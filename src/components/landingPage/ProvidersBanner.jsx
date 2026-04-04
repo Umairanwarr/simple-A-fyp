@@ -7,7 +7,7 @@ export default function ProvidersBanner() {
         
         <div className="flex flex-col items-start z-10 w-full md:w-1/2 px-8 pt-16 pb-8 md:px-20 lg:px-28 md:py-20 lg:py-24">
           <h2 className="text-white text-4xl sm:text-[42px] md:text-[48px] lg:text-[52px] font-medium leading-[1.15] mb-8 md:mb-10 tracking-[0.01em]">
-            Consult Our<br/>Providers
+            Consult Our<br/>Doctors
           </h2>
           <button className="bg-white text-[#1E232F] hover:bg-gray-100 transition-colors px-10 py-3.5 rounded-full font-semibold text-[15px] shadow-sm tracking-wide">
             Book Now

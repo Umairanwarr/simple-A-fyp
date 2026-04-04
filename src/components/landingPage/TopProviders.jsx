@@ -17,7 +17,7 @@ export default function TopProviders() {
     <div className="w-full bg-[#F9F9F9] py-20 px-6 lg:px-10">
       <div className="max-w-[1300px] mx-auto">
         <h2 className="text-[#1D635D] text-[36px] md:text-[44px] font-semibold text-center mb-16">
-          Our Top Providers
+          Our Top Doctors
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
