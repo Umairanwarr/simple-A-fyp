@@ -71,7 +71,7 @@ export default function SignUpForm() {
     switch (activeTab) {
       case 'patient': return 'Tell us about yourself';
       case 'doctor': return 'Doctor Registration';
-      case 'clinic': return 'Clinic/Hospital Registration';
+      case 'clinic': return 'Clinic Registration';
       case 'medical-store': return 'Medical Store Registration';
       default: return 'Tell us about yourself';
     }
@@ -249,7 +249,7 @@ export default function SignUpForm() {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic/Hospital Address</label>
+          <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic Address</label>
           <input 
             type="text" 
             placeholder="Precise location" 
@@ -312,7 +312,7 @@ export default function SignUpForm() {
   const ClinicForm = () => (
     <form className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic/Hospital Name</label>
+        <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic Name</label>
         <input 
           type="text" 
           placeholder="Official registered title" 

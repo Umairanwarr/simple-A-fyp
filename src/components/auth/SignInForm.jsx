@@ -36,7 +36,7 @@ export default function SignInForm() {
     switch (activeTab) {
       case 'patient': return 'To log in, enter your email address';
       case 'doctor': return 'Doctor Login';
-      case 'clinic': return 'Clinic/Hospital Login';
+      case 'clinic': return 'Clinic Login';
       case 'medical-store': return 'Medical Store Login';
       default: return 'To log in, enter your email address';
     }
