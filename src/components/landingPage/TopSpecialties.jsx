@@ -15,56 +15,90 @@ export default function TopSpecialties() {
   ];
 
   return (
-    <div className="w-full bg-white py-20 md:py-28 px-6 lg:px-10 relative overflow-hidden">
+    <div className="w-full bg-white py-20 md:py-28 px-4 md:px-8 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #1E232F 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-b from-[#1EBDB8]/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-[-10%] w-[300px] h-[300px] bg-[#1CAAAE]/5 rounded-full blur-[80px] pointer-events-none" />
+
       <div className="max-w-[1300px] mx-auto relative z-10">
-        <div className="flex items-center justify-between mb-12 md:mb-16">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#1EBDB8]" />
-              <span className="text-[#1EBDB8] text-[10px] font-bold uppercase tracking-[3px]">Browse by Specialty</span>
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between mb-14 md:mb-20 gap-6 text-center md:text-left">
+          <div className="flex flex-col items-center md:items-start">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="hidden md:block h-[2px] w-10 bg-gradient-to-r from-transparent to-[#1EBDB8] rounded-full" />
+              <span className="text-[#1EBDB8] text-[11px] md:text-[12px] font-bold uppercase tracking-[3px] md:tracking-[4px] bg-[#1EBDB8]/10 px-4 py-1.5 rounded-full">Browse by Specialty</span>
+              <div className="block md:hidden h-[2px] w-10 bg-gradient-to-l from-transparent to-[#1EBDB8] rounded-full" />
             </div>
-            <h2 className="text-[#1E232F] text-3xl md:text-[44px] font-bold leading-tight">
-              Top Searched <span className="text-gray-400">Specialties</span>
+            
+            <h2 className="text-[#1E232F] text-3xl md:text-[44px] lg:text-[48px] font-extrabold leading-tight tracking-tight">
+              Top Searched <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE]">Specialties</span>
             </h2>
           </div>
-          <button className="hidden md:flex items-center gap-2 text-[#1EBDB8] group">
-            <span className="text-[13px] font-semibold uppercase tracking-wider border-b border-[#1EBDB8]/30 group-hover:border-[#1EBDB8] transition-all pb-1">View All</span>
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7" />
+          
+          <button className="hidden md:flex items-center gap-2 text-white bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] hover:shadow-lg hover:shadow-[#1EBDB8]/25 px-8 py-4 rounded-full font-bold transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] group">
+            <span className="text-[13.5px] uppercase tracking-wider">Explore All Areas</span>
+            <svg className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </button>
         </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+
+        {/* Modern Vibrant Cards Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-7">
           {specialties.map((spec, index) => (
-            <div 
-              key={index} 
-              className="group cursor-pointer"
-            >
-              <div className={`bg-gradient-to-br ${spec.color} rounded-[28px] flex flex-col items-center justify-center p-6 md:p-8 aspect-[1.1] border border-gray-100 hover:border-gray-200 transition-all duration-500 hover:shadow-xl hover:-translate-y-1`}>
-                <div className={`h-14 w-14 md:h-16 md:w-16 flex items-center justify-center mb-4 md:mb-5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}>
-                  <img 
-                    src={spec.icon} 
-                    alt={spec.title} 
-                    className="max-w-full max-h-full object-contain" 
-                  />
-                </div>
-                <span className="font-semibold text-[#1E232F] text-center text-[14px] md:text-[15px] group-hover:text-[#1EBDB8] transition-colors">
-                  {spec.title}
-                </span>
+            <div key={index} className="relative group cursor-pointer h-full perspective-1000">
+              
+              {/* Animated Glow Drop-Shadow Behind Card */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${spec.color} rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-95 group-hover:scale-105 pointer-events-none`} />
+              
+              {/* Main Interactive Card */}
+              <div className="relative h-full bg-white rounded-[2rem] p-6 lg:p-8 border border-gray-100 hover:border-transparent flex flex-col items-center justify-center gap-5 transition-all duration-500 transform-gpu group-hover:-translate-y-2 overflow-hidden shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+                 
+                 {/* Internal Card Background Accent */}
+                 <div className={`absolute inset-0 bg-gradient-to-br ${spec.color} opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none`} />
+
+                 {/* Icon Wrapper Ring */}
+                 <div className={`relative w-[70px] h-[70px] md:w-[85px] md:h-[85px] rounded-2xl bg-gradient-to-br ${spec.color} flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500 z-10 border border-white/60 ring-4 ring-transparent group-hover:ring-white/50`}>
+                   <img 
+                     src={spec.icon} 
+                     alt={spec.title} 
+                     className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-sm transition-transform duration-500 group-hover:scale-110" 
+                   />
+                 </div>
+                 
+                 {/* Text Content */}
+                 <div className="relative w-full z-10 mt-1">
+                   <h3 className={`text-[#1E232F] font-extrabold text-[15px] md:text-[16px] text-center transition-colors duration-300 ${spec.iconColor.replace('text-', 'group-hover:text-')} tracking-wide`}>
+                     {spec.title}
+                   </h3>
+                 </div>
+
+                 {/* Top Right Mini Arrow Indicator */}
+                 <div className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-2 translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0 text-gray-400">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="7" y1="17" x2="17" y2="7"></line>
+                      <polyline points="7 7 17 7 17 17"></polyline>
+                    </svg>
+                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex md:hidden justify-center mt-8">
-          <button className="flex items-center gap-2 text-[#1EBDB8] group">
-            <span className="text-[13px] font-semibold uppercase tracking-wider border-b border-[#1EBDB8]/30 group-hover:border-[#1EBDB8] transition-all pb-1">View All Specialties</span>
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7" />
+        {/* Mobile View All Button */}
+        <div className="flex md:hidden justify-center mt-12 w-full">
+          <button className="flex items-center justify-center gap-2 text-white bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] active:scale-[0.98] w-full px-8 py-4 rounded-full font-bold shadow-lg shadow-[#1EBDB8]/20 transition-all group">
+            <span className="text-[14px] uppercase tracking-wider">Explore All Areas</span>
+            <svg className="w-5 h-5 transition-transform duration-300 group-active:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </button>
         </div>
+
       </div>
     </div>
   );

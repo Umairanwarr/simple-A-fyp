@@ -3,11 +3,31 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function VerificationForm() {
   const [method, setMethod] = useState('phone');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isSignup = searchParams.get('flow') === 'signup';
 
   const isPhone = method === 'phone';
+  
+  const handlePhoneChange = (e) => {
+    const onlyNums = e.target.value.replace(/[^0-9+]/g, '');
+    setPhone(onlyNums);
+  };
+
+  const isFormValid = () => {
+    const isContactValid = isPhone 
+      ? phone.length >= 10 
+      : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      
+    if (isSignup) {
+      return isContactValid && termsAccepted;
+    }
+    return isContactValid;
+  };
 
   return (
     <div className="w-full flex flex-col items-center px-6 py-10 md:py-20 bg-white min-h-[calc(100vh-250px)]">
@@ -32,12 +52,16 @@ export default function VerificationForm() {
             <input 
               type="tel" 
               placeholder="+92 ( _ _ _ ) _ _ _ - _ _ _ _" 
+              value={phone}
+              onChange={handlePhoneChange}
               className="bg-[#F5F5F5E5] rounded-[10px] px-5 py-4 text-[#4B5563] text-[16px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] w-full mt-2"
             />
           ) : (
             <input 
               type="email" 
               placeholder="Enter your email address" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="bg-[#F5F5F5E5] rounded-[10px] px-5 py-4 text-[#4B5563] text-[16px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] w-full mt-2"
             />
           )}
@@ -45,7 +69,12 @@ export default function VerificationForm() {
           {isSignup && (
             <label className="flex items-start gap-4 cursor-pointer group mt-2">
               <div className="mt-1">
-                <input type="checkbox" className="w-[18px] h-[18px] text-[#1EBDB8] focus:ring-[#1EBDB8] rounded border-gray-300 accent-[#1EBDB8]" />
+                <input 
+                  type="checkbox" 
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="w-[18px] h-[18px] text-[#1EBDB8] focus:ring-[#1EBDB8] rounded border-gray-300 accent-[#1EBDB8]" 
+                />
               </div>
               <p className="text-[13px] text-[#6B7280] font-medium leading-[1.6]">
                 I have read and accept Simple's <a href="#" className="font-bold underline decoration-2 underline-offset-2">Terms of Use</a> and I consent to Simple collecting data, including sensitive information such as health data (as fully described in the <a href="#" className="font-bold underline decoration-2 underline-offset-2">Privacy Policy</a>)
@@ -56,8 +85,11 @@ export default function VerificationForm() {
           <div className="flex flex-col gap-5 mt-4">
             <button 
               type="button" 
+              disabled={!isFormValid()}
               onClick={() => navigate('/verification-code')}
-              className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white py-4 rounded-full font-bold text-[16px] transition-colors shadow-sm"
+              className={`w-full py-4 rounded-full font-bold text-[16px] transition-colors shadow-sm ${
+                isFormValid() ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               {isPhone ? "Send Verification Text" : "Send Verification Email"}
             </button>

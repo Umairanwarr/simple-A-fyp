@@ -1,7 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import GenderModal from './GenderModal';
+import DoctorForm from './DoctorForm';
+import ClinicForm from './ClinicForm';
+import MedicalStoreForm from './MedicalStoreForm';
 
 const specialties = [
   'Cardiologist', 'Dermatologist', 'Endocrinologist', 'Gastroenterologist',
@@ -14,25 +19,25 @@ const facilityTypes = [
   'Rehabilitation Center', 'Nursing Home', 'Mental Health Facility'
 ];
 
-export default function SignUpForm() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('patient');
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
-  const recaptchaRef = useRef(null);
-  const [showPassword, setShowPassword] = useState({});
-
-  const togglePasswordVisibility = (field) => {
-    setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const PasswordInput = ({ id, label, placeholder }) => (
+// Password Input Component
+const PasswordField = memo(function PasswordField({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  showPassword,
+  togglePasswordVisibility,
+}) {
+  return (
     <div className="flex flex-col gap-2">
       <label className="text-[13.5px] font-bold text-[#6B7280]">{label}</label>
       <div className="relative">
         <input
-          type={showPassword[id] ? 'text' : 'password'}
+          type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
+          value={value}
+          onChange={onChange}
           className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] w-full pr-12"
         />
         <button
@@ -40,7 +45,7 @@ export default function SignUpForm() {
           onClick={() => togglePasswordVisibility(id)}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
         >
-          {showPassword[id] ? (
+          {showPassword ? (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
               <line x1="1" y1="1" x2="23" y2="23"></line>
@@ -55,10 +60,193 @@ export default function SignUpForm() {
       </div>
     </div>
   );
+});
 
-  const handleCaptchaChange = (value) => {
+// Patient Form Component
+const PatientForm = memo(function PatientForm({
+  patientData,
+  onPatientSubmit,
+  onPatientEmailChange,
+  onPatientFirstNameChange,
+  onPatientLastNameChange,
+  onPatientDobChange,
+  onPatientPasswordChange,
+  onPatientConfirmPasswordChange,
+  isPatientFormComplete,
+  setModalOpen,
+  showPassword,
+  togglePasswordVisibility,
+}) {
+  return (
+    <form className="flex flex-col gap-5" onSubmit={onPatientSubmit}>
+      <div className="flex flex-col gap-2">
+        <label className="text-[13.5px] font-bold text-[#6B7280]">Email Address</label>
+        <input
+          type="email"
+          placeholder="Enter your Email address"
+          value={patientData.email}
+          onChange={onPatientEmailChange}
+          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#6B7280]">
+            First Legal Name
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 mt-0.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 16v-4"></path>
+              <path d="M12 8h.01"></path>
+            </svg>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter your First name"
+            value={patientData.firstName}
+            onChange={onPatientFirstNameChange}
+            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#6B7280]">
+            Last Legal Name
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 mt-0.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 16v-4"></path>
+              <path d="M12 8h.01"></path>
+            </svg>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter your last name"
+            value={patientData.lastName}
+            onChange={onPatientLastNameChange}
+            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-[13.5px] font-bold text-[#6B7280]">Date of birth</label>
+        <input
+          type="date"
+          placeholder="Select date"
+          value={patientData.dob}
+          onChange={onPatientDobChange}
+          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 mt-1 mb-2">
+        <label className="text-[13.5px] font-bold text-[#6B7280]">Gender</label>
+        <div className="flex flex-col gap-3">
+          <label className="flex items-center gap-3 cursor-pointer group w-fit">
+            <div className="w-[18px] h-[18px] rounded-full border-[2.5px] border-[#1F2937] flex items-center justify-center p-[2px]">
+              <div className="w-full h-full bg-[#1F2937] rounded-full hidden group-has-[:checked]:block"></div>
+            </div>
+            <input type="radio" name="gender" value="male" className="hidden" defaultChecked />
+            <span className="text-[#4B5563] text-[14.5px] font-medium leading-none mt-0.5">Male</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer group w-fit">
+            <div className="w-[18px] h-[18px] rounded-full border-[2.5px] border-[#4B5563] group-has-[:checked]:border-[#1F2937] flex items-center justify-center p-[2px]">
+              <div className="w-full h-full bg-[#1F2937] rounded-full hidden group-has-[:checked]:block"></div>
+            </div>
+            <input type="radio" name="gender" value="female" className="hidden" />
+            <span className="text-[#4B5563] text-[14.5px] font-medium leading-none mt-0.5">Female</span>
+          </label>
+        </div>
+
+        <button 
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="text-[#1F2937] text-[13px] font-bold underline decoration-2 underline-offset-4 mt-2 text-left"
+        >
+          Add more sex and gender info <span className="font-medium text-[#6B7280] no-underline">(optional)</span>
+        </button>
+      </div>
+
+      <PasswordField
+        id="patient-password"
+        label="Password"
+        placeholder="Create a strong password"
+        value={patientData.password}
+        onChange={onPatientPasswordChange}
+        showPassword={showPassword['patient-password']}
+        togglePasswordVisibility={togglePasswordVisibility}
+      />
+
+      <PasswordField
+        id="patient-confirm"
+        label="Confirm Password"
+        placeholder="Re-enter your password"
+        value={patientData.confirmPassword}
+        onChange={onPatientConfirmPasswordChange}
+        showPassword={showPassword['patient-confirm']}
+        togglePasswordVisibility={togglePasswordVisibility}
+      />
+      <p className="text-[#9CA3AF] text-[12px] mt-1">
+        Password must be at least 9 characters with 1 uppercase letter and 1 special character
+      </p>
+
+      <button 
+        type="submit" 
+        disabled={!isPatientFormComplete()}
+        className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${
+          isPatientFormComplete()
+            ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' 
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        }`}
+      >
+        Sign Up
+      </button>
+      
+      <div className="flex items-center gap-4 my-2">
+        <div className="h-[1.5px] flex-1 bg-[#E5E7EB]"></div>
+        <span className="text-[#6B7280] text-[13px] font-bold">Or</span>
+        <div className="h-[1.5px] flex-1 bg-[#E5E7EB]"></div>
+      </div>
+      
+      <button type="button" className="w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-[#E5E7EB] hover:bg-gray-50 text-[#1F2937] py-3.5 rounded-xl font-bold text-[15.5px] transition-colors shadow-sm">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-[22px] h-[22px]" alt="Google logo"/>
+        Continue with Google
+      </button>
+    </form>
+  );
+});
+
+// Main Component
+export default function SignUpForm() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('patient');
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const recaptchaRef = useRef(null);
+  const [showPassword, setShowPassword] = useState({});
+
+  // Form data states
+  const [patientData, setPatientData] = useState({
+    email: '', firstName: '', lastName: '', dob: '', password: '', confirmPassword: ''
+  });
+
+  const togglePasswordVisibility = useCallback((field) => {
+    setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
+  }, []);
+
+  const showFieldError = useCallback((fieldName) => {
+    toast.error(`${fieldName} is required`, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  }, []);
+
+  const handleCaptchaChange = useCallback((value) => {
     setCaptchaVerified(!!value);
-  };
+  }, []);
 
   const tabs = [
     { id: 'patient', label: 'Patient' },
@@ -87,451 +275,105 @@ export default function SignUpForm() {
     }
   };
 
-  // Patient Form
-  const PatientForm = () => (
-    <form className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Email Address</label>
-        <input 
-          type="email" 
-          placeholder="Enter your Email address" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#6B7280]">
-            First Legal Name
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 mt-0.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 16v-4"></path>
-              <path d="M12 8h.01"></path>
-            </svg>
-          </label>
-          <input 
-            type="text" 
-            placeholder="Enter your First name" 
-            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#6B7280]">
-            Last Legal Name
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 mt-0.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 16v-4"></path>
-              <path d="M12 8h.01"></path>
-            </svg>
-          </label>
-          <input 
-            type="text" 
-            placeholder="Enter your last name" 
-            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Date of birth</label>
-        <input 
-          type="text" 
-          placeholder="mm/dd/yy" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-3 mt-1 mb-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Gender</label>
-        <div className="flex flex-col gap-3">
-          <label className="flex items-center gap-3 cursor-pointer group w-fit">
-            <div className="w-[18px] h-[18px] rounded-full border-[2.5px] border-[#1F2937] flex items-center justify-center p-[2px]">
-              <div className="w-full h-full bg-[#1F2937] rounded-full hidden group-has-[:checked]:block"></div>
-            </div>
-            <input type="radio" name="gender" value="male" className="hidden" defaultChecked />
-            <span className="text-[#4B5563] text-[14.5px] font-medium leading-none mt-0.5">Male</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer group w-fit">
-            <div className="w-[18px] h-[18px] rounded-full border-[2.5px] border-[#4B5563] group-has-[:checked]:border-[#1F2937] flex items-center justify-center p-[2px]">
-              <div className="w-full h-full bg-[#1F2937] rounded-full hidden group-has-[:checked]:block"></div>
-            </div>
-            <input type="radio" name="gender" value="female" className="hidden" />
-            <span className="text-[#4B5563] text-[14.5px] font-medium leading-none mt-0.5">Female</span>
-          </label>
-        </div>
-        
-        <button 
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="text-[#1F2937] text-[13px] font-bold underline decoration-2 underline-offset-4 mt-2 text-left"
-        >
-          Add more sex and gender info <span className="font-medium text-[#6B7280] no-underline">(optional)</span>
-        </button>
-      </div>
-
-      <PasswordInput id="patient-password" label="Password" placeholder="Create a strong password" />
-      <PasswordInput id="patient-confirm" label="Confirm Password" placeholder="Re-enter your password" />
-
-      <button type="button" onClick={() => navigate('/verification?flow=signup')} className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3">
-        Continue
-      </button>
-      
-      <div className="flex items-center gap-4 my-2">
-        <div className="h-[1.5px] flex-1 bg-[#E5E7EB]"></div>
-        <span className="text-[#6B7280] text-[13px] font-bold">Or</span>
-        <div className="h-[1.5px] flex-1 bg-[#E5E7EB]"></div>
-      </div>
-      
-      <button type="button" className="w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-[#E5E7EB] hover:bg-gray-50 text-[#1F2937] py-3.5 rounded-xl font-bold text-[15.5px] transition-colors shadow-sm">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-[22px] h-[22px]" alt="Google logo"/>
-        Continue with Google
-      </button>
-    </form>
-  );
-
-  // Doctor Form
-  const DoctorForm = () => (
-    <form className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Full Professional Name</label>
-        <input 
-          type="text" 
-          placeholder="e.g., Dr. Badar Salar" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Professional Email</label>
-        <input 
-          type="email" 
-          placeholder="For verification code/OTP" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Verified Phone Number</label>
-        <input 
-          type="tel" 
-          placeholder="For identity and two-step verification" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Specialization</label>
-        <select className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] cursor-pointer">
-          <option value="">Select your specialization</option>
-          {specialties.map(spec => (
-            <option key={spec} value={spec}>{spec}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Medical License Number</label>
-        <input 
-          type="text" 
-          placeholder="PMDC/PMC registration number" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="flex flex-col gap-2">
-          <label className="text-[13.5px] font-bold text-[#6B7280]">Years of Experience</label>
-          <input 
-            type="number" 
-            min="0"
-            placeholder="e.g., 5" 
-            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic Address</label>
-          <input 
-            type="text" 
-            placeholder="Precise location" 
-            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-          />
-        </div>
-      </div>
-
-      <PasswordInput id="doctor-password" label="Password" placeholder="Create a secure password" />
-      <PasswordInput id="doctor-confirm" label="Confirm Password" placeholder="Re-enter your password" />
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Medical License Upload (PDF/Image)</label>
-        <div className="relative">
-          <input 
-            type="file" 
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="hidden" 
-            id="doctor-license"
-          />
-          <label 
-            htmlFor="doctor-license" 
-            className="flex items-center gap-3 bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#9CA3AF] text-[14px] font-medium cursor-pointer hover:bg-[#E5E7EB] transition-all border border-transparent border-dashed border-[#9CA3AF]"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload medical license (Required)
-          </label>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
-        <label className="text-[13.5px] font-bold text-[#6B7280] mb-2">Security Verification</label>
-        <ReCAPTCHA
-          sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-          onChange={handleCaptchaChange}
-          ref={recaptchaRef}
-        />
-      </div>
-
-      <button 
-        type="button" 
-        onClick={() => navigate('/verification?flow=signup')} 
-        disabled={!captchaVerified}
-        className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${
-          captchaVerified 
-            ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' 
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        }`}
-      >
-        Submit for Verification
-      </button>
-    </form>
-  );
-
-  // Clinic Form
-  const ClinicForm = () => (
-    <form className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic Name</label>
-        <input 
-          type="text" 
-          placeholder="Official registered title" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Administrator Email</label>
-        <input 
-          type="email" 
-          placeholder="For secure management and verification" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Official Phone Number</label>
-        <input 
-          type="tel" 
-          placeholder="For patient contact and identity" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Facility Type</label>
-        <select className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] cursor-pointer">
-          <option value="">Select facility type</option>
-          {facilityTypes.map(type => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Complete Physical Address</label>
-        <textarea 
-          placeholder="For GPS-based search results and Near Me engine" 
-          rows="3"
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] resize-none"
-        />
-      </div>
-
-      <PasswordInput id="clinic-password" label="Password" placeholder="Create a secure password" />
-      <PasswordInput id="clinic-confirm" label="Confirm Password" placeholder="Re-enter your password" />
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Health Permit Upload (PDF/Image)</label>
-        <div className="relative">
-          <input 
-            type="file" 
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="hidden" 
-            id="clinic-permit"
-          />
-          <label 
-            htmlFor="clinic-permit" 
-            className="flex items-center gap-3 bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#9CA3AF] text-[14px] font-medium cursor-pointer hover:bg-[#E5E7EB] transition-all border border-transparent border-dashed border-[#9CA3AF]"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload health permit (Required)
-          </label>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
-        <label className="text-[13.5px] font-bold text-[#6B7280] mb-2">Security Verification</label>
-        <ReCAPTCHA
-          sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-          onChange={handleCaptchaChange}
-        />
-      </div>
-
-      <button 
-        type="button" 
-        onClick={() => navigate('/verification?flow=signup')} 
-        disabled={!captchaVerified}
-        className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${
-          captchaVerified 
-            ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' 
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        }`}
-      >
-        Submit for Verification
-      </button>
-    </form>
-  );
-
-  // Medical Store Form
-  const MedicalStoreForm = () => (
-    <form className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Store Name</label>
-        <input 
-          type="text" 
-          placeholder="Official pharmacy or medical store title" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Owner/Proprietor Email</label>
-        <input 
-          type="email" 
-          placeholder="For mandatory OTP/Verification" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Contact Phone Number</label>
-        <input 
-          type="tel" 
-          placeholder="For delivery logistics and identity" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Pharmacy License Number</label>
-        <input 
-          type="text" 
-          placeholder="Drug regulatory authority ID" 
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Store Physical Address</label>
-        <textarea 
-          placeholder="For local delivery area and location-based discovery" 
-          rows="3"
-          className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] resize-none"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="flex flex-col gap-2">
-          <label className="text-[13.5px] font-bold text-[#6B7280]">Opening Time</label>
-          <input 
-            type="time" 
-            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-[13.5px] font-bold text-[#6B7280]">Closing Time</label>
-          <input 
-            type="time" 
-            className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#4B5563] text-[14px] font-medium outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]"
-          />
-        </div>
-      </div>
-
-      <PasswordInput id="store-password" label="Password" placeholder="Create a secure password" />
-      <PasswordInput id="store-confirm" label="Confirm Password" placeholder="Re-enter your password" />
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Pharmacy License Upload (PDF/Image)</label>
-        <div className="relative">
-          <input 
-            type="file" 
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="hidden" 
-            id="pharmacy-license"
-          />
-          <label 
-            htmlFor="pharmacy-license" 
-            className="flex items-center gap-3 bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 sm:py-4 text-[#9CA3AF] text-[14px] font-medium cursor-pointer hover:bg-[#E5E7EB] transition-all border border-transparent border-dashed border-[#9CA3AF]"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload pharmacy license (Required)
-          </label>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
-        <label className="text-[13.5px] font-bold text-[#6B7280] mb-2">Security Verification</label>
-        <ReCAPTCHA
-          sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-          onChange={handleCaptchaChange}
-        />
-      </div>
-
-      <button 
-        type="button" 
-        onClick={() => navigate('/verification?flow=signup')} 
-        disabled={!captchaVerified}
-        className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${
-          captchaVerified 
-            ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' 
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        }`}
-      >
-        Submit for Verification
-      </button>
-    </form>
-  );
-
-  const renderForm = () => {
-    switch (activeTab) {
-      case 'patient': return <PatientForm />;
-      case 'doctor': return <DoctorForm />;
-      case 'clinic': return <ClinicForm />;
-      case 'medical-store': return <MedicalStoreForm />;
-      default: return <PatientForm />;
-    }
+  const isPatientFormComplete = () => {
+    return patientData.email.trim() && 
+           patientData.firstName.trim() && 
+           patientData.lastName.trim() && 
+           patientData.dob.trim() && 
+           patientData.password.trim() && 
+           patientData.confirmPassword.trim();
   };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const hasMinLength = password.length >= 9;
+    return hasUpperCase && hasSpecialChar && hasMinLength;
+  };
+
+  const onPatientEmailChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, email: e.target.value }));
+  }, []);
+
+  const onPatientFirstNameChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, firstName: e.target.value }));
+  }, []);
+
+  const onPatientLastNameChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, lastName: e.target.value }));
+  }, []);
+
+  const onPatientDobChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, dob: e.target.value }));
+  }, []);
+
+  const onPatientPasswordChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, password: e.target.value }));
+  }, []);
+
+  const onPatientConfirmPasswordChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, confirmPassword: e.target.value }));
+  }, []);
+
+  const onPatientSubmit = useCallback((e) => {
+    e.preventDefault();
+    const missing = [];
+    if (!patientData.email.trim()) missing.push('Email Address');
+    if (!patientData.firstName.trim()) missing.push('First Legal Name');
+    if (!patientData.lastName.trim()) missing.push('Last Legal Name');
+    if (!patientData.dob.trim()) missing.push('Date of Birth');
+    if (!patientData.password.trim()) missing.push('Password');
+    if (!patientData.confirmPassword.trim()) missing.push('Confirm Password');
+
+    if (missing.length > 0) {
+      missing.forEach(field => showFieldError(field));
+      return;
+    }
+
+    if (patientData.password !== patientData.confirmPassword) {
+      toast.error('Passwords do not match', { position: "top-right", autoClose: 3000 });
+      return;
+    }
+
+    if (!validatePassword(patientData.password)) {
+      toast.error('Password must be at least 9 characters with 1 uppercase letter and 1 special character', {
+        position: "top-right", autoClose: 3000,
+      });
+      return;
+    }
+
+    const selectedDate = new Date(patientData.dob);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate > today) {
+      toast.error('Date of birth cannot be in the future', { position: "top-right", autoClose: 3000 });
+      return;
+    }
+
+    const minAge = 18;
+    const birthDate = new Date(patientData.dob);
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+    
+    if (actualAge < minAge) {
+      toast.error('You must be at least 18 years old to register', { position: "top-right", autoClose: 3000 });
+      return;
+    }
+
+    navigate('/verification?flow=signup');
+  }, [navigate, patientData, showFieldError]);
 
   return (
     <div className="w-full flex justify-center px-6 py-10 md:py-16 bg-white min-h-[calc(100vh-200px)]">
+      <ToastContainer />
       <div className="w-full max-w-[500px]">
         <GenderModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
         
@@ -541,7 +383,6 @@ export default function SignUpForm() {
           </h1>
         </div>
 
-        {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8 p-1 bg-gray-100 rounded-xl">
           {tabs.map(tab => (
             <button
@@ -567,7 +408,27 @@ export default function SignUpForm() {
           </p>
         </div>
 
-        {renderForm()}
+        {activeTab === 'patient' && (
+          <PatientForm 
+            patientData={patientData}
+            onPatientSubmit={onPatientSubmit}
+            onPatientEmailChange={onPatientEmailChange}
+            onPatientFirstNameChange={onPatientFirstNameChange}
+            onPatientLastNameChange={onPatientLastNameChange}
+            onPatientDobChange={onPatientDobChange}
+            onPatientPasswordChange={onPatientPasswordChange}
+            onPatientConfirmPasswordChange={onPatientConfirmPasswordChange}
+            isPatientFormComplete={isPatientFormComplete}
+            setModalOpen={setModalOpen}
+            showPassword={showPassword}
+            togglePasswordVisibility={togglePasswordVisibility}
+          />
+        )}
+        
+        {activeTab === 'doctor' && <DoctorForm />}
+        {activeTab === 'clinic' && <ClinicForm />}
+        {activeTab === 'medical-store' && <MedicalStoreForm />}
+
       </div>
     </div>
   );
