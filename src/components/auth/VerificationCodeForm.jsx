@@ -40,7 +40,7 @@ export default function VerificationCodeForm() {
           <div className="flex flex-col gap-5 mt-2">
             <button 
               type="button" 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/reset-password')}
               className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white py-4 rounded-full font-bold text-[16px] transition-colors shadow-sm"
             >
               Continue

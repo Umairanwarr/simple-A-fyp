@@ -4,6 +4,7 @@ import SignUp from './pages/auth/SignUp';
 import SignIn from './pages/auth/SignIn';
 import Verification from './pages/auth/Verification';
 import VerificationCode from './pages/auth/VerificationCode';
+import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/patientDashboard/Dashboard';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/verification" element={<Verification />} />
         <Route path="/verification-code" element={<VerificationCode />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>

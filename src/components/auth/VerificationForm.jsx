@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function VerificationForm() {
   const [method, setMethod] = useState('phone');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSignup = searchParams.get('flow') === 'signup';
 
   const isPhone = method === 'phone';
 
@@ -40,14 +42,16 @@ export default function VerificationForm() {
             />
           )}
 
-          <label className="flex items-start gap-4 cursor-pointer group mt-2">
-            <div className="mt-1">
-              <input type="checkbox" className="w-[18px] h-[18px] text-[#1EBDB8] focus:ring-[#1EBDB8] rounded border-gray-300 accent-[#1EBDB8]" />
-            </div>
-            <p className="text-[13px] text-[#6B7280] font-medium leading-[1.6]">
-              I have read and accept Simple's <a href="#" className="font-bold underline decoration-2 underline-offset-2">Terms of Use</a> and I consent to Simple collecting data, including sensitive information such as health data (as fully described in the <a href="#" className="font-bold underline decoration-2 underline-offset-2">Privacy Policy</a>)
-            </p>
-          </label>
+          {isSignup && (
+            <label className="flex items-start gap-4 cursor-pointer group mt-2">
+              <div className="mt-1">
+                <input type="checkbox" className="w-[18px] h-[18px] text-[#1EBDB8] focus:ring-[#1EBDB8] rounded border-gray-300 accent-[#1EBDB8]" />
+              </div>
+              <p className="text-[13px] text-[#6B7280] font-medium leading-[1.6]">
+                I have read and accept Simple's <a href="#" className="font-bold underline decoration-2 underline-offset-2">Terms of Use</a> and I consent to Simple collecting data, including sensitive information such as health data (as fully described in the <a href="#" className="font-bold underline decoration-2 underline-offset-2">Privacy Policy</a>)
+              </p>
+            </label>
+          )}
 
           <div className="flex flex-col gap-5 mt-4">
             <button 
@@ -66,9 +70,11 @@ export default function VerificationForm() {
             </button>
           </div>
 
-          <p className="text-[#9CA3AF] text-[12.5px] font-medium leading-[1.6] text-center px-4 mt-2">
-            By clicking "Send verification {isPhone ? "text" : "email"}" you agree to receive account updates and appointment reminders via {isPhone ? "text" : "email"} from Simple. Message frequency varies. Reply STOP to cancel or HELP for help. Message and data rates may apply.
-          </p>
+          {isSignup && (
+            <p className="text-[#9CA3AF] text-[12.5px] font-medium leading-[1.6] text-center px-4 mt-2">
+              By clicking "Send verification {isPhone ? "text" : "email"}" you agree to receive account updates and appointment reminders via {isPhone ? "text" : "email"} from Simple. Message frequency varies. Reply STOP to cancel or HELP for help. Message and data rates may apply.
+            </p>
+          )}
         </form>
       </div>
     </div>
