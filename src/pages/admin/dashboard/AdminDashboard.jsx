@@ -1,14 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout';
+import { fetchAdminStats } from '../../../services/authApi';
 
 export default function AdminDashboard() {
+  const [totalPatients, setTotalPatients] = useState('0');
+  const [totalDoctors, setTotalDoctors] = useState('0');
+  const [totalClinics, setTotalClinics] = useState('0');
+  const [totalMedicalStores, setTotalMedicalStores] = useState('0');
+
+  useEffect(() => {
+    const loadStats = async () => {
+      const token = localStorage.getItem('adminToken');
+
+      if (!token) {
+        return;
+      }
+
+      try {
+        const data = await fetchAdminStats(token);
+        setTotalPatients(String(data.totalPatients ?? 0));
+        setTotalDoctors(String(data.approvedDoctors ?? 0));
+        setTotalClinics(String(data.totalClinics ?? 0));
+        setTotalMedicalStores(String(data.totalMedicalStores ?? 0));
+      } catch (error) {
+        // Keep static fallback values if stats endpoint is unavailable.
+      }
+    };
+
+    loadStats();
+  }, []);
   
   const stats = [
-    { title: 'Total Patients', value: '14,235', change: '+12%', isPositive: true },
-    { title: 'Total Doctors', value: '452', change: '+5%', isPositive: true },
-    { title: 'Total Clinics', value: '128', change: '+2%', isPositive: true },
-    { title: 'Medical Stores', value: '87', change: '-1%', isPositive: false },
+    { title: 'Total Patients', value: totalPatients, change: '+0%', isPositive: true },
+    { title: 'Total Doctors', value: totalDoctors, change: '+0%', isPositive: true },
+    { title: 'Total Clinics', value: totalClinics, change: '+0%', isPositive: true },
+    { title: 'Medical Stores', value: totalMedicalStores, change: '+0%', isPositive: true },
   ];
+
+  const chartData = [
+    { label: 'Patients', value: Number(totalPatients) || 0, color: '#0EA5E9' },
+    { label: 'Doctors', value: Number(totalDoctors) || 0, color: '#1EBDB8' },
+    { label: 'Clinics', value: Number(totalClinics) || 0, color: '#6366F1' },
+    { label: 'Stores', value: Number(totalMedicalStores) || 0, color: '#F59E0B' }
+  ];
+
+  const maxChartValue = Math.max(...chartData.map((item) => item.value), 1);
+  const totalUsers = chartData.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <AdminLayout>
@@ -21,14 +58,7 @@ export default function AdminDashboard() {
             <p className="text-[14px] text-gray-500 font-medium mt-1">Monitor all users and activities across the platform.</p>
           </div>
           
-          <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-[13.5px] transition-colors shadow-sm flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Export Report
-          </button>
+          
         </div>
 
         {/* Stats Grid */}
@@ -51,36 +81,37 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Recent Activity / Chart Placeholder */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
-          
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] min-h-[400px] flex flex-col">
-            <h2 className="text-[18px] font-bold text-gray-900 mb-6">User Growth</h2>
-            <div className="flex-1 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center">
-               <span className="text-gray-400 font-medium text-[14px]">Chart goes here</span>
-            </div>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] min-h-[420px] flex flex-col">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+            <h2 className="text-[18px] font-bold text-gray-900">Users Chart</h2>
+            <p className="text-[13px] font-semibold text-gray-500">
+              Total users: <span className="text-gray-900">{totalUsers}</span>
+            </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col">
-            <h2 className="text-[18px] font-bold text-gray-900 mb-6">Recent Users Joined</h2>
-            <div className="flex flex-col gap-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm">
-                    U{i}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-gray-900 truncate">New User {i}</p>
-                    <p className="text-[12px] font-medium text-gray-500 truncate">Patient • Joined 2 mins ago</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="mt-auto w-full py-3 text-[#1EBDB8] font-bold text-[13.5px] border border-[#1EBDB8]/20 rounded-xl hover:bg-[#1EBDB8]/5 transition-colors">
-              View All Users
-            </button>
-          </div>
+          <div className="flex-1 bg-gray-50 rounded-xl border border-gray-100 p-5">
+            <div className="h-[260px] flex items-end justify-between gap-4 sm:gap-6">
+              {chartData.map((item) => {
+                const barHeight = Math.max((item.value / maxChartValue) * 100, item.value > 0 ? 8 : 0);
 
+                return (
+                  <div key={item.label} className="flex-1 h-full flex flex-col items-center justify-end gap-2">
+                    <span className="text-[12px] font-bold text-gray-700">{item.value}</span>
+                    <div className="w-full max-w-[72px] h-full flex items-end">
+                      <div
+                        className="w-full rounded-t-xl transition-all duration-500"
+                        style={{
+                          height: `${barHeight}%`,
+                          backgroundColor: item.color
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-[12px] font-bold text-gray-500 text-center">{item.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
       </div>

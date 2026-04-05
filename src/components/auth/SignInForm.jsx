@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { PasswordField, validateEmail, validatePassword } from './SharedFields';
+import { signInWithPopup } from 'firebase/auth';
+import { PasswordField, validateEmail } from './SharedFields';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { auth, googleProvider } from '../../services/firebase';
+import {
+  loginClinic,
+  loginDoctor,
+  loginMedicalStore,
+  loginPatient,
+  loginPatientWithGoogle,
+  sendClinicLoginOtp,
+  sendMedicalStoreLoginOtp,
+  sendDoctorLoginOtp
+} from '../../services/authApi';
 
 export default function SignInForm() {
   const navigate = useNavigate();
@@ -12,6 +24,8 @@ export default function SignInForm() {
   const [showPassword, setShowPassword] = useState({});
   const [countdown, setCountdown] = useState(0);
   const [isFirstOTP, setIsFirstOTP] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -30,6 +44,33 @@ export default function SignInForm() {
   };
 
   const handleResendOTP = () => {
+    if (activeTab === 'doctor' || activeTab === 'clinic' || activeTab === 'medical-store') {
+      if (!validateEmail(email)) {
+        toast.error(`Enter a valid ${activeTab} email before requesting OTP`);
+        return;
+      }
+
+      setCountdown(60);
+      setIsFirstOTP(false);
+
+      const sendOtpPromise = activeTab === 'doctor'
+        ? sendDoctorLoginOtp(email)
+        : activeTab === 'clinic'
+          ? sendClinicLoginOtp(email)
+          : sendMedicalStoreLoginOtp(email);
+
+      sendOtpPromise
+        .then((data) => {
+          toast.success(data.message || 'OTP sent successfully');
+        })
+        .catch((error) => {
+          toast.error(error.message || 'Could not send OTP');
+          setCountdown(0);
+        });
+
+      return;
+    }
+
     setCountdown(60);
     if(isFirstOTP) setIsFirstOTP(false);
     toast.info(isFirstOTP ? 'OTP Sent!' : 'OTP Resent!');
@@ -39,20 +80,30 @@ export default function SignInForm() {
     setCaptchaVerified(!!value);
   };
 
+  const handleForgotPassword = () => {
+    if (!validateEmail(email)) {
+      toast.error('Enter your email first to receive reset OTP');
+      return;
+    }
+
+    navigate(`/verification-code?flow=reset&email=${encodeURIComponent(email.trim().toLowerCase())}&autoSend=1`);
+  };
+
   const isFormValid = () => {
     const isEmailValid = validateEmail(email);
     const isPasswordValid = password.length > 0;
-    
+
     if (activeTab === 'patient') {
       return isEmailValid && isPasswordValid;
     }
-    
-    // For others (doctor, clinic, medical-store)
+
+    // For doctor, clinic and medical-store require 2FA + captcha.
     return isEmailValid && isPasswordValid && otp.length === 6 && captchaVerified;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!validateEmail(email)) {
       toast.error('Please enter a valid email address');
       return;
@@ -65,8 +116,102 @@ export default function SignInForm() {
       toast.error('Please complete all security verification steps');
       return;
     }
-    
-    navigate('/dashboard');
+
+    if (!['patient', 'doctor', 'clinic', 'medical-store'].includes(activeTab)) {
+      navigate('/dashboard');
+      return;
+    }
+
+    if (activeTab === 'doctor') {
+      try {
+        setIsSubmitting(true);
+        const data = await loginDoctor({ email, password, otp });
+
+        localStorage.setItem('doctorToken', data.token);
+        localStorage.setItem('doctor', JSON.stringify(data.doctor));
+        toast.success('Login successful!');
+        navigate('/doctor/dashboard');
+      } catch (error) {
+        toast.error(error.message || 'Could not sign in');
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return;
+    }
+
+    if (activeTab === 'clinic') {
+      try {
+        setIsSubmitting(true);
+        const data = await loginClinic({ email, password, otp });
+
+        localStorage.setItem('clinicToken', data.token);
+        localStorage.setItem('clinic', JSON.stringify(data.clinic));
+        toast.success('Login successful!');
+        navigate('/clinic/dashboard');
+      } catch (error) {
+        toast.error(error.message || 'Could not sign in');
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return;
+    }
+
+    if (activeTab === 'medical-store') {
+      try {
+        setIsSubmitting(true);
+        const data = await loginMedicalStore({ email, password, otp });
+
+        localStorage.setItem('medicalStoreToken', data.token);
+        localStorage.setItem('medicalStore', JSON.stringify(data.medicalStore));
+        toast.success('Login successful!');
+        navigate('/store/dashboard');
+      } catch (error) {
+        toast.error(error.message || 'Could not sign in');
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const data = await loginPatient({ email, password });
+
+      localStorage.setItem('patientToken', data.token);
+      localStorage.setItem('patient', JSON.stringify(data.patient));
+      toast.success('Login successful!');
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error(error.message || 'Could not sign in');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleSubmitting(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      const data = await loginPatientWithGoogle(idToken);
+
+      localStorage.setItem('patientToken', data.token);
+      localStorage.setItem('patient', JSON.stringify(data.patient));
+      toast.success('Google sign-in successful!');
+      navigate('/dashboard');
+    } catch (error) {
+      if (error?.code === 'auth/popup-closed-by-user') {
+        toast.info('Google sign-in cancelled');
+        return;
+      }
+
+      toast.error(error.message || 'Could not sign in with Google');
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
   };
 
   const tabs = [
@@ -146,7 +291,7 @@ export default function SignInForm() {
                 setCountdown(0);
                 setIsFirstOTP(true);
               }}
-              className={`flex-1 min-w-[80px] py-2.5 px-3 rounded-lg text-[13px] font-bold transition-all ${
+              className={`flex-1 min-w-[70px] sm:min-w-[80px] py-2.5 px-2 sm:px-3 flex items-center justify-center rounded-lg text-[13px] sm:text-[14px] font-bold transition-all text-center leading-tight whitespace-normal sm:whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-white text-[#1EBDB8] shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
@@ -188,23 +333,25 @@ export default function SignInForm() {
           />
 
           <div className="flex justify-end">
-            <button type="button" onClick={() => navigate('/verification')} className="text-[#1EBDB8] text-[13px] font-bold hover:underline">
-              Forgot Password?
-            </button>
+            {activeTab === 'patient' && (
+              <button type="button" onClick={handleForgotPassword} className="text-[#1EBDB8] text-[13px] font-bold hover:underline">
+                Forgot Password?
+              </button>
+            )}
           </div>
 
           {renderSecurityFields()}
 
           <button
             type="submit"
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || isSubmitting}
             className={`w-full py-4 rounded-full font-bold text-[16px] transition-colors shadow-sm mt-2 ${
-              isFormValid()
+              isFormValid() && !isSubmitting
                 ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Sign In
+            {isSubmitting ? 'Signing In...' : 'Sign In'}
           </button>
 
           {activeTab === 'patient' && (
@@ -216,9 +363,18 @@ export default function SignInForm() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <button type="button" className="w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-[#E5E7EB] hover:bg-gray-50 text-[#1F2937] py-3.5 rounded-xl font-bold text-[16px] transition-colors shadow-sm">
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isGoogleSubmitting || isSubmitting}
+                  className={`w-full flex items-center justify-center gap-3 border-[1.5px] py-3.5 rounded-xl font-bold text-[16px] transition-colors shadow-sm ${
+                    isGoogleSubmitting || isSubmitting
+                      ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-white border-[#E5E7EB] hover:bg-gray-50 text-[#1F2937]'
+                  }`}
+                >
                   <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-[20px] h-[20px]" alt="Google logo" />
-                  Continue with Google
+                  {isGoogleSubmitting ? 'Please wait...' : 'Continue with Google'}
                 </button>
               </div>
             </>

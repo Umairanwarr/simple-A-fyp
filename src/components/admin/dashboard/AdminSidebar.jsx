@@ -120,40 +120,23 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
               </div>
             </div>
 
-            {/* Other Links Placeholder */}
-            <a 
-              href="/admin/settings"
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] mt-2 ${isActive('/admin/settings') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
-              Settings
-            </a>
-
           </nav>
         </div>
 
-        {/* User Profile Footer */}
+        {/* Logout Footer */}
         <div className="p-4 border-t border-gray-100">
-          <div 
+          <button
+            type="button"
             onClick={handleLogout}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 p-3 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 font-bold text-[14px]"
           >
-            <div className="w-10 h-10 rounded-full bg-[#1EBDB8]/20 flex items-center justify-center font-bold text-[#1EBDB8]">
-              A
-            </div>
-            <div className="flex flex-col flex-1 truncate">
-              <span className="text-[14px] font-bold text-gray-900 truncate">Super Admin</span>
-              <span className="text-[12px] font-medium text-gray-500 truncate">admin@simple.com</span>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
               <line x1="21" y1="12" x2="9" y2="12"></line>
             </svg>
-          </div>
+            Logout
+          </button>
         </div>
       </aside>
     </>

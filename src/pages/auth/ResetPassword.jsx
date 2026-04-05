@@ -5,19 +5,22 @@ import Footer from '../../components/landingPage/Footer';
 import { PasswordField, validatePassword } from '../../components/auth/SharedFields';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { resetPatientPassword } from '../../services/authApi';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState({});
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const togglePasswordVisibility = (field) => {
     setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleReset = (e) => {
+  const handleReset = async (e) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -26,10 +29,44 @@ export default function ResetPassword() {
       toast.error('Password must be at least 9 characters with 1 uppercase letter and 1 special character');
       return;
     }
-    toast.success('Password successfully reset');
-    setTimeout(() => {
-      navigate('/signin');
-    }, 1500);
+
+    const resetContextRaw = sessionStorage.getItem('patientResetContext');
+
+    if (!resetContextRaw) {
+      toast.error('Reset session is missing or expired. Please verify again.');
+      return;
+    }
+
+    let resetContext;
+
+    try {
+      resetContext = JSON.parse(resetContextRaw);
+    } catch (error) {
+      sessionStorage.removeItem('patientResetContext');
+      toast.error('Reset session is invalid. Please verify again.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await resetPatientPassword({
+        email: resetContext.email,
+        resetToken: resetContext.resetToken,
+        password,
+        confirmPassword
+      });
+
+      sessionStorage.removeItem('patientResetContext');
+      toast.success('Password successfully reset');
+
+      setTimeout(() => {
+        navigate('/signin');
+      }, 1200);
+    } catch (error) {
+      toast.error(error.message || 'Could not reset password');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isFormValid = () => {
@@ -83,12 +120,12 @@ export default function ResetPassword() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!isFormValid()}
+              disabled={!isFormValid() || isSubmitting}
               className={`w-full py-4 rounded-full font-bold text-[16px] transition-colors shadow-sm mt-4 ${
-                isFormValid() ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                isFormValid() && !isSubmitting ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Reset Password
+              {isSubmitting ? 'Resetting...' : 'Reset Password'}
             </button>
 
             {/* Back to Sign In */}

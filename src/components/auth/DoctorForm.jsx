@@ -3,6 +3,7 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { PasswordField, FilePicker, validatePassword, validateEmail } from './SharedFields';
+import { registerDoctor } from '../../services/authApi';
 
 const specialties = [
   'Cardiologist', 'Dermatologist', 'Endocrinologist', 'Gastroenterologist',
@@ -26,6 +27,7 @@ export default function DoctorForm() {
   });
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [showPassword, setShowPassword] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const togglePasswordVisibility = (field) => {
     setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
@@ -44,7 +46,7 @@ export default function DoctorForm() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateEmail(formData.email)) {
@@ -67,7 +69,33 @@ export default function DoctorForm() {
       return;
     }
 
-    navigate('/verification?flow=signup');
+    try {
+      setIsSubmitting(true);
+
+      const formPayload = new FormData();
+      formPayload.append('fullName', formData.fullName);
+      formPayload.append('email', formData.email);
+      formPayload.append('phone', formData.phone);
+      formPayload.append('specialization', formData.specialization);
+      formPayload.append('licenseNumber', formData.licenseNumber);
+      formPayload.append('experience', formData.experience);
+      formPayload.append('address', formData.address);
+      formPayload.append('password', formData.password);
+      formPayload.append('confirmPassword', formData.confirmPassword);
+
+      if (formData.licenseMedia) {
+        formPayload.append('licenseMedia', formData.licenseMedia);
+      }
+
+      await registerDoctor(formPayload);
+
+      toast.success('Details submitted. Please verify your email.');
+      navigate(`/verification-code?flow=doctor-signup&email=${encodeURIComponent(formData.email.trim().toLowerCase())}&autoSend=1`);
+    } catch (error) {
+      toast.error(error.message || 'Could not submit doctor registration');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isFormComplete = () => {
@@ -149,8 +177,8 @@ export default function DoctorForm() {
         <ReCAPTCHA sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" onChange={(val) => setCaptchaVerified(!!val)} />
       </div>
 
-      <button type="submit" disabled={!isFormComplete()} className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${isFormComplete() ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-        Verify & Submit for Admin Approval
+      <button type="submit" disabled={!isFormComplete() || isSubmitting} className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${isFormComplete() && !isSubmitting ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+        {isSubmitting ? 'Submitting...' : 'Verify & Submit for Admin Approval'}
       </button>
     </form>
   );

@@ -1,12 +1,14 @@
 import React, { useState, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { signInWithPopup } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import GenderModal from './GenderModal';
 import DoctorForm from './DoctorForm';
 import ClinicForm from './ClinicForm';
 import MedicalStoreForm from './MedicalStoreForm';
+import { auth, googleProvider } from '../../services/firebase';
+import { loginPatientWithGoogle, registerPatient } from '../../services/authApi';
 
 const specialties = [
   'Cardiologist', 'Dermatologist', 'Endocrinologist', 'Gastroenterologist',
@@ -70,12 +72,15 @@ const PatientForm = memo(function PatientForm({
   onPatientFirstNameChange,
   onPatientLastNameChange,
   onPatientDobChange,
+  onPatientGenderChange,
   onPatientPasswordChange,
   onPatientConfirmPasswordChange,
   isPatientFormComplete,
-  setModalOpen,
   showPassword,
   togglePasswordVisibility,
+  isSubmitting,
+  onGoogleContinue,
+  isGoogleSubmitting,
 }) {
   return (
     <form className="flex flex-col gap-5" onSubmit={onPatientSubmit}>
@@ -145,25 +150,31 @@ const PatientForm = memo(function PatientForm({
             <div className="w-[18px] h-[18px] rounded-full border-[2.5px] border-[#1F2937] flex items-center justify-center p-[2px]">
               <div className="w-full h-full bg-[#1F2937] rounded-full hidden group-has-[:checked]:block"></div>
             </div>
-            <input type="radio" name="gender" value="male" className="hidden" defaultChecked />
+            <input
+              type="radio"
+              name="gender"
+              value="male"
+              className="hidden"
+              checked={patientData.gender === 'male'}
+              onChange={onPatientGenderChange}
+            />
             <span className="text-[#4B5563] text-[14.5px] font-medium leading-none mt-0.5">Male</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer group w-fit">
             <div className="w-[18px] h-[18px] rounded-full border-[2.5px] border-[#4B5563] group-has-[:checked]:border-[#1F2937] flex items-center justify-center p-[2px]">
               <div className="w-full h-full bg-[#1F2937] rounded-full hidden group-has-[:checked]:block"></div>
             </div>
-            <input type="radio" name="gender" value="female" className="hidden" />
+            <input
+              type="radio"
+              name="gender"
+              value="female"
+              className="hidden"
+              checked={patientData.gender === 'female'}
+              onChange={onPatientGenderChange}
+            />
             <span className="text-[#4B5563] text-[14.5px] font-medium leading-none mt-0.5">Female</span>
           </label>
         </div>
-
-        <button 
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="text-[#1F2937] text-[13px] font-bold underline decoration-2 underline-offset-4 mt-2 text-left"
-        >
-          Add more sex and gender info <span className="font-medium text-[#6B7280] no-underline">(optional)</span>
-        </button>
       </div>
 
       <PasswordField
@@ -191,14 +202,14 @@ const PatientForm = memo(function PatientForm({
 
       <button 
         type="submit" 
-        disabled={!isPatientFormComplete()}
+        disabled={!isPatientFormComplete() || isSubmitting}
         className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${
-          isPatientFormComplete()
+          isPatientFormComplete() && !isSubmitting
             ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' 
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         }`}
       >
-        Sign Up
+        {isSubmitting ? 'Creating Account...' : 'Sign Up'}
       </button>
       
       <div className="flex items-center gap-4 my-2">
@@ -207,9 +218,18 @@ const PatientForm = memo(function PatientForm({
         <div className="h-[1.5px] flex-1 bg-[#E5E7EB]"></div>
       </div>
       
-      <button type="button" className="w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-[#E5E7EB] hover:bg-gray-50 text-[#1F2937] py-3.5 rounded-xl font-bold text-[15.5px] transition-colors shadow-sm">
+      <button
+        type="button"
+        onClick={onGoogleContinue}
+        disabled={isGoogleSubmitting || isSubmitting}
+        className={`w-full flex items-center justify-center gap-3 border-[1.5px] py-3.5 rounded-xl font-bold text-[15.5px] transition-colors shadow-sm ${
+          isGoogleSubmitting || isSubmitting
+            ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+            : 'bg-white border-[#E5E7EB] hover:bg-gray-50 text-[#1F2937]'
+        }`}
+      >
         <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-[22px] h-[22px]" alt="Google logo"/>
-        Continue with Google
+        {isGoogleSubmitting ? 'Please wait...' : 'Continue with Google'}
       </button>
     </form>
   );
@@ -219,14 +239,15 @@ const PatientForm = memo(function PatientForm({
 export default function SignUpForm() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('patient');
-  const [isModalOpen, setModalOpen] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const recaptchaRef = useRef(null);
   const [showPassword, setShowPassword] = useState({});
+  const [isSubmittingPatient, setIsSubmittingPatient] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   // Form data states
   const [patientData, setPatientData] = useState({
-    email: '', firstName: '', lastName: '', dob: '', password: '', confirmPassword: ''
+    email: '', firstName: '', lastName: '', dob: '', gender: 'male', password: '', confirmPassword: ''
   });
 
   const togglePasswordVisibility = useCallback((field) => {
@@ -312,6 +333,10 @@ export default function SignUpForm() {
     setPatientData(prev => ({ ...prev, dob: e.target.value }));
   }, []);
 
+  const onPatientGenderChange = useCallback((e) => {
+    setPatientData(prev => ({ ...prev, gender: e.target.value }));
+  }, []);
+
   const onPatientPasswordChange = useCallback((e) => {
     setPatientData(prev => ({ ...prev, password: e.target.value }));
   }, []);
@@ -320,7 +345,7 @@ export default function SignUpForm() {
     setPatientData(prev => ({ ...prev, confirmPassword: e.target.value }));
   }, []);
 
-  const onPatientSubmit = useCallback((e) => {
+  const onPatientSubmit = useCallback(async (e) => {
     e.preventDefault();
     const missing = [];
     if (!patientData.email.trim()) missing.push('Email Address');
@@ -368,15 +393,55 @@ export default function SignUpForm() {
       return;
     }
 
-    navigate('/verification?flow=signup');
+    try {
+      setIsSubmittingPatient(true);
+
+      await registerPatient({
+        email: patientData.email,
+        firstName: patientData.firstName,
+        lastName: patientData.lastName,
+        dob: patientData.dob,
+        gender: patientData.gender,
+        password: patientData.password,
+        confirmPassword: patientData.confirmPassword
+      });
+
+      toast.success('Account created successfully. Please verify your email.');
+      navigate(`/verification-code?flow=signup&email=${encodeURIComponent(patientData.email.trim().toLowerCase())}&autoSend=1`);
+    } catch (error) {
+      toast.error(error.message || 'Could not register patient');
+    } finally {
+      setIsSubmittingPatient(false);
+    }
   }, [navigate, patientData, showFieldError]);
+
+  const onPatientGoogleContinue = useCallback(async () => {
+    try {
+      setIsGoogleSubmitting(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      const data = await loginPatientWithGoogle(idToken);
+
+      localStorage.setItem('patientToken', data.token);
+      localStorage.setItem('patient', JSON.stringify(data.patient));
+      toast.success('Google sign-up successful!');
+      navigate('/dashboard');
+    } catch (error) {
+      if (error?.code === 'auth/popup-closed-by-user') {
+        toast.info('Google sign-up cancelled');
+        return;
+      }
+
+      toast.error(error.message || 'Could not continue with Google');
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
+  }, [navigate]);
 
   return (
     <div className="w-full flex justify-center px-6 py-10 md:py-16 bg-white min-h-[calc(100vh-200px)]">
       <ToastContainer />
       <div className="w-full max-w-[500px]">
-        <GenderModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
-        
         <div className="text-center mb-8">
           <h1 className="text-[34px] sm:text-[40px] text-[#6B7280] font-medium tracking-tight mb-2">
             Create an <span className="text-[#1EBDB8] font-bold">Account</span>
@@ -388,7 +453,7 @@ export default function SignUpForm() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[80px] py-2.5 px-3 rounded-lg text-[13px] font-bold transition-all ${
+              className={`flex-1 min-w-[70px] sm:min-w-[80px] py-2.5 px-2 sm:px-3 flex items-center justify-center rounded-lg text-[13px] sm:text-[14px] font-bold transition-all text-center leading-tight whitespace-normal sm:whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'bg-white text-[#1EBDB8] shadow-sm' 
                   : 'text-gray-500 hover:text-gray-700'
@@ -416,12 +481,15 @@ export default function SignUpForm() {
             onPatientFirstNameChange={onPatientFirstNameChange}
             onPatientLastNameChange={onPatientLastNameChange}
             onPatientDobChange={onPatientDobChange}
+            onPatientGenderChange={onPatientGenderChange}
             onPatientPasswordChange={onPatientPasswordChange}
             onPatientConfirmPasswordChange={onPatientConfirmPasswordChange}
             isPatientFormComplete={isPatientFormComplete}
-            setModalOpen={setModalOpen}
             showPassword={showPassword}
             togglePasswordVisibility={togglePasswordVisibility}
+            isSubmitting={isSubmittingPatient}
+            onGoogleContinue={onPatientGoogleContinue}
+            isGoogleSubmitting={isGoogleSubmitting}
           />
         )}
         

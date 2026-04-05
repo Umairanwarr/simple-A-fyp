@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { loginAdmin } from '../../../services/authApi';
 
 export default function AdminSignInForm() {
   const navigate = useNavigate();
@@ -14,26 +15,13 @@ export default function AdminSignInForm() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3002/api/auth/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success('Login successful!');
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('admin', JSON.stringify(data.admin));
-        navigate('/admin/dashboard');
-      } else {
-        toast.error(data.message || 'Invalid credentials');
-      }
+      const data = await loginAdmin({ email, password });
+      toast.success('Login successful!');
+      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('admin', JSON.stringify(data.admin));
+      navigate('/admin/dashboard');
     } catch (error) {
-      toast.error('Network error. Please try again.');
+      toast.error(error.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { PasswordField, FilePicker, validatePassword, validateEmail } from './SharedFields';
+import { registerClinic } from '../../services/authApi';
 
 const facilityTypes = [
   'General Hospital', 'Private Clinic', 'Diagnostic Lab', 'Specialty Center',
@@ -23,6 +24,7 @@ export default function ClinicForm() {
   });
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [showPassword, setShowPassword] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const togglePasswordVisibility = (field) => {
     setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
@@ -41,7 +43,7 @@ export default function ClinicForm() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateEmail(formData.email)) {
@@ -64,7 +66,31 @@ export default function ClinicForm() {
       return;
     }
 
-    navigate('/verification?flow=signup');
+    try {
+      setIsSubmitting(true);
+
+      const formPayload = new FormData();
+      formPayload.append('name', formData.name);
+      formPayload.append('email', formData.email);
+      formPayload.append('phone', formData.phone);
+      formPayload.append('facilityType', formData.facilityType);
+      formPayload.append('address', formData.address);
+      formPayload.append('password', formData.password);
+      formPayload.append('confirmPassword', formData.confirmPassword);
+
+      if (formData.permitMedia) {
+        formPayload.append('permitMedia', formData.permitMedia);
+      }
+
+      await registerClinic(formPayload);
+
+      toast.success('Clinic details submitted. Please verify your email.');
+      navigate(`/verification-code?flow=clinic-signup&email=${encodeURIComponent(formData.email.trim().toLowerCase())}&autoSend=1`);
+    } catch (error) {
+      toast.error(error.message || 'Could not submit clinic registration');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isFormComplete = () => {
@@ -75,7 +101,7 @@ export default function ClinicForm() {
   return (
     <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic/Hospital Name</label>
+        <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic Name</label>
         <input name="name" type="text" placeholder="Official registered title" value={formData.name} onChange={handleChange} className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]" />
       </div>
 
@@ -136,8 +162,8 @@ export default function ClinicForm() {
         <ReCAPTCHA sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" onChange={(val) => setCaptchaVerified(!!val)} />
       </div>
 
-      <button type="submit" disabled={!isFormComplete()} className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${isFormComplete() ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-        Verify & Submit for Admin Approval
+      <button type="submit" disabled={!isFormComplete() || isSubmitting} className={`w-full py-4 rounded-full font-bold text-[15px] transition-colors shadow-sm mt-3 ${isFormComplete() && !isSubmitting ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+        {isSubmitting ? 'Submitting...' : 'Verify & Submit for Admin Approval'}
       </button>
     </form>
   );

@@ -1,13 +1,86 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../AdminLayout';
+import { toast } from 'react-toastify';
+import { deleteAdminPatient, fetchAdminPatients } from '../../../../services/authApi';
 
 export default function Patients() {
-  const patients = [
-    { id: '1', name: 'Alina Malik', email: 'alina@example.com', joined: 'Oct 12, 2023', status: 'Active' },
-    { id: '2', name: 'Zohaib Hassan', email: 'zohaib@example.com', joined: 'Oct 15, 2023', status: 'Active' },
-    { id: '3', name: 'Sana Fatima', email: 'sana@example.com', joined: 'Nov 02, 2023', status: 'Inactive' },
-    { id: '4', name: 'Bilal Ahmed', email: 'bilal@example.com', joined: 'Nov 09, 2023', status: 'Active' },
-  ];
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [deletingPatientId, setDeletingPatientId] = useState('');
+
+  useEffect(() => {
+    const loadPatients = async () => {
+      const adminToken = localStorage.getItem('adminToken');
+
+      if (!adminToken) {
+        setError('Please login as admin to view patients');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await fetchAdminPatients(adminToken);
+        setPatients(data.patients || []);
+      } catch (err) {
+        setError(err.message || 'Could not fetch patients');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPatients();
+  }, []);
+
+  const filteredPatients = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return patients;
+    }
+
+    return patients.filter((patient) => {
+      return (
+        patient.name.toLowerCase().includes(normalizedSearch) ||
+        patient.email.toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [patients, search]);
+
+  const formatDate = (rawDate) => {
+    return new Date(rawDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit'
+    });
+  };
+
+  const handleDeletePatient = async (patient) => {
+    const adminToken = localStorage.getItem('adminToken');
+
+    if (!adminToken) {
+      toast.error('Please login as admin first');
+      return;
+    }
+
+    const shouldDelete = window.confirm(`Delete patient ${patient.name}? This action cannot be undone.`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setDeletingPatientId(patient.id);
+      await deleteAdminPatient(adminToken, patient.id);
+      setPatients((prevPatients) => prevPatients.filter((item) => item.id !== patient.id));
+      toast.success('Patient deleted successfully');
+    } catch (err) {
+      toast.error(err.message || 'Could not delete patient');
+    } finally {
+      setDeletingPatientId('');
+    }
+  };
 
   return (
     <AdminLayout>
@@ -27,14 +100,6 @@ export default function Patients() {
             </h1>
             <p className="text-[14px] text-gray-500 font-medium mt-1">Manage all registered patients on the platform.</p>
           </div>
-          
-          <button className="bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white px-5 py-2.5 rounded-xl font-bold text-[13.5px] transition-colors shadow-sm flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add Patient
-          </button>
         </div>
 
         {/* Filters/Search block */}
@@ -47,6 +112,8 @@ export default function Patients() {
             <input 
               type="text" 
               placeholder="Search patients by name or email..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-[#FAFAFA] text-[#4B5563] text-[14px] font-medium py-2.5 pl-10 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 border border-gray-200 focus:border-[#1EBDB8] transition-all"
             />
           </div>
@@ -72,7 +139,31 @@ export default function Patients() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {patients.map((patient) => (
+                {loading && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-10 text-center text-sm font-medium text-gray-500">
+                      Loading patients...
+                    </td>
+                  </tr>
+                )}
+
+                {!loading && error && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-10 text-center text-sm font-medium text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                )}
+
+                {!loading && !error && filteredPatients.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-10 text-center text-sm font-medium text-gray-500">
+                      No patients found.
+                    </td>
+                  </tr>
+                )}
+
+                {!loading && !error && filteredPatients.map((patient) => (
                   <tr key={patient.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -83,21 +174,29 @@ export default function Patients() {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-medium text-[14.5px] text-gray-600">{patient.email}</td>
-                    <td className="px-6 py-4 font-medium text-[14.5px] text-gray-600">{patient.joined}</td>
+                    <td className="px-6 py-4 font-medium text-[14.5px] text-gray-600">{formatDate(patient.joined)}</td>
                     <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-md text-[12px] font-bold ${
-                          patient.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          patient.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                         }`}>
                           {patient.status}
                         </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-gray-400 hover:text-[#1EBDB8] p-2 transition-colors">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="1"></circle>
-                          <circle cx="19" cy="12" r="1"></circle>
-                          <circle cx="5" cy="12" r="1"></circle>
+                      <button
+                        type="button"
+                        disabled={deletingPatientId === patient.id}
+                        onClick={() => handleDeletePatient(patient)}
+                        className="inline-flex items-center gap-2 text-red-500 hover:text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed font-bold text-[13px] px-2 py-1 rounded-lg transition-colors"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                          <path d="M10 11v6"></path>
+                          <path d="M14 11v6"></path>
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
                         </svg>
+                        {deletingPatientId === patient.id ? 'Deleting...' : 'Delete'}
                       </button>
                     </td>
                   </tr>
@@ -108,7 +207,7 @@ export default function Patients() {
           
           {/* Pagination Placeholder */}
           <div className="p-4 border-t border-gray-100 flex items-center justify-between text-[13.5px] font-medium text-gray-500">
-            <span>Showing 1 to 4 of 4 entries</span>
+            <span>Showing 1 to {filteredPatients.length} of {filteredPatients.length} entries</span>
             <div className="flex gap-2">
               <button disabled className="px-3 py-1 border border-gray-200 rounded-lg opacity-50 cursor-not-allowed">Prev</button>
               <button disabled className="px-3 py-1 border border-gray-200 rounded-lg opacity-50 cursor-not-allowed">Next</button>

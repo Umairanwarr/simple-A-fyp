@@ -1,13 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import {
+  sendClinicOtp,
+  sendMedicalStoreOtp,
+  verifyClinicOtp,
+  verifyMedicalStoreOtp,
+  sendDoctorOtp,
+  sendPatientOtp,
+  verifyDoctorOtp,
+  verifyPatientOtp
+} from '../../services/authApi';
 
 export default function VerificationCodeForm() {
-  const [method, setMethod] = useState('phone');
   const [otp, setOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const flow = searchParams.get('flow') || 'reset';
+  const email = searchParams.get('email') || '';
+  const autoSend = searchParams.get('autoSend') === '1';
+  const isPatientSignupFlow = flow === 'signup';
+  const isDoctorSignupFlow = flow === 'doctor-signup';
+  const isClinicSignupFlow = flow === 'clinic-signup';
+  const isMedicalStoreSignupFlow = flow === 'medical-store-signup';
+  const isSignupFlow =
+    isPatientSignupFlow ||
+    isDoctorSignupFlow ||
+    isClinicSignupFlow ||
+    isMedicalStoreSignupFlow;
+  const hasAutoSentRef = useRef(false);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -16,22 +41,183 @@ export default function VerificationCodeForm() {
     }
   }, [countdown]);
 
-  const isPhone = method === 'phone';
+  useEffect(() => {
+    const sendInitialOtp = async () => {
+      if (!autoSend || hasAutoSentRef.current) {
+        return;
+      }
+
+      if (!email) {
+        toast.error('Missing email. Please go back and try again.');
+        return;
+      }
+
+      hasAutoSentRef.current = true;
+
+      try {
+        setIsResending(true);
+
+        if (isDoctorSignupFlow) {
+          await sendDoctorOtp(email);
+        } else if (isClinicSignupFlow) {
+          await sendClinicOtp(email);
+        } else if (isMedicalStoreSignupFlow) {
+          await sendMedicalStoreOtp(email);
+        } else {
+          await sendPatientOtp(email, isPatientSignupFlow ? 'signup' : 'reset');
+        }
+
+        setCountdown(60);
+        toast.success('Verification code sent to your email');
+      } catch (error) {
+        toast.error(error.message || 'Could not send verification code');
+      } finally {
+        setIsResending(false);
+      }
+    };
+
+    sendInitialOtp();
+  }, [
+    autoSend,
+    email,
+    isClinicSignupFlow,
+    isDoctorSignupFlow,
+    isMedicalStoreSignupFlow,
+    isPatientSignupFlow
+  ]);
 
   const handleOtpChange = (e) => {
     setOtp(e.target.value.replace(/[^0-9]/g, ''));
   };
 
-  const handleResend = () => {
-    setCountdown(60);
-    toast.success('Verification code resent successfully!');
+  const handleResend = async () => {
+    if (countdown > 0 || isResending) {
+      return;
+    }
+
+    if (!email) {
+      toast.error('Missing email. Please go back and try again.');
+      return;
+    }
+
+    try {
+      setIsResending(true);
+
+      if (isDoctorSignupFlow) {
+        await sendDoctorOtp(email);
+      } else if (isClinicSignupFlow) {
+        await sendClinicOtp(email);
+      } else if (isMedicalStoreSignupFlow) {
+        await sendMedicalStoreOtp(email);
+      } else {
+        await sendPatientOtp(email, isPatientSignupFlow ? 'signup' : 'reset');
+      }
+
+      setCountdown(60);
+      toast.success('Verification code resent successfully!');
+    } catch (error) {
+      toast.error(error.message || 'Could not resend verification code');
+    } finally {
+      setIsResending(false);
+    }
   };
 
-  const handleSubmit = () => {
-    toast.success('Verification successful!');
-    setTimeout(() => {
-      navigate('/reset-password');
-    }, 1500);
+  const handleSubmit = async () => {
+    if (!isFormValid || isSubmitting) {
+      return;
+    }
+
+    if (!email) {
+      toast.error('Missing email. Please go back and try again.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      let data;
+
+      if (isDoctorSignupFlow) {
+        data = await verifyDoctorOtp({ email, otp });
+      } else if (isClinicSignupFlow) {
+        data = await verifyClinicOtp({ email, otp });
+      } else if (isMedicalStoreSignupFlow) {
+        data = await verifyMedicalStoreOtp({ email, otp });
+      } else {
+        data = await verifyPatientOtp({
+          email,
+          otp,
+          purpose: isPatientSignupFlow ? 'signup' : 'reset'
+        });
+      }
+
+      if (isDoctorSignupFlow) {
+        sessionStorage.setItem(
+          'doctorApplicationNotice',
+          JSON.stringify({
+            title: 'Application Submitted',
+            message:
+              'Your doctor request has been submitted. Admin will review your profile and you will receive an email when your application is approved or declined.'
+          })
+        );
+      }
+
+      if (isClinicSignupFlow) {
+        sessionStorage.setItem(
+          'clinicApplicationNotice',
+          JSON.stringify({
+            title: 'Application Submitted',
+            message:
+              'Your clinic request has been submitted. Admin will review your profile and you will receive an email when your application is approved or declined.'
+          })
+        );
+      }
+
+      if (isMedicalStoreSignupFlow) {
+        sessionStorage.setItem(
+          'medicalStoreApplicationNotice',
+          JSON.stringify({
+            title: 'Application Submitted',
+            message:
+              'Your medical store request has been submitted. Admin will review your profile and you will receive an email when your application is approved or declined.'
+          })
+        );
+      }
+
+      toast.success(
+        isDoctorSignupFlow
+          ? 'Verification successful! Application submitted.'
+          : isClinicSignupFlow
+            ? 'Verification successful! Application submitted.'
+          : isMedicalStoreSignupFlow
+            ? 'Verification successful! Application submitted.'
+          : isPatientSignupFlow
+            ? 'Verification successful! Please sign in.'
+            : 'Verification successful!'
+      );
+
+      if (!isSignupFlow && data?.resetToken) {
+        sessionStorage.setItem(
+          'patientResetContext',
+          JSON.stringify({
+            email,
+            resetToken: data.resetToken
+          })
+        );
+      }
+
+      setTimeout(() => {
+        if (isDoctorSignupFlow || isClinicSignupFlow || isMedicalStoreSignupFlow) {
+          navigate('/');
+          return;
+        }
+
+        navigate(isPatientSignupFlow ? '/signin' : '/reset-password');
+      }, 1200);
+    } catch (error) {
+      toast.error(error.message || 'Invalid verification code');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isFormValid = otp.length === 6;
@@ -45,7 +231,7 @@ export default function VerificationCodeForm() {
             Enter the <span className="text-[#1EBDB8] font-bold">6 digit code</span>
           </h1>
           <p className="text-[#9CA3AF] text-[14px] font-medium leading-relaxed px-4">
-            We sent a code to <span className="font-bold text-[#4B5563]">{isPhone ? "+92 300 1234567" : "your email address"}</span>. To keep your account safe, do not share this code with anyone
+            We sent a code to <span className="font-bold text-[#4B5563]">{email || 'your email address'}</span>. To keep your account safe, do not share this code with anyone
           </p>
         </div>
 
@@ -67,30 +253,23 @@ export default function VerificationCodeForm() {
             <button 
               type="button" 
               onClick={handleResend}
-              disabled={countdown > 0}
-              className={`font-bold ${countdown > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-[#1EBDB8] hover:underline underline-offset-4'}`}
+              disabled={countdown > 0 || isResending}
+              className={`font-bold ${countdown > 0 || isResending ? 'text-gray-400 cursor-not-allowed' : 'text-[#1EBDB8] hover:underline underline-offset-4'}`}
             >
-              {countdown > 0 ? `Resend Code in ${countdown}s` : 'Resend Code'}
+              {isResending ? 'Sending...' : countdown > 0 ? `Resend Code in ${countdown}s` : 'Resend Code'}
             </button>
           </div>
 
           <div className="flex flex-col gap-5 mt-2">
             <button 
               type="button" 
-              disabled={!isFormValid}
+              disabled={!isFormValid || isSubmitting}
               onClick={handleSubmit}
               className={`w-full py-4 rounded-full font-bold text-[16px] transition-colors shadow-sm ${
-                isFormValid ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                isFormValid && !isSubmitting ? 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Continue
-            </button>
-            <button 
-              type="button"
-              onClick={() => setMethod(isPhone ? 'email' : 'phone')}
-              className="text-[#6B7280] font-bold text-[16px] hover:text-[#4B5563] transition-colors pb-6 border-b-[1.5px] border-gray-200 text-center"
-            >
-              {isPhone ? "Verify with email instead" : "Verify with phone instead"}
+              {isSubmitting ? 'Verifying...' : 'Continue'}
             </button>
           </div>
         </form>
