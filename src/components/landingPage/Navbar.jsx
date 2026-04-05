@@ -31,13 +31,14 @@ export default function Navbar() {
           {/* Main Links */}
           <div className="flex flex-col gap-8 text-[18px] font-bold text-gray-200">
             <a href="#services" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Services</a>
+            <a href="#top-doctors" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Doctors</a>
+            <a href="#specialties" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Specialties</a>
+            <a href="#subscription-plans" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Plans</a>
             <a href="#live-streams" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all flex items-center justify-center gap-3">
                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                Live Streams
             </a>
             <a href="#clinics" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Clinics</a>
-            <a href="#top-doctors" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Doctors</a>
-            <a href="#gallery" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Gallery</a>
             <a href="#medical-stores" onClick={toggleMenu} className="hover:text-[#1EBDB8] uppercase tracking-[3px] transition-all">Stores</a>
           </div>
 
@@ -90,13 +91,14 @@ export default function Navbar() {
           {/* Desktop Navigation Links - Centered */}
           <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-8 text-[14px] font-bold text-gray-300">
             <a href="#services" className="hover:text-white transition-colors uppercase tracking-wider">Services</a>
+            <a href="#top-doctors" className="hover:text-white transition-colors uppercase tracking-wider">Doctors</a>
+            <a href="#specialties" className="hover:text-white transition-colors uppercase tracking-wider">Specialties</a>
+            <a href="#subscription-plans" className="hover:text-white transition-colors uppercase tracking-wider">Plans</a>
             <a href="#live-streams" className="hover:text-white transition-colors uppercase tracking-wider flex items-center gap-1.5">
                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                Live
             </a>
             <a href="#clinics" className="hover:text-white transition-colors uppercase tracking-wider">Clinics</a>
-            <a href="#top-doctors" className="hover:text-white transition-colors uppercase tracking-wider">Doctors</a>
-            <a href="#gallery" className="hover:text-white transition-colors uppercase tracking-wider">Gallery</a>
             <a href="#medical-stores" className="hover:text-white transition-colors uppercase tracking-wider">Stores</a>
           </div>
           

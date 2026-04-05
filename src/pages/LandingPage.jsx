@@ -3,6 +3,7 @@ import Navbar from '../components/landingPage/Navbar';
 import Hero from '../components/landingPage/Hero';
 import Services from '../components/landingPage/Services';
 import ProvidersBanner from '../components/landingPage/ProvidersBanner';
+import SubscriptionPlans from '../components/landingPage/SubscriptionPlans';
 import LiveStreams from '../components/landingPage/LiveStreams';
 import Hospitals from '../components/landingPage/Hospitals';
 import TopSpecialties from '../components/landingPage/TopSpecialties';
@@ -21,23 +22,29 @@ export default function LandingPage() {
       <div id="services">
         <Services />
       </div>
-      <ProvidersBanner />
+      <div id="top-doctors">
+        <TopProviders />
+      </div>
+      <div id="specialties">
+        <TopSpecialties />
+      </div>
+
+      <div id="subscription-plans">
+        <SubscriptionPlans />
+      </div>
+
       <div id="live-streams">
         <LiveStreams />
       </div>
       <div id="clinics">
         <Hospitals />
       </div>
-      <TopSpecialties />
-      <div id="top-doctors">
-        <TopProviders />
-      </div>
       <div id="medical-stores">
         <Stores />
       </div>
-      <div id="gallery">
+      {/* <div id="gallery">
         <MediaGallery />
-      </div>
+      </div> */}
       <Footer />
     </div>
   );

@@ -11,11 +11,7 @@ export default function Stores() {
       status: "Open 24/7",
       distance: "0.8 km",
       rating: "4.9",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" />
-        </svg>
-      ),
+      image: "https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=400",
       coords: { x: '25%', y: '30%' }
     },
     {
@@ -25,13 +21,7 @@ export default function Stores() {
       status: "Closing at 11 PM",
       distance: "1.2 km",
       rating: "4.8",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <line x1="12" y1="8" x2="12" y2="16" />
-          <line x1="8" y1="12" x2="16" y2="12" />
-        </svg>
-      ),
+      image: "https://images.unsplash.com/photo-1585435557343-3b0928aa3932?auto=format&fit=crop&q=80&w=400",
       coords: { x: '65%', y: '20%' }
     },
     {
@@ -41,184 +31,262 @@ export default function Stores() {
       status: "Open Now",
       distance: "2.5 km",
       rating: "4.7",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-        </svg>
-      ),
+      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=400",
       coords: { x: '50%', y: '45%' }
     }
   ];
 
   return (
-    <section className="w-full bg-[#1E232F] py-20 px-6 lg:px-10 overflow-hidden">
-      <div className="max-w-[1300px] mx-auto">
+    <section className="w-full bg-[#F5F7FA] py-20 px-6 lg:px-10 overflow-hidden relative">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#1EBDB8]/5 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      
+      <div className="max-w-[1300px] mx-auto relative z-10">
         
-        {/* Header */}
-        <div className="flex flex-col mb-16">
-          <span className="text-[#3AC4B8] font-bold tracking-[3px] text-[13px] uppercase mb-4 block">Medical Network</span>
-          <h2 className="text-white text-[38px] md:text-[52px] font-bold leading-[1.1] tracking-tight">
-            Find Medical Support <br />
-            <span className="text-gray-500">In Your Neighborhood</span>
-          </h2>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#1EBDB8]" />
+              <span className="text-[#1EBDB8] text-[10px] font-bold uppercase tracking-[3px]">Medical Network</span>
+            </div>
+            <h2 className="text-[#1E232F] text-[36px] md:text-[48px] font-bold leading-[1.15] tracking-tight">
+              Find Medical Support <br />
+              <span className="text-[#1EBDB8]">In Your Neighborhood</span>
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-[#1E232F] text-[13px] font-semibold">3 Nearby</span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
-          {/* Store List */}
-          <div className="lg:col-span-5 flex flex-col gap-5 order-2 lg:order-1">
+          <div className="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-1">
             {stores.map((store) => (
               <div 
                 key={store.id}
                 onMouseEnter={() => setSelectedStore(store.id)}
-                className={`group p-6 rounded-[32px] transition-all duration-500 cursor-pointer border ${
+                onClick={() => setSelectedStore(store.id)}
+                className={`group relative overflow-hidden rounded-[24px] transition-all duration-500 cursor-pointer border ${
                   selectedStore === store.id 
-                  ? 'bg-white border-transparent shadow-[0_20px_50px_rgba(58,196,184,0.1)] scale-[1.03]' 
-                  : 'bg-[#252A3A] border-white/5 hover:border-white/10'
+                  ? 'bg-white border-[#1EBDB8]/30 shadow-lg shadow-[#1EBDB8]/10 scale-[1.02]' 
+                  : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center gap-6">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-                    selectedStore === store.id ? 'bg-[#1E232F] text-white' : 'bg-white/5 text-[#3AC4B8]'
-                  }`}>
-                    {store.icon}
+                <div className="flex items-center gap-4 p-5">
+                  <div className="relative w-16 h-16 shrink-0 rounded-2xl overflow-hidden">
+                    <img 
+                      src={store.image} 
+                      alt={store.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className={`absolute inset-0 transition-opacity duration-500 ${selectedStore === store.id ? 'opacity-0' : 'opacity-30 bg-black/20'}`} />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className={`font-bold text-[19px] transition-colors ${selectedStore === store.id ? 'text-[#1E232F]' : 'text-white'}`}>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className={`font-bold text-[15px] truncate transition-colors ${selectedStore === store.id ? 'text-[#1EBDB8]' : 'text-[#1E232F]'}`}>
                         {store.name}
                       </h3>
-                      <div className="flex items-center gap-1 bg-yellow-400/10 px-2 py-0.5 rounded-lg">
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
                         <svg className="w-3.5 h-3.5 text-yellow-500 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
-                        <span className={`text-[13px] font-bold ${selectedStore === store.id ? 'text-[#1E232F]' : 'text-yellow-500'}`}>{store.rating}</span>
+                        <span className="text-[12px] font-bold text-[#1E232F]">{store.rating}</span>
                       </div>
                     </div>
-                    <p className={`text-[14px] font-medium mb-3 ${selectedStore === store.id ? 'text-[#1E232F]/60' : 'text-gray-400'}`}>{store.address}</p>
-                    <div className="flex items-center gap-4">
-                      <span className={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
-                        selectedStore === store.id ? 'bg-[#1E232F]/10 text-[#1E232F]' : 'bg-[#3AC4B8]/10 text-[#3AC4B8]'
+                    <p className="text-[13px] text-gray-400 mb-2 truncate">{store.address}</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                        store.status.includes('24/7') 
+                          ? 'bg-green-100 text-green-700' 
+                          : store.status.includes('Now')
+                          ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]'
+                          : 'bg-amber-100 text-amber-700'
                       }`}>
                         {store.status}
                       </span>
-                      <span className={`text-[13px] font-semibold ${selectedStore === store.id ? 'text-[#1E232F]/40' : 'text-gray-500'}`}>
+                      <span className="text-[12px] font-medium text-gray-400 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
                         {store.distance}
                       </span>
                     </div>
                   </div>
                 </div>
+
+                {selectedStore === store.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE]" />
+                )}
               </div>
             ))}
+
+            <button className="mt-2 w-full py-3.5 rounded-[16px] border-2 border-dashed border-gray-200 text-gray-400 font-semibold text-[14px] hover:border-[#1EBDB8]/40 hover:text-[#1EBDB8] transition-all duration-300 flex items-center justify-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v8M8 12h8" />
+              </svg>
+              View All Pharmacies
+            </button>
           </div>
 
-          {/* Map UI */}
-          <div className="lg:col-span-7 relative order-1 lg:order-2 h-[500px] lg:h-auto min-h-[550px]">
-             {/* Map Container */}
-             <div className="absolute inset-0 bg-[#252A3A] rounded-[48px] overflow-hidden border border-white/5 shadow-2xl">
-               {/* Abstract Map Background */}
-               <svg className="absolute inset-0 w-full h-full opacity-[0.07]" viewBox="0 0 800 600" preserveAspectRatio="none">
-                  <path d="M0,150 Q200,50 400,200 T800,100" stroke="white" fill="none" strokeWidth="40" strokeLinecap="round" />
-                  <path d="M-50,450 Q250,350 450,550 T900,400" stroke="white" fill="none" strokeWidth="60" strokeLinecap="round" />
-                  <path d="M300,-50 Q400,250 200,450 T400,700" stroke="white" fill="none" strokeWidth="30" strokeLinecap="round" />
-                  <defs>
-                    <pattern id="dotGrid" width="30" height="30" patternUnits="userSpaceOnUse">
-                      <circle cx="2" cy="2" r="1.5" fill="white" fillOpacity="0.2" />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#dotGrid)" />
-               </svg>
+          <div className="lg:col-span-8 relative order-1 lg:order-2 h-[450px] lg:h-[520px]">
+            <div className="absolute inset-0 bg-[#E8EDEE] rounded-[32px] overflow-hidden border border-gray-200 shadow-2xl">
+              
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 900 550" preserveAspectRatio="xMidYMid slice">
+                <rect width="900" height="550" fill="#E8EDEE" />
+                
+                <rect x="50" y="40" width="120" height="80" rx="8" fill="#C8E6C9" opacity="0.7" />
+                <rect x="680" y="380" width="140" height="100" rx="8" fill="#C8E6C9" opacity="0.7" />
+                <rect x="350" y="30" width="80" height="60" rx="6" fill="#C8E6C9" opacity="0.5" />
+                
+                <ellipse cx="780" cy="120" rx="90" ry="60" fill="#B3D9F7" opacity="0.6" />
+                
+                <line x1="0" y1="180" x2="900" y2="180" stroke="#FFFFFF" strokeWidth="18" />
+                <line x1="0" y1="180" x2="900" y2="180" stroke="#F5F5F0" strokeWidth="14" />
+                <line x1="0" y1="180" x2="900" y2="180" stroke="#E8E8E0" strokeWidth="2" />
+                
+                <line x1="0" y1="380" x2="900" y2="380" stroke="#FFFFFF" strokeWidth="14" />
+                <line x1="0" y1="380" x2="900" y2="380" stroke="#F5F5F0" strokeWidth="10" />
+                <line x1="0" y1="380" x2="900" y2="380" stroke="#E8E8E0" strokeWidth="1.5" />
+                
+                <line x1="200" y1="0" x2="200" y2="550" stroke="#FFFFFF" strokeWidth="16" />
+                <line x1="200" y1="0" x2="200" y2="550" stroke="#F5F5F0" strokeWidth="12" />
+                <line x1="200" y1="0" x2="200" y2="550" stroke="#E8E8E0" strokeWidth="1.5" />
+                
+                <line x1="500" y1="0" x2="500" y2="550" stroke="#FFFFFF" strokeWidth="12" />
+                <line x1="500" y1="0" x2="500" y2="550" stroke="#F5F5F0" strokeWidth="8" />
+                
+                <line x1="720" y1="0" x2="720" y2="550" stroke="#FFFFFF" strokeWidth="10" />
+                <line x1="720" y1="0" x2="720" y2="550" stroke="#F5F5F0" strokeWidth="6" />
+                
+                <line x1="0" y1="280" x2="900" y2="280" stroke="#FFFFFF" strokeWidth="8" />
+                <line x1="0" y1="280" x2="900" y2="280" stroke="#F5F5F0" strokeWidth="5" />
+                <line x1="350" y1="0" x2="350" y2="550" stroke="#FFFFFF" strokeWidth="8" />
+                <line x1="350" y1="0" x2="350" y2="550" stroke="#F5F5F0" strokeWidth="5" />
+                
+                <line x1="0" y1="500" x2="500" y2="0" stroke="#FFFFFF" strokeWidth="6" />
+                <line x1="0" y1="500" x2="500" y2="0" stroke="#F5F5F0" strokeWidth="4" />
+                
+                <rect x="220" y="50" width="80" height="100" rx="4" fill="#D5D8DC" />
+                <rect x="220" y="200" width="100" height="60" rx="4" fill="#D5D8DC" />
+                <rect x="520" y="50" width="150" height="100" rx="4" fill="#D5D8DC" />
+                <rect x="520" y="200" width="120" height="60" rx="4" fill="#D5D8DC" />
+                <rect x="50" y="200" width="120" height="60" rx="4" fill="#D5D8DC" />
+                <rect x="50" y="300" width="100" height="60" rx="4" fill="#D5D8DC" />
+                <rect x="370" y="200" width="100" height="60" rx="4" fill="#D5D8DC" />
+                <rect x="370" y="300" width="100" height="60" rx="4" fill="#D5D8DC" />
+                <rect x="740" y="200" width="100" height="150" rx="4" fill="#D5D8DC" />
+                <rect x="220" y="400" width="100" height="80" rx="4" fill="#D5D8DC" />
+                <rect x="520" y="400" width="150" height="80" rx="4" fill="#D5D8DC" />
+                
+                <text x="450" y="175" fill="#A0A0A0" fontSize="9" fontWeight="500" textAnchor="middle" fontFamily="system-ui">Shahrah-e-Faisal</text>
+                <text x="195" y="280" fill="#A0A0A0" fontSize="8" fontWeight="500" textAnchor="middle" transform="rotate(-90, 195, 280)" fontFamily="system-ui">Tariq Road</text>
+              </svg>
 
-               {/* Decorative Gradient Overlays */}
-               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#3AC4B8]/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
-               <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
-
-               {/* Map Markers Container */}
-               <div className="relative w-full h-full p-12">
-                 
-                 {/* Main Store Markers */}
-                 {stores.map((store) => (
-                   <div 
-                     key={store.id}
-                     className={`absolute transition-all duration-700 ease-out cursor-pointer ${selectedStore === store.id ? 'z-30 scale-110' : 'z-10'}`}
-                     style={{ left: store.coords.x, top: store.coords.y }}
-                     onClick={() => setSelectedStore(store.id)}
-                   >
-                     <div className="relative group/marker">
-                        {/* Interactive Ripple for selected */}
-                        {selectedStore === store.id && (
-                          <div className="absolute -inset-8 bg-[#3AC4B8]/20 rounded-full animate-ping opacity-40" />
-                        )}
-                        
-                        {/* Marker Body */}
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md border-[3px] transition-all duration-500 transform ${
-                          selectedStore === store.id 
-                          ? 'bg-white border-[#3AC4B8] -translate-y-2' 
-                          : 'bg-[#1E232F]/80 border-white/20 hover:border-white/40'
-                        }`}>
-                           <div className={`w-6 h-6 transition-colors duration-500 ${selectedStore === store.id ? 'text-[#1E232F]' : 'text-[#3AC4B8]'}`}>
-                             {store.icon}
-                           </div>
-                        </div>
-
-                        {/* Store Info Tooltip */}
-                        <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-4 transition-all duration-500 pointer-events-none ${
-                          selectedStore === store.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                        }`}>
-                          <div className="bg-white text-[#1E232F] px-5 py-2.5 rounded-2xl text-[14px] font-bold shadow-[0_15px_35px_rgba(0,0,0,0.3)] whitespace-nowrap">
-                            {store.name}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white" />
+              <div className="relative w-full h-full">
+                {stores.map((store) => (
+                  <div 
+                    key={store.id}
+                    className={`absolute transition-all duration-700 ease-out cursor-pointer ${selectedStore === store.id ? 'z-30' : 'z-10'}`}
+                    style={{ left: store.coords.x, top: store.coords.y }}
+                    onClick={() => setSelectedStore(store.id)}
+                  >
+                    <div className="relative group/marker">
+                      {selectedStore === store.id && (
+                        <>
+                          <div className="absolute -inset-10 bg-[#1EBDB8]/15 rounded-full animate-ping opacity-40" />
+                          <div className="absolute -inset-4 bg-[#1EBDB8]/25 rounded-full animate-pulse" />
+                        </>
+                      )}
+                      
+                      <div className={`relative flex flex-col items-center transition-all duration-500 ${selectedStore === store.id ? '-translate-y-4' : ''}`}>
+                        <div className={`relative transition-all duration-500 ${selectedStore === store.id ? 'scale-110' : ''}`}>
+                          <svg width="32" height="44" viewBox="0 0 32 44" fill="none" className="drop-shadow-lg">
+                            <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 28 16 28s16-16 16-28C32 7.16 24.84 0 16 0z" fill={selectedStore === store.id ? '#1EBDB8' : '#FFFFFF'} stroke={selectedStore === store.id ? '#1EBDB8' : '#D1D5DB'} strokeWidth="1.5" />
+                            <circle cx="16" cy="15" r="7" fill={selectedStore === store.id ? 'white' : '#1EBDB8'} />
+                          </svg>
+                          <div className="absolute top-[8px] left-1/2 -translate-x-1/2">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={selectedStore === store.id ? '#1EBDB8' : 'white'} strokeWidth="2.5">
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                            </svg>
                           </div>
                         </div>
-                     </div>
-                   </div>
-                 ))}
-
-                 {/* User Location Indicator */}
-                 <div className="absolute left-[15%] top-[55%] z-20">
-                   <div className="relative">
-                      <div className="absolute -inset-12 bg-[#3AC4B8]/5 rounded-full animate-pulse" />
-                      <div className="w-14 h-14 bg-[#1E232F]/60 backdrop-blur-sm border border-[#3AC4B8]/30 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(58,196,184,0.2)]">
-                         <div className="w-4 h-4 bg-[#3AC4B8] rounded-full shadow-[0_0_15px_#3AC4B8]">
-                            <div className="absolute inset-0 bg-[#3AC4B8] rounded-full animate-ping opacity-60" />
-                         </div>
+                        
+                        {selectedStore === store.id && (
+                          <div className="mt-1 bg-white rounded-xl px-4 py-2 shadow-xl border border-gray-100 whitespace-nowrap">
+                            <p className="text-[#1E232F] text-[13px] font-bold">{store.name}</p>
+                            <p className="text-gray-400 text-[10px]">{store.distance} away</p>
+                          </div>
+                        )}
                       </div>
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#3AC4B8] text-white px-4 py-1 rounded-full text-[11px] font-black uppercase tracking-widest shadow-xl">
-                         Home
-                      </div>
-                   </div>
-                 </div>
+                    </div>
+                  </div>
+                ))}
 
-               </div>
-               
-               {/* Location Context Card */}
-               <div className="absolute bottom-10 left-10 right-10 bg-[#1E232F]/60 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 flex items-center justify-between shadow-2xl">
-                 <div className="flex items-center gap-5">
-                   <div className="w-14 h-14 bg-gradient-to-br from-[#3AC4B8] to-[#1EBD92] rounded-[20px] flex items-center justify-center text-white shadow-lg shadow-[#3AC4B8]/20">
-                     <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                       <circle cx="12" cy="10" r="3" />
-                     </svg>
-                   </div>
-                   <div>
-                     <h4 className="text-white font-bold text-[18px]">Nearest Stores</h4>
-                     <p className="text-gray-400 text-[14px]">Serving Karachi, Sindh</p>
-                   </div>
-                 </div>
-                 <div className="hidden sm:flex items-center gap-8">
-                   <div className="text-right">
-                     <p className="text-[#3AC4B8] text-[22px] font-black leading-none mb-1">10km+</p>
-                     <p className="text-gray-500 text-[10px] uppercase font-black tracking-[2px]">Coverage</p>
-                   </div>
-                   <div className="h-10 w-[1px] bg-white/10" />
-                   <div className="text-right">
-                     <p className="text-white text-[22px] font-black leading-none mb-1">5 min</p>
-                     <p className="text-gray-500 text-[10px] uppercase font-black tracking-[2px]">Response</p>
-                   </div>
-                 </div>
-               </div>
+                <div className="absolute left-[15%] top-[65%] z-20">
+                  <div className="relative">
+                    <div className="absolute -inset-16 bg-[#1EBDB8]/8 rounded-full animate-pulse" />
+                    <div className="absolute -inset-8 bg-[#1EBDB8]/12 rounded-full animate-ping opacity-30" />
+                    <div className="relative w-10 h-10 bg-white rounded-full border-[3px] border-[#1EBDB8] flex items-center justify-center shadow-xl">
+                      <div className="w-3 h-3 bg-[#1EBDB8] rounded-full border-2 border-white" />
+                    </div>
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1E232F] text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap shadow-lg">
+                      Your Location
+                    </div>
+                  </div>
+                </div>
 
-             </div>
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+                  <button className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M12 5v-2M12 21v-2M5 12H3M21 12h-2" />
+                    </svg>
+                  </button>
+                  <button className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </button>
+                  <button className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-100 rounded-2xl p-4 flex items-center justify-between shadow-xl z-20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 bg-gradient-to-br from-[#1EBDB8] to-[#1CAAAE] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#1EBDB8]/20">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-[#1E232F] font-bold text-[14px]">Karachi, Sindh</h4>
+                      <p className="text-gray-400 text-[11px]">3 pharmacies nearby</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <p className="text-[#1EBDB8] text-[18px] font-bold leading-none">2.5km</p>
+                      <p className="text-gray-400 text-[9px] uppercase font-semibold tracking-wider">Coverage</p>
+                    </div>
+                    <div className="h-8 w-[1px] bg-gray-200" />
+                    <div className="text-center">
+                      <p className="text-[#1E232F] text-[18px] font-bold leading-none">5 min</p>
+                      <p className="text-gray-400 text-[9px] uppercase font-semibold tracking-wider">Avg. ETA</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

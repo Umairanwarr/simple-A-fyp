@@ -1,49 +1,90 @@
 import React from 'react';
 
 export default function Services() {
-  const cards = [
+  const services = [
     {
-      title: 'Second Opinion',
-      description: 'When facing a serious, life-changing illness, we understand the critical importance of obtaining expert advices',
-      icon: <img src="/second-option.svg" alt="Second Opinion" className="w-14 h-14" />
+      title: 'Consult Online Now',
+      description: 'Instantly connect with Specialists through Video call.',
+      badge: '12 Doctors Online Now',
+      image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=600',
     },
     {
-      title: 'Treatment',
-      description: 'Get help from the best chosen hospitals and specialists that excel in providing premium healthcare directly from Pakistan.',
-      icon: <img src="/treatement.svg" alt="Treatment" className="w-14 h-14" />
+      title: 'In-Clinic Appointments',
+      description: "Book an In-Person visit to doctor's clinic.",
+      image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=600',
     },
     {
-      title: 'Global Plans',
-      description: 'Get help from the best chosen hospitals and specialists that excel in providing premium healthcare directly from Pakistan.',
-      icon: <img src="/global-plans.svg" alt="Global Plans" className="w-14 h-14" />
+      title: 'Laboratory Tests',
+      description: 'Avail Exclusive discounts on lab tests.',
+      image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600',
+    },
+    {
+      title: 'Procedures & Surgeries',
+      description: 'Plan your surgeries at discounted rates.',
+      image: 'https://images.unsplash.com/photo-1551190822-a9ce113ac100?auto=format&fit=crop&q=80&w=600',
+    },
+    {
+      title: 'Medicines',
+      description: 'Know your medicines better',
+      image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=600',
     }
   ];
 
   return (
-    <div className="w-full bg-white relative">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-24 md:py-32">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-20 items-start mb-24">
-          <h2 className="text-3xl sm:text-4xl md:text-[44px] font-medium leading-[1.25] text-[#1D635D]">
-            Experience Exceptional<br className="hidden lg:block"/> Healthcare In Pakistan With<br className="hidden lg:block"/> Simple Pakistan
-          </h2>
-          <p className="text-[15px] md:text-[16px] text-gray-500 leading-relaxed md:pt-3">
-            Discover the pinnacle of healthcare services in Pakistan, where advancements, quality, cutting edge research, expert doctors and a commitment to patient success, combine to provide an unparalleled medical tourism experience. Simple is your dedicated partner, guiding you towards improved health and wellness. Connect with us today and embark on a journey of exceptional Pakistan healthcare services.
+    <div className="w-full bg-[#F5F7FA] py-20 md:py-28 relative overflow-hidden">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6">
+        <div className="text-center mb-12 md:mb-16">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-[#1EBDB8]" />
+            <span className="text-[#1EBDB8] text-[11px] font-bold uppercase tracking-[3px]">Our Services</span>
+            <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-[#1EBDB8]" />
+          </div>
+            <h2 className="text-[#1E232F] text-3xl md:text-[48px] font-bold leading-tight mb-4">
+              Comprehensive Healthcare <span className="text-[#1EBDB8]">Solutions</span>
+            </h2>
+          <p className="text-gray-500 text-[15px] md:text-[17px] max-w-2xl mx-auto">
+            From online consultations to in-person visits, we provide end-to-end medical services tailored to your needs.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-14 md:gap-10 lg:gap-14 pb-12">
-          {cards.map((card, index) => (
-            <div key={index} className="bg-[#F8F9FB] rounded-[40px] px-8 pt-16 pb-20 flex flex-col items-center text-center relative mt-10 md:mt-0">
-               <div className="text-[#1D635D] mb-8 h-20 w-20 flex items-center justify-center">
-                 {card.icon}
-               </div>
-               <h3 className="text-[22px] font-semibold text-[#1F2937] mb-5">{card.title}</h3>
-               <p className="text-[14.5px] text-[#6B7280] leading-relaxed mb-4">
-                 {card.description}
-               </p>
-               <button className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white px-10 py-3.5 rounded-full font-semibold text-[15px] transition-colors whitespace-nowrap shadow-md shadow-[#1EBDB8]/30">
-                 Get Started
-               </button>
+        <div className="flex md:grid md:grid-cols-5 gap-5 md:gap-6 overflow-x-auto md:overflow-visible pb-6 md:pb-0 snap-x snap-mandatory md:snap-none px-4 md:px-0 -mx-4 md:mx-0">
+          {services.map((service, index) => (
+            <div 
+              key={index} 
+              className="flex-shrink-0 w-[300px] md:w-auto snap-start group cursor-pointer"
+            >
+              <div className="bg-white rounded-[24px] border border-gray-100 overflow-hidden hover:border-gray-200 transition-all duration-500 h-full flex flex-col hover:shadow-xl hover:-translate-y-1">
+                <div className="relative h-[180px] overflow-hidden">
+                  <img 
+                    src={service.image} 
+                    alt={service.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  
+                  {service.badge && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] py-2.5 px-4 flex items-center justify-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      <span className="text-white font-semibold text-xs">{service.badge}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 flex flex-col flex-1">
+                  <h3 className="text-[18px] font-bold text-[#1E232F] mb-2 leading-tight group-hover:text-[#1EBDB8] transition-colors">
+                    {service.title}
+                  </h3>
+                  <p className="text-[14px] text-gray-500 leading-relaxed flex-1">
+                    {service.description}
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-[#1EBDB8] text-[13px] font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                    <span>Learn More</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
