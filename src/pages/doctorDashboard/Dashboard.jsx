@@ -1,55 +1,70 @@
-import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import Sidebar from '../../components/doctorDashboard/Sidebar';
+import Header from '../../components/doctorDashboard/Header';
+import Analytics from '../../components/doctorDashboard/Analytics';
+import VirtualClinic from '../../components/doctorDashboard/VirtualClinic';
+import LiveStreaming from '../../components/doctorDashboard/LiveStreaming';
+import SubscriptionManager from '../../components/doctorDashboard/SubscriptionManager';
+import DigitalPrescription from '../../components/doctorDashboard/DigitalPrescription';
+import MediaManagement from '../../components/doctorDashboard/MediaManagement';
 
-export default function DoctorDashboard() {
-	const navigate = useNavigate();
+export default function Dashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('analytics');
 
-	const doctorName = useMemo(() => {
-		try {
-			const rawDoctor = localStorage.getItem('doctor');
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'analytics': return <Analytics />;
+      case 'clinic': return <VirtualClinic />;
+      case 'streaming': return <LiveStreaming />;
+      case 'subscriptions': return <SubscriptionManager />;
+      case 'prescriptions': return <DigitalPrescription />;
+      case 'media': return <MediaManagement />;
+      default: return <Analytics />;
+    }
+  };
 
-			if (!rawDoctor) {
-				return 'Doctor';
-			}
+  return (
+    <div className="flex bg-[#FAFAFB] min-h-screen font-sans overflow-x-hidden">
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+      
+      <div className="flex-1 ml-0 lg:ml-[260px] flex flex-col relative h-screen w-full">
+        {/* Scrollable Content Container */}
+        <div className="px-5 sm:px-10 lg:px-14 flex-1 h-full overflow-y-auto overflow-x-hidden pb-10 custom-scrollbar">
+          <Header 
+            onMenuClick={() => setIsSidebarOpen(true)} 
+            activeTab={activeTab}
+          />
+          
+          <main className="mt-2 md:mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {renderContent()}
+          </main>
+        </div>
 
-			const parsedDoctor = JSON.parse(rawDoctor);
-			return parsedDoctor?.fullName || 'Doctor';
-		} catch (error) {
-			return 'Doctor';
-		}
-	}, []);
+        {/* Global Floating Action Button */}
+        <button className="fixed bottom-8 right-10 w-[72px] h-[72px] bg-[#1EBDB8] hover:bg-[#1CAAAE] rounded-full shadow-2xl flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 z-50 group">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:rotate-12 transition-transform">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full border-4 border-[#FAFAFB] text-[10px] font-bold flex items-center justify-center">3</span>
+        </button>
+      </div>
 
-	return (
-		<div className="min-h-screen bg-[#F8FAFC] font-sans px-6 py-10">
-			<div className="max-w-[980px] mx-auto bg-white border border-gray-100 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 sm:p-10">
-				<h1 className="text-[30px] sm:text-[36px] font-bold text-[#1F2937] leading-tight">
-					Welcome, <span className="text-[#1EBDB8]">{doctorName}</span>
-				</h1>
-				<p className="mt-3 text-[15px] text-[#6B7280] font-medium">
-					You are now signed in to your doctor dashboard.
-				</p>
-
-				<div className="mt-8 flex flex-wrap gap-3">
-					<button
-						type="button"
-						onClick={() => navigate('/')}
-						className="px-5 py-2.5 rounded-xl bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white font-bold text-[14px] transition-colors"
-					>
-						Go to Home
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							localStorage.removeItem('doctorToken');
-							localStorage.removeItem('doctor');
-							navigate('/signin');
-						}}
-						className="px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-bold text-[14px] transition-colors"
-					>
-						Sign Out
-					</button>
-				</div>
-			</div>
-		</div>
-	);
+      <style jsx="true">{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+        }
+        .custom-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+    </div>
+  );
 }
