@@ -1,0 +1,132 @@
+export const patientDoctorDirectory = [
+  {
+    id: 'doctor-1',
+    name: 'Dr. Adam Cooper',
+    specialty: 'Dermatologist, Cosmetologist',
+    specialtyTag: 'Dermatology',
+    degrees: 'M.B.B.S., F.C.P.S. (Dermatology)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'San Antonio, California',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Today at 11 AM',
+    image: '/topdoc.svg'
+  },
+  {
+    id: 'doctor-2',
+    name: 'Dr. Sarah Malik',
+    specialty: 'Endocrinologist',
+    specialtyTag: 'Endocrinology',
+    degrees: 'M.B.B.S., F.C.P.S. (Endocrinology)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Houston, Texas',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Tomorrow at 9 AM',
+    image: '/top1.svg'
+  },
+  {
+    id: 'doctor-3',
+    name: 'Dr. Imran Qureshi',
+    specialty: 'Cardiologist',
+    specialtyTag: 'Cardiology',
+    degrees: 'M.B.B.S., M.D. (Cardiology)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Mountain View, CA',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Today at 4 PM',
+    image: '/top2.svg'
+  },
+  {
+    id: 'doctor-4',
+    name: 'Dr. Rachel Green',
+    specialty: 'Neurologist',
+    specialtyTag: 'Neurology',
+    degrees: 'M.B.B.S., F.C.P.S. (Neurology)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Austin, Texas',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Friday at 2 PM',
+    image: '/top3.svg'
+  },
+  {
+    id: 'doctor-5',
+    name: 'Dr. Emma Stone',
+    specialty: 'Psychiatrist',
+    specialtyTag: 'Mental Health',
+    degrees: 'M.B.B.S., M.D. (Psychiatry)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Chicago, Illinois',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Today at 7 PM',
+    image: '/top4.svg'
+  },
+  {
+    id: 'doctor-6',
+    name: 'Dr. Hana Javed',
+    specialty: 'Fertility Specialist',
+    specialtyTag: 'Infertility',
+    degrees: 'M.B.B.S., F.C.P.S. (Gynecology)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Seattle, Washington',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Saturday at 10 AM',
+    image: '/top5.svg'
+  },
+  {
+    id: 'doctor-7',
+    name: 'Dr. John Patel',
+    specialty: 'Plastic Surgeon',
+    specialtyTag: 'Plastic Surgery',
+    degrees: 'M.B.B.S., M.S. (Plastic Surgery)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'San Jose, California',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Monday at 1 PM',
+    image: '/top6.svg'
+  },
+  {
+    id: 'doctor-8',
+    name: 'Dr. Olivia Adams',
+    specialty: 'Rheumatologist',
+    specialtyTag: 'Rheumatology',
+    degrees: 'M.B.B.S., F.C.P.S. (Rheumatology)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Denver, Colorado',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Wednesday at 12 PM',
+    image: '/top7.svg'
+  },
+  {
+    id: 'doctor-9',
+    name: 'Dr. Khan Bhai',
+    specialty: 'General Physician',
+    specialtyTag: 'Primary Care',
+    degrees: 'M.B.B.S., F.C.P.S. (Internal Medicine)',
+    rating: '0.00',
+    reviews: '0 reviews',
+    location: 'Mountain View, CA',
+    stats: 'New Patient Appointments . Excellent wait time . Highly Recommended',
+    availability: 'Today at 6 PM',
+    image: '/top10.svg'
+  }
+];
+
+export const exploreSpecialties = [
+  { id: 'Oncology', label: 'Oncology', icon: '/top1.svg' },
+  { id: 'Endocrinology', label: 'Endocrinology', icon: '/top2.svg' },
+  { id: 'Infertility', label: 'Infertility', icon: '/top3.svg' },
+  { id: 'Mental Health', label: 'Mental Health', icon: '/top4.svg' },
+  { id: 'Cardiology', label: 'Cardiology', icon: '/top5.svg' },
+  { id: 'Neurology', label: 'Neurology', icon: '/top6.svg' },
+  { id: 'Rheumatology', label: 'Rheumatology', icon: '/top7.svg' },
+  { id: 'Plastic Surgery', label: 'Plastic Surgery', icon: '/top8.svg' },
+  { id: 'Rare Diseases', label: 'Rare Diseases', icon: '/top9.svg' },
+  { id: 'Surrogacy', label: 'Surrogacy', icon: '/top10.svg' }
+];

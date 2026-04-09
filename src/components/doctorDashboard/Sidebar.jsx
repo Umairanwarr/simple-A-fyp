@@ -1,15 +1,43 @@
 import React from 'react';
 
-export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }) {
+export default function Sidebar({ isOpen, onClose, activeTab, onTabChange, onLogout }) {
   const menuItems = [
     { id: 'analytics', label: 'Analytics', icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
       </svg>
     )},
+    { id: 'profile', label: 'Profile', icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    )},
+    { id: 'reviews', label: 'Reviews', icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+      </svg>
+    )},
+    { id: 'schedule', label: 'My Schedule', icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    )},
     { id: 'clinic', label: 'Virtual Clinic', icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    )},
+    { id: 'availability', label: 'Set Availability', icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <line x1="12" y1="14" x2="12" y2="18"/>
+        <line x1="10" y1="16" x2="14" y2="16"/>
       </svg>
     )},
     { id: 'streaming', label: 'Live Streaming', icon: (
@@ -84,7 +112,11 @@ export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }) {
         </div>
 
         <div className="mt-auto mb-10 px-6">
-          <button className="flex items-center gap-4 py-4 pl-2 text-[#9ca3af] hover:text-red-400 transition-colors w-full">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex items-center gap-4 py-4 pl-2 text-[#9ca3af] hover:text-red-400 transition-colors w-full"
+          >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>

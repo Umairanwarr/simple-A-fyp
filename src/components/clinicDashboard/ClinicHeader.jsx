@@ -1,4 +1,5 @@
 import React from 'react';
+import { getClinicSessionProfile } from '../../utils/authSession';
 
 const tabTitles = {
   analytics: 'Clinic Performance Analytics',
@@ -8,7 +9,13 @@ const tabTitles = {
   streaming: 'Clinic-Wide Broadcasting',
 };
 
-export default function ClinicHeader({ onMenuClick, activeTab }) {
+export default function ClinicHeader({ onMenuClick, activeTab, onAvatarClick }) {
+  const {
+    name: clinicName,
+    email: clinicEmail,
+    avatarUrl: clinicAvatarUrl
+  } = getClinicSessionProfile();
+
   return (
     <header className="flex items-center justify-between py-6 md:py-8 lg:py-10 bg-[#FAFAFB]/80 backdrop-blur-md sticky top-0 z-40 transition-all duration-300">
       <div className="flex items-center gap-4">
@@ -46,21 +53,27 @@ export default function ClinicHeader({ onMenuClick, activeTab }) {
         {/* Clinic Profile */}
         <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-gray-200">
           <div className="hidden sm:block text-right">
-            <p className="text-[14px] font-bold text-[#1F2432]">City Medical Center</p>
-            <p className="text-[11px] font-bold text-[#1EBDB8] uppercase tracking-[0.1em]">Facility Admin</p>
+            <p className="text-[14px] font-bold text-[#1F2432]">{clinicName}</p>
+            <p className="text-[11px] font-bold text-[#1EBDB8] uppercase tracking-[0.1em]">
+              {clinicEmail || 'Facility Admin'}
+            </p>
           </div>
-          <div className="relative group">
+          <button
+            type="button"
+            onClick={onAvatarClick}
+            className="relative group"
+          >
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#1EBDB8] to-[#1CAAAE] p-0.5 shadow-lg group-hover:scale-105 transition-transform duration-300">
               <div className="w-full h-full bg-white rounded-2xl overflow-hidden border-2 border-white">
                 <img 
-                  src="https://ui-avatars.com/api/?name=CMC&background=1EBDB8&color=fff" 
-                  alt="Clinic Profile" 
+                  src={clinicAvatarUrl}
+                  alt={clinicName}
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
             <div className="absolute bottom-[-2px] right-[-2px] w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-          </div>
+          </button>
         </div>
       </div>
     </header>

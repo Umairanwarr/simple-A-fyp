@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import AdminLayout from '../AdminLayout';
 import {
+  deleteAdminClinic,
   fetchAdminClinics,
   reviewAdminClinicApplication
 } from '../../../../services/authApi';
@@ -13,6 +14,7 @@ export default function Clinics() {
   const [search, setSearch] = useState('');
   const [selectedClinic, setSelectedClinic] = useState(null);
   const [reviewingClinicId, setReviewingClinicId] = useState('');
+  const [deletingClinicId, setDeletingClinicId] = useState('');
 
   useEffect(() => {
     const normalizeApplicationStatus = (status) => {
@@ -154,6 +156,39 @@ export default function Clinics() {
     }
   };
 
+  const handleDeleteClinic = async (clinic) => {
+    const adminToken = localStorage.getItem('adminToken');
+
+    if (!adminToken) {
+      toast.error('Please login as admin first');
+      return;
+    }
+
+    const shouldDelete = window.confirm(`Delete clinic ${clinic.name}? This action cannot be undone.`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setDeletingClinicId(clinic.id);
+      await deleteAdminClinic(adminToken, clinic.id);
+      setClinics((prevClinics) => prevClinics.filter((item) => item.id !== clinic.id));
+      setSelectedClinic((prevSelectedClinic) => {
+        if (!prevSelectedClinic || prevSelectedClinic.id !== clinic.id) {
+          return prevSelectedClinic;
+        }
+
+        return null;
+      });
+      toast.success('Clinic deleted successfully');
+    } catch (err) {
+      toast.error(err.message || 'Could not delete clinic');
+    } finally {
+      setDeletingClinicId('');
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6">
@@ -262,7 +297,7 @@ export default function Clinics() {
                           <>
                             <button
                               type="button"
-                              disabled={reviewingClinicId === clinic.id}
+                              disabled={reviewingClinicId === clinic.id || deletingClinicId === clinic.id}
                               onClick={() => handleReviewAction(clinic, 'approved')}
                               className="px-3 py-1.5 rounded-lg text-[12.5px] font-bold text-green-700 border border-green-200 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -271,7 +306,7 @@ export default function Clinics() {
 
                             <button
                               type="button"
-                              disabled={reviewingClinicId === clinic.id}
+                              disabled={reviewingClinicId === clinic.id || deletingClinicId === clinic.id}
                               onClick={() => handleReviewAction(clinic, 'declined')}
                               className="px-3 py-1.5 rounded-lg text-[12.5px] font-bold text-red-700 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -283,6 +318,22 @@ export default function Clinics() {
                             Reviewed
                           </span>
                         )}
+
+                        <button
+                          type="button"
+                          disabled={deletingClinicId === clinic.id}
+                          onClick={() => handleDeleteClinic(clinic)}
+                          className="inline-flex items-center gap-2 text-red-500 hover:text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed font-bold text-[13px] px-2 py-1 rounded-lg transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                          </svg>
+                          {deletingClinicId === clinic.id ? 'Deleting...' : 'Delete'}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -403,6 +454,15 @@ export default function Clinics() {
                   </button>
                 </>
               )}
+
+              <button
+                type="button"
+                disabled={deletingClinicId === selectedClinic.id}
+                onClick={() => handleDeleteClinic(selectedClinic)}
+                className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-red-700 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingClinicId === selectedClinic.id ? 'Deleting...' : 'Delete Clinic'}
+              </button>
 
               <button
                 type="button"

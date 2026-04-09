@@ -1,12 +1,35 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { fetchAdminClinics, fetchAdminDoctors, fetchAdminMedicalStores } from '../../../services/authApi';
+import {
+  fetchAdminClinics,
+  fetchAdminDoctors,
+  fetchAdminMedicalStores,
+  fetchAdminNotifications,
+  markAdminNotificationsRead
+} from '../../../services/authApi';
+
+const formatNotificationDate = (dateValue) => {
+  if (!dateValue) {
+    return '';
+  }
+
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  return parsedDate.toLocaleString();
+};
 
 export default function AdminHeader({ onMenuClick }) {
   const navigate = useNavigate();
   const [pendingApplications, setPendingApplications] = useState([]);
+  const [reviewNotifications, setReviewNotifications] = useState([]);
+  const [reviewUnreadCount, setReviewUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [markingReviewNotificationsRead, setMarkingReviewNotificationsRead] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -27,10 +50,11 @@ export default function AdminHeader({ onMenuClick }) {
 
       try {
         setLoadingNotifications(true);
-        const [doctorData, clinicData, storeData] = await Promise.all([
+        const [doctorData, clinicData, storeData, reviewNotificationData] = await Promise.all([
           fetchAdminDoctors(adminToken),
           fetchAdminClinics(adminToken),
-          fetchAdminMedicalStores(adminToken)
+          fetchAdminMedicalStores(adminToken),
+          fetchAdminNotifications(adminToken)
         ]);
 
         if (!isMounted) {
@@ -53,24 +77,31 @@ export default function AdminHeader({ onMenuClick }) {
           ...pendingDoctors.map((doctor) => ({
             id: `doctor-${doctor.id}`,
             type: 'doctor',
-            name: doctor.fullName
+            name: doctor.fullName,
+            createdAt: doctor.joinedAt || null
           })),
           ...pendingClinics.map((clinic) => ({
             id: `clinic-${clinic.id}`,
             type: 'clinic',
-            name: clinic.name
+            name: clinic.name,
+            createdAt: clinic.joinedAt || null
           })),
           ...pendingStores.map((store) => ({
             id: `store-${store.id}`,
             type: 'store',
-            name: store.name
+            name: store.name,
+            createdAt: store.joinedAt || null
           }))
         ];
 
         setPendingApplications(mergedPending);
+        setReviewNotifications(Array.isArray(reviewNotificationData?.notifications) ? reviewNotificationData.notifications : []);
+        setReviewUnreadCount(Math.max(0, Math.trunc(Number(reviewNotificationData?.unreadCount || 0))));
       } catch (error) {
         if (isMounted) {
           setPendingApplications([]);
+          setReviewNotifications([]);
+          setReviewUnreadCount(0);
         }
       } finally {
         if (isMounted) {
@@ -89,8 +120,33 @@ export default function AdminHeader({ onMenuClick }) {
     };
   }, []);
 
-  const notificationCount = pendingApplications.length;
-  const notificationPreview = useMemo(() => pendingApplications.slice(0, 5), [pendingApplications]);
+  const getNotificationTargetPath = (notification) => {
+    return String(notification?.type || '').trim().toLowerCase() === 'bug_report_submitted'
+      ? '/admin/bug-reports'
+      : '/admin/reviews';
+  };
+
+  const markReviewNotificationsAsRead = async () => {
+    const adminToken = localStorage.getItem('adminToken');
+
+    if (!adminToken || reviewUnreadCount <= 0 || markingReviewNotificationsRead) {
+      return;
+    }
+
+    try {
+      setMarkingReviewNotificationsRead(true);
+      await markAdminNotificationsRead(adminToken);
+      setReviewUnreadCount(0);
+    } catch (error) {
+      // Keep silent to avoid noisy toasts while hovering notifications.
+    } finally {
+      setMarkingReviewNotificationsRead(false);
+    }
+  };
+
+  const pendingNotificationPreview = useMemo(() => pendingApplications.slice(0, 5), [pendingApplications]);
+  const reviewNotificationPreview = useMemo(() => reviewNotifications.slice(0, 5), [reviewNotifications]);
+  const notificationCount = pendingApplications.length + reviewUnreadCount;
 
   return (
     <header className="h-[72px] bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-8 font-sans sticky top-0 z-30">
@@ -126,10 +182,17 @@ export default function AdminHeader({ onMenuClick }) {
 
       {/* Right side: Notifications & Quick Actions */}
       <div className="flex items-center gap-3 sm:gap-5">
-        <div className="relative group/notifications">
+        <div className="relative group/notifications" onMouseEnter={markReviewNotificationsAsRead}>
           <button
             onClick={() => {
-              const firstPending = notificationPreview[0];
+              if (reviewNotificationPreview.length > 0) {
+                const latestNotification = reviewNotificationPreview[0];
+                markReviewNotificationsAsRead();
+                navigate(getNotificationTargetPath(latestNotification));
+                return;
+              }
+
+              const firstPending = pendingNotificationPreview[0];
 
               if (firstPending?.type === 'clinic') {
                 navigate('/admin/users/clinics');
@@ -162,7 +225,7 @@ export default function AdminHeader({ onMenuClick }) {
               <h3 className="text-[13px] font-bold text-gray-900">Notifications</h3>
               {notificationCount > 0 && (
                 <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                  {notificationCount} Pending
+                  {notificationCount} Alerts
                 </span>
               )}
             </div>
@@ -174,13 +237,49 @@ export default function AdminHeader({ onMenuClick }) {
                 </div>
               )}
 
-              {!loadingNotifications && notificationPreview.length === 0 && (
+              {!loadingNotifications && reviewNotificationPreview.length === 0 && pendingNotificationPreview.length === 0 && (
                 <div className="px-2 py-4 text-[12px] font-medium text-gray-500">
-                  No doctor, clinic, or medical store registrations are waiting right now.
+                  No new review, bug report, or pending application notifications right now.
                 </div>
               )}
 
-              {!loadingNotifications && notificationPreview.map((application) => (
+              {!loadingNotifications && reviewNotificationPreview.length > 0 && (
+                <div className="px-2 py-1.5 text-[11px] uppercase tracking-[0.06em] font-bold text-[#1EBDB8]">
+                  Recent Alerts
+                </div>
+              )}
+
+              {!loadingNotifications && reviewNotificationPreview.map((reviewNotification) => (
+                <button
+                  key={reviewNotification.id}
+                  type="button"
+                  onClick={() => {
+                    markReviewNotificationsAsRead();
+                    navigate(getNotificationTargetPath(reviewNotification));
+                  }}
+                  className="w-full text-left p-2 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  <p className="text-[12.5px] font-bold text-gray-900 truncate">
+                    {reviewNotification.title || 'New Notification'}
+                  </p>
+                  <p className="text-[12px] text-gray-600 mt-0.5 leading-relaxed line-clamp-2">
+                    {reviewNotification.message || 'A new notification is available.'}
+                  </p>
+                  {formatNotificationDate(reviewNotification.createdAt) && (
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {formatNotificationDate(reviewNotification.createdAt)}
+                    </p>
+                  )}
+                </button>
+              ))}
+
+              {!loadingNotifications && pendingNotificationPreview.length > 0 && (
+                <div className="px-2 py-1.5 mt-1 text-[11px] uppercase tracking-[0.06em] font-bold text-gray-500">
+                  Pending Applications
+                </div>
+              )}
+
+              {!loadingNotifications && pendingNotificationPreview.map((application) => (
                 <button
                   key={application.id}
                   type="button"
@@ -203,31 +302,58 @@ export default function AdminHeader({ onMenuClick }) {
                         ? 'Medical store registered waiting for your response.'
                       : 'Doctor registered waiting for your response.'}
                   </p>
+                  {formatNotificationDate(application.createdAt) && (
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {formatNotificationDate(application.createdAt)}
+                    </p>
+                  )}
                 </button>
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                const firstPending = notificationPreview[0];
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  markReviewNotificationsAsRead();
+                  navigate('/admin/reviews');
+                }}
+                className="text-[12px] font-bold text-[#1EBDB8] py-2 rounded-lg hover:bg-[#1EBDB8]/10 transition-colors"
+              >
+                View Reviews
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  markReviewNotificationsAsRead();
+                  navigate('/admin/bug-reports');
+                }}
+                className="text-[12px] font-bold text-[#1EBDB8] py-2 rounded-lg hover:bg-[#1EBDB8]/10 transition-colors"
+              >
+                View Bugs
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const firstPending = pendingNotificationPreview[0];
 
-                if (firstPending?.type === 'clinic') {
-                  navigate('/admin/users/clinics');
-                  return;
-                }
+                  if (firstPending?.type === 'clinic') {
+                    navigate('/admin/users/clinics');
+                    return;
+                  }
 
-                if (firstPending?.type === 'store') {
-                  navigate('/admin/users/stores');
-                  return;
-                }
+                  if (firstPending?.type === 'store') {
+                    navigate('/admin/users/stores');
+                    return;
+                  }
 
-                navigate('/admin/users/doctors');
-              }}
-              className="w-full mt-2 text-[12px] font-bold text-[#1EBDB8] py-2 rounded-lg hover:bg-[#1EBDB8]/10 transition-colors"
-            >
-              View Applications
-            </button>
+                  navigate('/admin/users/doctors');
+                }}
+                className="text-[12px] font-bold text-[#1EBDB8] py-2 rounded-lg hover:bg-[#1EBDB8]/10 transition-colors"
+              >
+                View Applications
+              </button>
+            </div>
           </div>
         </div>
         
