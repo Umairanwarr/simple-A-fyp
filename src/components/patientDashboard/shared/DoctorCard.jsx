@@ -34,11 +34,11 @@ export default function DoctorCard({
         </button>
       )}
 
-      <div className="flex items-start gap-3 mb-2 h-[120px]">
-        <div className="w-[120px] h-full bg-transparent shrink-0 flex items-end">
-          <img src={doctor.image} alt={doctor.name} className="w-[110%] h-[110%] object-contain object-bottom -ml-2" />
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-[88px] h-[88px] rounded-full overflow-hidden border-2 border-[#E5E7EB] bg-[#F9FAFB] shrink-0">
+          <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
         </div>
-        <div className="flex flex-col pr-6 pt-2">
+        <div className="flex flex-col pr-6 pt-0.5">
           <h3 className="text-[#1EBDB8] font-bold text-[17px]">{doctor.name}</h3>
           <p className="text-[#1F2937] font-semibold text-[13px] mt-0.5">{doctor.specialty}</p>
           <div className="flex items-center gap-1.5 mt-1.5">
