@@ -9,6 +9,7 @@ import ClinicForm from './ClinicForm';
 import MedicalStoreForm from './MedicalStoreForm';
 import { auth, googleProvider } from '../../services/firebase';
 import { loginPatientWithGoogle, registerPatient } from '../../services/authApi';
+import { saveSessionUser } from '../../utils/authSession';
 
 const specialties = [
   'Cardiologist', 'Dermatologist', 'Endocrinologist', 'Gastroenterologist',
@@ -423,7 +424,7 @@ export default function SignUpForm() {
       const data = await loginPatientWithGoogle(idToken);
 
       localStorage.setItem('patientToken', data.token);
-      localStorage.setItem('patient', JSON.stringify(data.patient));
+      saveSessionUser('patient', data.patient);
       toast.success('Google sign-up successful!');
       navigate('/dashboard');
     } catch (error) {

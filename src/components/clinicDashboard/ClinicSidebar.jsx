@@ -28,7 +28,7 @@ const navItems = [
   )},
 ];
 
-export default function ClinicSidebar({ isOpen, onClose, activeTab, onTabChange }) {
+export default function ClinicSidebar({ isOpen, onClose, activeTab, onTabChange, onLogout }) {
   return (
     <>
       {/* Mobile Overlay */}
@@ -90,7 +90,11 @@ export default function ClinicSidebar({ isOpen, onClose, activeTab, onTabChange 
             </button>
           </div>
           
-          <button className="w-full mt-6 flex items-center gap-4 px-6 py-4 text-white/50 hover:text-red-400 hover:bg-red-400/5 rounded-2xl transition-all group">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="w-full mt-6 flex items-center gap-4 px-6 py-4 text-white/50 hover:text-red-400 hover:bg-red-400/5 rounded-2xl transition-all group"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             <span className="text-[15px] font-semibold">Logout</span>
           </button>

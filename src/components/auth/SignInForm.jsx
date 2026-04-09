@@ -16,6 +16,7 @@ import {
   sendMedicalStoreLoginOtp,
   sendDoctorLoginOtp
 } from '../../services/authApi';
+import { saveSessionUser } from '../../utils/authSession';
 
 export default function SignInForm() {
   const navigate = useNavigate();
@@ -128,7 +129,7 @@ export default function SignInForm() {
         const data = await loginDoctor({ email, password, otp });
 
         localStorage.setItem('doctorToken', data.token);
-        localStorage.setItem('doctor', JSON.stringify(data.doctor));
+        saveSessionUser('doctor', data.doctor);
         toast.success('Login successful!');
         navigate('/doctor/dashboard');
       } catch (error) {
@@ -146,7 +147,7 @@ export default function SignInForm() {
         const data = await loginClinic({ email, password, otp });
 
         localStorage.setItem('clinicToken', data.token);
-        localStorage.setItem('clinic', JSON.stringify(data.clinic));
+        saveSessionUser('clinic', data.clinic);
         toast.success('Login successful!');
         navigate('/clinic/dashboard');
       } catch (error) {
@@ -164,7 +165,7 @@ export default function SignInForm() {
         const data = await loginMedicalStore({ email, password, otp });
 
         localStorage.setItem('medicalStoreToken', data.token);
-        localStorage.setItem('medicalStore', JSON.stringify(data.medicalStore));
+        saveSessionUser('medicalStore', data.medicalStore);
         toast.success('Login successful!');
         navigate('/store/dashboard');
       } catch (error) {
@@ -181,7 +182,7 @@ export default function SignInForm() {
       const data = await loginPatient({ email, password });
 
       localStorage.setItem('patientToken', data.token);
-      localStorage.setItem('patient', JSON.stringify(data.patient));
+      saveSessionUser('patient', data.patient);
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (error) {
@@ -199,7 +200,7 @@ export default function SignInForm() {
       const data = await loginPatientWithGoogle(idToken);
 
       localStorage.setItem('patientToken', data.token);
-      localStorage.setItem('patient', JSON.stringify(data.patient));
+      saveSessionUser('patient', data.patient);
       toast.success('Google sign-in successful!');
       navigate('/dashboard');
     } catch (error) {

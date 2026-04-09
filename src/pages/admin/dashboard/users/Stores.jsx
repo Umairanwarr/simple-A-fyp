@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import AdminLayout from '../AdminLayout';
 import {
+  deleteAdminMedicalStore,
   fetchAdminMedicalStores,
   reviewAdminMedicalStoreApplication
 } from '../../../../services/authApi';
@@ -13,6 +14,7 @@ export default function Stores() {
   const [search, setSearch] = useState('');
   const [selectedStore, setSelectedStore] = useState(null);
   const [reviewingStoreId, setReviewingStoreId] = useState('');
+  const [deletingStoreId, setDeletingStoreId] = useState('');
 
   useEffect(() => {
     const normalizeApplicationStatus = (status) => {
@@ -154,6 +156,39 @@ export default function Stores() {
     }
   };
 
+  const handleDeleteStore = async (store) => {
+    const adminToken = localStorage.getItem('adminToken');
+
+    if (!adminToken) {
+      toast.error('Please login as admin first');
+      return;
+    }
+
+    const shouldDelete = window.confirm(`Delete medical store ${store.name}? This action cannot be undone.`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setDeletingStoreId(store.id);
+      await deleteAdminMedicalStore(adminToken, store.id);
+      setStores((prevStores) => prevStores.filter((item) => item.id !== store.id));
+      setSelectedStore((prevSelectedStore) => {
+        if (!prevSelectedStore || prevSelectedStore.id !== store.id) {
+          return prevSelectedStore;
+        }
+
+        return null;
+      });
+      toast.success('Medical store deleted successfully');
+    } catch (err) {
+      toast.error(err.message || 'Could not delete medical store');
+    } finally {
+      setDeletingStoreId('');
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6">
@@ -258,7 +293,7 @@ export default function Stores() {
                           <>
                             <button
                               type="button"
-                              disabled={reviewingStoreId === store.id}
+                              disabled={reviewingStoreId === store.id || deletingStoreId === store.id}
                               onClick={() => handleReviewAction(store, 'approved')}
                               className="px-3 py-1.5 rounded-lg text-[12.5px] font-bold text-green-700 border border-green-200 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -267,7 +302,7 @@ export default function Stores() {
 
                             <button
                               type="button"
-                              disabled={reviewingStoreId === store.id}
+                              disabled={reviewingStoreId === store.id || deletingStoreId === store.id}
                               onClick={() => handleReviewAction(store, 'declined')}
                               className="px-3 py-1.5 rounded-lg text-[12.5px] font-bold text-red-700 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -279,6 +314,22 @@ export default function Stores() {
                             Reviewed
                           </span>
                         )}
+
+                        <button
+                          type="button"
+                          disabled={deletingStoreId === store.id}
+                          onClick={() => handleDeleteStore(store)}
+                          className="inline-flex items-center gap-2 text-red-500 hover:text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed font-bold text-[13px] px-2 py-1 rounded-lg transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                          </svg>
+                          {deletingStoreId === store.id ? 'Deleting...' : 'Delete'}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -399,6 +450,15 @@ export default function Stores() {
                   </button>
                 </>
               )}
+
+              <button
+                type="button"
+                disabled={deletingStoreId === selectedStore.id}
+                onClick={() => handleDeleteStore(selectedStore)}
+                className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-red-700 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingStoreId === selectedStore.id ? 'Deleting...' : 'Delete Store'}
+              </button>
 
               <button
                 type="button"

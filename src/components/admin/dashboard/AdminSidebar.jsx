@@ -120,6 +120,32 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
               </div>
             </div>
 
+            <a 
+              href="/admin/reviews"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/reviews') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+              </svg>
+              Reviews Management
+            </a>
+
+            <a
+              href="/admin/bug-reports"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/bug-reports') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="8" x2="16" y2="8"></line>
+                <line x1="8" y1="8" x2="6" y2="8"></line>
+                <line x1="18" y1="16" x2="16" y2="16"></line>
+                <line x1="8" y1="16" x2="6" y2="16"></line>
+                <path d="M14 4h-4"></path>
+                <path d="M15 8a3 3 0 1 0-6 0v8a3 3 0 0 0 6 0z"></path>
+                <path d="M12 4v4"></path>
+              </svg>
+              Bug Reports
+            </a>
+
           </nav>
         </div>
 
