@@ -679,50 +679,34 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1.08fr_0.92fr] gap-7 pb-24">
-      <section className="bg-white border border-gray-100 rounded-[28px] p-6 sm:p-8">
-        <div className="flex items-start justify-between gap-3 mb-6">
-          <button
-            type="button"
-            onClick={() => onBack?.()}
-            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6B7280] hover:text-[#1F2432]"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
-          <div className="w-[120px] h-[120px] rounded-2xl overflow-hidden bg-[#F3F4F6] border border-gray-100 shrink-0">
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
+      {/* Left Column (Profile info) */}
+      <section className="bg-transparent p-4 sm:p-6 lg:p-8 shrink-0">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 mb-10">
+          <div className="w-[180px] h-[180px] rounded-full overflow-hidden bg-[#F3F4F6] border-[4px] border-white shadow-sm shrink-0">
             <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-[30px] leading-tight font-bold text-[#1F2432]">{doctor.name}</h1>
-            <p className="text-[21px] font-semibold text-[#374151]">{doctor.specialty}</p>
-            <p className="text-[15px] text-[#6B7280]">{doctor.location}</p>
-            <div className="flex items-center gap-2.5 pt-1">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              <p className="text-[13px] font-bold text-[#4B5563]">
-                {doctor.rating}
-                <span className="font-medium text-[#9CA3AF]"> . {doctor.reviews}</span>
-              </p>
+          <div className="space-y-1.5 text-center sm:text-left mt-2">
+            <h1 className="text-[32px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{doctor.name}</h1>
+            <p className="text-[22px] font-semibold text-[#1F2432]">{doctor.specialty} Primary Care Doctor</p>
+            <p className="text-[18px] font-medium text-[#6B7280]">{doctor.location || 'Doctors Address'}</p>
+            <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 text-[16px] font-medium">
+                <span className="text-red-500">Closed</span>
+                <span className="text-[#9CA3AF]">•</span>
+                <span className="text-[#6B7280]">Opens 9 AM Mon</span>
             </div>
+            {/* Keeping rating hidden based on image layout */}
           </div>
         </div>
 
-        <div className="mt-10 mb-6 border-b border-gray-200 flex gap-6">
+        <div className="mb-8 border-b border-gray-200/60 flex flex-wrap gap-8 justify-center sm:justify-start">
           <button
             type="button"
             onClick={() => setActiveTab('about')}
-            className={`pb-3 text-[15px] font-bold border-b-2 transition-colors ${
+            className={`pb-3 text-[16px] font-bold border-b-2 transition-colors ${
               activeTab === 'about'
-                ? 'border-[#1EBDB8] text-[#1EBDB8]'
+                ? 'border-[#1F2432] text-[#1F2432]'
                 : 'border-transparent text-[#6B7280] hover:text-[#1F2432]'
             }`}
           >
@@ -731,9 +715,9 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
           <button
             type="button"
             onClick={() => setActiveTab('reviews')}
-            className={`pb-3 text-[15px] font-bold border-b-2 transition-colors ${
+            className={`pb-3 text-[16px] font-bold border-b-2 transition-colors ${
               activeTab === 'reviews'
-                ? 'border-[#1EBDB8] text-[#1EBDB8]'
+                ? 'border-[#1F2432] text-[#1F2432]'
                 : 'border-transparent text-[#6B7280] hover:text-[#1F2432]'
             }`}
           >
@@ -744,8 +728,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         <div className="min-h-[200px]">
           {activeTab === 'about' && (
             <div className="space-y-4">
-              <h2 className="text-[19px] font-bold text-[#1F2432]">About</h2>
-              <p className="text-[14px] leading-relaxed text-[#4B5563]">
+              <p className="text-[15px] leading-relaxed text-[#1F2432] pr-0 lg:pr-12">
                 {doctor.bio || 'This doctor has not provided a biography yet.'}
               </p>
             </div>
@@ -782,15 +765,17 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         </div>
       </section>
 
-      <section className="bg-white border border-gray-100 rounded-[28px] p-6 sm:p-8 space-y-6">
-        <div className="space-y-1.5">
-          <h2 className="text-[34px] leading-tight font-bold text-[#1F2432]">Book an appointment</h2>
-          <p className="text-[14px] text-[#6B7280]">Select appointment type and choose an available slot.</p>
+      {/* Right Column (Booking card) */}
+      <section className="bg-white rounded-3xl p-8 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] m-4 mb-24 max-w-[600px] w-full ml-auto">
+        <div className="space-y-2 mb-8">
+          <h2 className="text-[28px] leading-tight font-semibold text-[#1F2432]">Book an appointment on Simple</h2>
+          <p className="text-[16px] text-[#6B7280]">The office partners with Simple to schedule appointments</p>
         </div>
 
-        <div className="space-y-3">
-          <h3 className="text-[16px] font-bold text-[#1F2432]">Appointment Type</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="space-y-4 mt-8">
+          <h3 className="text-[18px] font-medium text-[#1F2432]">Scheduling details</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {APPOINTMENT_TYPE_OPTIONS.map((option) => {
               const isSelected = selectedMode === option.id;
               const slotCount = option.id === 'online' ? slotsByMode.online.length : slotsByMode.offline.length;
@@ -800,13 +785,13 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                   key={option.id}
                   type="button"
                   onClick={() => setSelectedMode(option.id)}
-                  className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  className={`rounded-xl border px-4 py-3.5 text-center transition-colors ${
                     isSelected
                       ? 'border-[#1EBDB8] bg-[#E8FBFA]'
                       : 'border-gray-200 bg-white hover:border-[#1EBDB8]/40'
                   }`}
                 >
-                  <p className={`text-[13px] font-bold ${isSelected ? 'text-[#1EBDB8]' : 'text-[#1F2432]'}`}>{option.label}</p>
+                  <p className={`text-[14px] font-bold ${isSelected ? 'text-[#1EBDB8]' : 'text-[#1F2432]'}`}>{option.label}</p>
                   <p className="text-[12px] mt-1 text-[#6B7280]">{slotCount} slots</p>
                 </button>
               );
@@ -814,15 +799,22 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h3 className="text-[16px] font-bold text-[#1F2432]">Available Slots</h3>
+        <div className="space-y-4 mt-10">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[20px] font-medium text-[#1F2432]">Today, Dec 13 - Thu, Dec 26</h3>
+            <button type="button" className="p-1">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1F2432]">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
           {selectedModeSlots.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-[#F8FAFC] px-4 py-6 text-center">
               <p className="text-[13px] font-medium text-[#6B7280]">No slots available for this appointment type.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {selectedModeSlots.map((slot) => {
+            <div className="grid grid-cols-5 gap-3 mt-4">
+              {selectedModeSlots.slice(0, 10).map((slot) => {
                 const isSelected = String(selectedSlotId) === String(slot.id);
 
                 return (
@@ -830,29 +822,37 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                     key={slot.id}
                     type="button"
                     onClick={() => setSelectedSlotId(String(slot.id))}
-                    className={`rounded-xl border px-3 py-3 text-left transition-colors ${
+                    className={`rounded-[12px] p-0 flex flex-col overflow-hidden text-center transition-colors h-[100px] ${
                       isSelected
-                        ? 'border-[#1EBDB8] bg-[#1EBDB8] text-white'
-                        : 'border-gray-200 bg-white hover:border-[#1EBDB8]/40 text-[#1F2432]'
+                        ? 'border border-[#1EBDB8]'
+                        : 'border-0'
                     }`}
                   >
-                    <p className="text-[11px] font-bold opacity-90">{formatSlotDate(slot.date)}</p>
-                    <p className="text-[12px] font-bold mt-1">{slot.fromTime} - {slot.toTime}</p>
-                    <p className="text-[11px] mt-1 opacity-90">{formatCurrency(slot.priceInRupees || 0)}</p>
+                    <div className="bg-[#f0f0f0] text-[12px] font-medium text-[#6B7280] w-full py-3 h-1/2 flex items-center justify-center">
+                        {formatSlotDate(slot.date)}
+                    </div>
+                    <div className="bg-[#1EBDB8] text-white text-[13px] font-semibold w-full py-3 h-1/2 flex items-center justify-center">
+                        1 appts
+                    </div>
                   </button>
                 );
               })}
             </div>
           )}
+          <div className="pt-6">
+              <button className="text-[15px] font-medium text-[#1F2432] underline underline-offset-4 decoration-current hover:opacity-80 transition-opacity">
+                  View more availability
+              </button>
+          </div>
         </div>
 
         {selectedSlot ? (
           <button
             type="button"
             onClick={handleProceedToBooking}
-            className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white py-3.5 rounded-[12px] text-[14px] font-bold transition-colors"
+            className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white py-4 rounded-[12px] text-[16px] font-bold transition-colors mt-8"
           >
-            Book Now
+            Continue Booking
           </button>
         ) : null}
       </section>
