@@ -23,6 +23,7 @@ const EMPTY_FORM = {
   fromTime: '',
   toTime: '',
   consultationMode: 'online',
+  offlineAddress: '',
   priceInRupees: ''
 };
 
@@ -159,6 +160,11 @@ export default function AvailabilityPage({ onGoToProfile }) {
       return false;
     }
 
+    if (form.consultationMode === 'offline' && !String(form.offlineAddress || '').trim()) {
+      toast.error('Offline clinic address is required for clinic visit slots');
+      return false;
+    }
+
     const overlap = slots.some((slot) => {
       if (editingSlotId && slot.id === editingSlotId) {
         return false;
@@ -236,6 +242,7 @@ export default function AvailabilityPage({ onGoToProfile }) {
       fromTime: slot.fromTime,
       toTime: slot.toTime,
       consultationMode: slot.consultationMode || 'online',
+      offlineAddress: String(slot.offlineAddress || '').trim(),
       priceInRupees: String(slot.priceInRupees ?? '')
     });
     setEditingSlotId(slot.id);
@@ -269,6 +276,15 @@ export default function AvailabilityPage({ onGoToProfile }) {
   };
 
   const handleChange = (field, value) => {
+    if (field === 'consultationMode') {
+      setForm((prev) => ({
+        ...prev,
+        consultationMode: value,
+        offlineAddress: value === 'offline' ? prev.offlineAddress : ''
+      }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       [field]: value

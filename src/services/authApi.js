@@ -188,6 +188,33 @@ export const fetchPatientDoctorProfile = async (token, doctorId) => {
   });
 };
 
+export const fetchPatientProfile = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/patient/profile', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const updatePatientProfile = async (token, payload) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/patient/profile', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
+  });
+};
+
 export const createPatientAppointmentPaymentIntent = async (token, payload) => {
   if (!token) {
     throw new Error('Unauthorized: Missing token');
@@ -475,6 +502,36 @@ export const fetchDoctorSchedule = async (token, { fromDate = '', toDate = '' } 
 
   return apiRequest(`/auth/doctor/schedule${queryString ? `?${queryString}` : ''}`, {
     method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const fetchDoctorAppointments = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/doctor/appointments', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const cancelDoctorUpcomingAppointment = async (token, appointmentId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!appointmentId) {
+    throw new Error('Appointment id is required');
+  }
+
+  return apiRequest(`/auth/doctor/appointments/${appointmentId}/cancel`, {
+    method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`
     }

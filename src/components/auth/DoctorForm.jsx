@@ -139,7 +139,7 @@ export default function DoctorForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Clinic/Hospital Address</label>
+        <label className="text-[13.5px] font-bold text-[#6B7280]">City</label>
         <textarea name="address" placeholder="Enter precise location" value={formData.address} onChange={handleChange} className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] min-h-[80px]" />
       </div>
 

@@ -28,6 +28,7 @@ import {
 
 const TAB_PATHS = {
   dashboard: '/dashboard',
+  profile: '/dashboard/profile',
   appointments: '/dashboard/appointments',
   explore: '/dashboard/explore',
   favorites: '/dashboard/favorites',
@@ -251,6 +252,19 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
     setIsAvatarModalOpen(false);
   };
 
+  const handleProfileUpdated = (data) => {
+    const missingFields = Array.isArray(data?.profile?.missingFields)
+      ? data.profile.missingFields
+      : [];
+
+    if (missingFields.length === 0) {
+      setIsAvatarMandatory(false);
+      return;
+    }
+
+    setIsAvatarMandatory(missingFields.includes('avatar'));
+  };
+
   const handleToggleFavoriteDoctor = async (doctor) => {
     const doctorId = String(doctor?.id || '').trim();
 
@@ -406,6 +420,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
     favoriteDoctorIds,
     favoriteActionDoctorIds,
     isFavoritesLoading,
+    handleProfileUpdated,
     onToggleFavoriteDoctor: handleToggleFavoriteDoctor,
     openDoctorProfile
   };

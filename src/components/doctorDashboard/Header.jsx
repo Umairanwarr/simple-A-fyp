@@ -44,6 +44,7 @@ export default function Header({
       case 'profile': return 'Doctor Profile';
       case 'reviews': return 'Patient Reviews';
       case 'schedule': return 'My Schedule';
+      case 'appointments': return 'Appointments';
       case 'clinic': return 'Virtual Clinic';
       case 'availability': return 'Set Availability';
       case 'streaming': return 'Advanced Live Streaming';

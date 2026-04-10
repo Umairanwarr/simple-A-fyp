@@ -24,6 +24,7 @@ const TAB_PATHS = {
   profile: '/doctor/dashboard/profile',
   reviews: '/doctor/dashboard/reviews',
   schedule: '/doctor/dashboard/schedule',
+  appointments: '/doctor/dashboard/appointments',
   clinic: '/doctor/dashboard/clinic',
   availability: '/doctor/dashboard/availability',
   streaming: '/doctor/dashboard/streaming',
