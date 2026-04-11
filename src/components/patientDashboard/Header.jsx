@@ -22,6 +22,8 @@ const formatNotificationDateTime = (dateValue) => {
 
 const getTabTitle = (activeTab) => {
   switch (activeTab) {
+    case 'profile':
+      return 'Profile';
     case 'explore':
       return 'Explore';
     case 'doctor-profile':

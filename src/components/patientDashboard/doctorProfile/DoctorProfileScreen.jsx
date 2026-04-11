@@ -339,6 +339,20 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
     return formatCurrency(selectedSlot?.priceInRupees || 0);
   }, [selectedSlot]);
 
+  const selectedOfflineAddress = useMemo(() => {
+    if (selectedMode !== 'offline') {
+      return '';
+    }
+
+    const slotAddress = String(selectedSlot?.offlineAddress || '').trim();
+
+    if (slotAddress) {
+      return slotAddress;
+    }
+
+    return String(doctor?.location || '').trim();
+  }, [doctor?.location, selectedMode, selectedSlot]);
+
   const canSubmitBooking = useMemo(() => {
     return Boolean(
       bookingForm.termsAccepted
@@ -516,7 +530,11 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
               <div className="space-y-1.5">
                 <h1 className="text-[22px] sm:text-[28px] leading-tight font-bold text-[#1F2432]">{doctor.name}</h1>
                 <p className="text-[19px] font-semibold text-[#374151]">{doctor.specialty}</p>
-                <p className="text-[15px] text-[#6B7280]">{doctor.location}</p>
+                <p className="text-[15px] text-[#6B7280]">
+                  {selectedMode === 'offline' && selectedOfflineAddress
+                    ? selectedOfflineAddress
+                    : doctor.location}
+                </p>
                 <p className="text-[14px] font-semibold text-[#1F2432]">{selectedAppointmentTypeLabel}</p>
                 <div className="text-[13px] text-[#4B5563]">
                   <span>{formatAppointmentDateTime(selectedSlot)}</span>
@@ -839,6 +857,16 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
               })}
             </div>
           )}
+
+          {selectedSlot && selectedMode === 'offline' ? (
+            <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3">
+              <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6B7280]">Selected Clinic Address</p>
+              <p className="text-[13px] font-medium text-[#1F2432] mt-1">
+                {selectedOfflineAddress || 'Address not provided'}
+              </p>
+            </div>
+          ) : null}
+
           <div className="pt-6">
               <button className="text-[15px] font-medium text-[#1F2432] underline underline-offset-4 decoration-current hover:opacity-80 transition-opacity">
                   View more availability

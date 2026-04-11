@@ -101,6 +101,21 @@ export default function AvailabilityForm({
           />
         </label>
 
+        {form.consultationMode === 'offline' ? (
+          <label className="flex flex-col gap-2 md:col-span-3">
+            <span className="text-[13px] font-bold text-[#6B7280]">Offline Clinic Address</span>
+            <input
+              type="text"
+              value={form.offlineAddress}
+              disabled={isDisabled}
+              onChange={(event) => onChange('offlineAddress', event.target.value)}
+              placeholder="Enter clinic address for this slot"
+              className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl px-4 py-3 text-[14px] font-medium text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/20"
+              required
+            />
+          </label>
+        ) : null}
+
         <div className="md:col-span-6 flex justify-end mt-1">
           <button
             type="submit"

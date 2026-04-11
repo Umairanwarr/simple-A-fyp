@@ -167,8 +167,8 @@ export default function UpcomingAppointments() {
             
             <div className="flex items-center justify-between mt-auto">
               <div className="flex items-center gap-3">
-                <div className="w-[52px] h-[52px] bg-transparent shrink-0 flex items-end">
-                  <img src={appt.doctor.image} alt={appt.doctor.name} className="w-[120%] h-[120%] object-contain object-bottom -ml-2" />
+                <div className="w-[52px] h-[52px] rounded-full overflow-hidden bg-[#F3F4F6] border border-gray-100 shrink-0">
+                  <img src={appt.doctor.image} alt={appt.doctor.name} className="w-full h-full object-cover object-center" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[#1F2937] font-extrabold text-[16px]">{appt.doctor.name}</span>

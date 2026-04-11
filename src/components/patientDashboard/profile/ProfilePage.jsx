@@ -1,30 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import {
-  fetchDoctorProfile,
-  updateDoctorAvatar,
-  updateDoctorProfile
+  fetchPatientProfile,
+  updatePatientAvatar,
+  updatePatientProfile
 } from '../../../services/authApi';
-import { getDoctorSessionProfile, saveSessionUser } from '../../../utils/authSession';
+import { getPatientSessionProfile, saveSessionUser } from '../../../utils/authSession';
 import ProfileField from './components/ProfileField';
 import ProfileOverviewCard from './components/ProfileOverviewCard';
 
 const MISSING_FIELD_LABELS = {
-  name: 'Name',
-  avatar: 'Avatar',
+  firstName: 'First Name',
+  lastName: 'Last Name',
+  email: 'Email',
   phone: 'Phone Number',
-  address: 'Clinic Address',
-  bio: 'Bio',
+  location: 'Location',
+  avatar: 'Avatar'
 };
 
-const getDoctorTokenOrThrow = () => {
-  const doctorToken = localStorage.getItem('doctorToken');
+const PHONE_PATTERN = /^\d{7,15}$/;
 
-  if (!doctorToken) {
-    throw new Error('Please login again to update profile');
-  }
-
-  return doctorToken;
+const isValidEmail = (email) => {
+  return /^\S+@\S+\.\S+$/.test(String(email || '').trim());
 };
 
 const normalizeMissingFields = (fields) => {
@@ -33,22 +30,29 @@ const normalizeMissingFields = (fields) => {
   }
 
   return fields
-    .map((field) => String(field || '').trim().toLowerCase())
+    .map((field) => String(field || '').trim())
     .filter(Boolean);
 };
 
+const getPatientTokenOrThrow = () => {
+  const patientToken = localStorage.getItem('patientToken');
+
+  if (!patientToken) {
+    throw new Error('Please login again to update profile');
+  }
+
+  return patientToken;
+};
+
 export default function ProfilePage({ onProfileUpdated }) {
-  const sessionProfile = getDoctorSessionProfile();
+  const sessionProfile = getPatientSessionProfile();
   const avatarInputRef = useRef(null);
 
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [specialization, setSpecialization] = useState('');
-  const [licenseNumber, setLicenseNumber] = useState('');
-  const [experience, setExperience] = useState('');
-  const [address, setAddress] = useState('');
-  const [bio, setBio] = useState('');
+  const [location, setLocation] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(sessionProfile.avatarUrl);
   const [missingFields, setMissingFields] = useState([]);
   const [errors, setErrors] = useState({});
@@ -59,19 +63,16 @@ export default function ProfilePage({ onProfileUpdated }) {
   const hydrateProfile = (data) => {
     const profile = data?.profile || {};
 
-    setFullName(String(profile.fullName || '').trim());
+    setFirstName(String(profile.firstName || '').trim());
+    setLastName(String(profile.lastName || '').trim());
     setEmail(String(profile.email || '').trim());
     setPhone(String(profile.phone || '').trim());
-    setSpecialization(String(profile.specialization || '').trim());
-    setLicenseNumber(String(profile.licenseNumber || '').trim());
-    setExperience(String(profile.experience ?? '').trim());
-    setAddress(String(profile.address || '').trim());
-    setBio(String(profile.bio || ''));
+    setLocation(String(profile.location || '').trim());
     setAvatarUrl(String(profile.avatarUrl || '').trim() || sessionProfile.avatarUrl);
     setMissingFields(normalizeMissingFields(profile.missingFields));
 
-    if (data?.doctor) {
-      saveSessionUser('doctor', data.doctor);
+    if (data?.patient) {
+      saveSessionUser('patient', data.patient);
     }
 
     if (typeof onProfileUpdated === 'function') {
@@ -84,8 +85,8 @@ export default function ProfilePage({ onProfileUpdated }) {
 
     const loadProfile = async () => {
       try {
-        const doctorToken = getDoctorTokenOrThrow();
-        const data = await fetchDoctorProfile(doctorToken);
+        const patientToken = getPatientTokenOrThrow();
+        const data = await fetchPatientProfile(patientToken);
 
         if (!isMounted) {
           return;
@@ -93,11 +94,9 @@ export default function ProfilePage({ onProfileUpdated }) {
 
         hydrateProfile(data);
       } catch (error) {
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          toast.error(error?.message || 'Could not load profile');
         }
-
-        toast.error(error?.message || 'Could not load profile');
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -114,21 +113,30 @@ export default function ProfilePage({ onProfileUpdated }) {
 
   const validateProfile = () => {
     const nextErrors = {};
+    const normalizedPhone = String(phone || '').replace(/\D/g, '').slice(0, 15);
 
-    if (!fullName.trim()) {
-      nextErrors.fullName = 'Name is required';
+    if (!firstName.trim()) {
+      nextErrors.firstName = 'First name is required';
     }
 
-    if (!phone.trim()) {
+    if (!lastName.trim()) {
+      nextErrors.lastName = 'Last name is required';
+    }
+
+    if (!email.trim()) {
+      nextErrors.email = 'Email is required';
+    } else if (!isValidEmail(email)) {
+      nextErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!normalizedPhone) {
       nextErrors.phone = 'Phone number is required';
+    } else if (!PHONE_PATTERN.test(normalizedPhone)) {
+      nextErrors.phone = 'Phone number must be 7 to 15 digits';
     }
 
-    if (!address.trim()) {
-      nextErrors.address = 'Clinic address is required';
-    }
-
-    if (!bio.trim()) {
-      nextErrors.bio = 'Bio is required';
+    if (!location.trim()) {
+      nextErrors.location = 'Location is required';
     }
 
     setErrors(nextErrors);
@@ -150,13 +158,14 @@ export default function ProfilePage({ onProfileUpdated }) {
 
     try {
       setIsSaving(true);
-      const doctorToken = getDoctorTokenOrThrow();
+      const patientToken = getPatientTokenOrThrow();
 
-      const data = await updateDoctorProfile(doctorToken, {
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        bio: bio.trim()
+      const data = await updatePatientProfile(patientToken, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: String(phone || '').replace(/\D/g, '').slice(0, 15),
+        location: location.trim()
       });
 
       hydrateProfile(data);
@@ -165,20 +174,24 @@ export default function ProfilePage({ onProfileUpdated }) {
       if (Array.isArray(error?.data?.missingFields)) {
         const serverErrors = {};
 
-        if (error.data.missingFields.includes('name')) {
-          serverErrors.fullName = 'Name is required';
+        if (error.data.missingFields.includes('firstName')) {
+          serverErrors.firstName = 'First name is required';
+        }
+
+        if (error.data.missingFields.includes('lastName')) {
+          serverErrors.lastName = 'Last name is required';
+        }
+
+        if (error.data.missingFields.includes('email')) {
+          serverErrors.email = 'Email is required';
         }
 
         if (error.data.missingFields.includes('phone')) {
           serverErrors.phone = 'Phone number is required';
         }
 
-        if (error.data.missingFields.includes('address')) {
-          serverErrors.address = 'Clinic address is required';
-        }
-
-        if (error.data.missingFields.includes('bio')) {
-          serverErrors.bio = 'Bio is required';
+        if (error.data.missingFields.includes('location')) {
+          serverErrors.location = 'Location is required';
         }
 
         setErrors(serverErrors);
@@ -211,18 +224,18 @@ export default function ProfilePage({ onProfileUpdated }) {
 
     try {
       setIsAvatarSaving(true);
-      const doctorToken = getDoctorTokenOrThrow();
-      const data = await updateDoctorAvatar(doctorToken, selectedFile);
+      const patientToken = getPatientTokenOrThrow();
+      const data = await updatePatientAvatar(patientToken, selectedFile);
 
-      if (data?.doctor) {
-        saveSessionUser('doctor', data.doctor);
+      if (data?.patient) {
+        saveSessionUser('patient', data.patient);
       }
 
       if (data?.profile) {
         setMissingFields(normalizeMissingFields(data.profile.missingFields));
       }
 
-      setAvatarUrl(String(data?.doctor?.avatarUrl || '').trim() || avatarUrl);
+      setAvatarUrl(String(data?.patient?.avatarUrl || '').trim() || avatarUrl);
 
       if (typeof onProfileUpdated === 'function') {
         onProfileUpdated(data);
@@ -241,6 +254,7 @@ export default function ProfilePage({ onProfileUpdated }) {
     avatarInputRef.current?.click();
   };
 
+  const fullName = `${firstName} ${lastName}`.trim();
   const isProfileComplete = missingFields.length === 0;
   const missingFieldNames = missingFields
     .map((field) => MISSING_FIELD_LABELS[field] || field)
@@ -280,24 +294,49 @@ export default function ProfilePage({ onProfileUpdated }) {
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-[20px] font-bold text-[#1F2432]">Professional Details</h3>
+            <h3 className="text-[20px] font-bold text-[#1F2432]">Personal Details</h3>
             <p className="text-[13px] text-[#9CA3AF] font-medium mt-1">
-              Editable: name, phone number, clinic address, and bio.
+              Editable: first name, last name, email, phone number, and location.
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <ProfileField
-            label="Full Name"
-            value={fullName}
-            placeholder="Enter your full name"
+            label="First Name"
+            value={firstName}
+            placeholder="Enter your first name"
             onChange={(event) => {
-              setFullName(event.target.value);
-              setErrors((prev) => ({ ...prev, fullName: '' }));
+              setFirstName(event.target.value);
+              setErrors((prev) => ({ ...prev, firstName: '' }));
             }}
-            error={errors.fullName}
+            error={errors.firstName}
             disabled={isSaving}
+          />
+
+          <ProfileField
+            label="Last Name"
+            value={lastName}
+            placeholder="Enter your last name"
+            onChange={(event) => {
+              setLastName(event.target.value);
+              setErrors((prev) => ({ ...prev, lastName: '' }));
+            }}
+            error={errors.lastName}
+            disabled={isSaving}
+          />
+
+          <ProfileField
+            label="Email"
+            value={email}
+            placeholder="Enter your email"
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setErrors((prev) => ({ ...prev, email: '' }));
+            }}
+            error={errors.email}
+            disabled={isSaving}
+            type="email"
           />
 
           <ProfileField
@@ -305,67 +344,27 @@ export default function ProfilePage({ onProfileUpdated }) {
             value={phone}
             placeholder="Enter your phone number"
             onChange={(event) => {
-              setPhone(event.target.value);
+              setPhone(event.target.value.replace(/\D/g, '').slice(0, 15));
               setErrors((prev) => ({ ...prev, phone: '' }));
             }}
             error={errors.phone}
             disabled={isSaving}
           />
-
-          <ProfileField
-            label="Professional Email"
-            value={email}
-            readOnly
-          />
-
-          <ProfileField
-            label="Specialization"
-            value={specialization}
-            readOnly
-          />
-
-          <ProfileField
-            label="Medical License Number"
-            value={licenseNumber}
-            readOnly
-          />
-
-          <ProfileField
-            label="Years of Experience"
-            value={experience}
-            readOnly
-          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <ProfileField
-            label="City"
-            value={address}
-            placeholder="Enter your city"
-            onChange={(event) => {
-              setAddress(event.target.value);
-              setErrors((prev) => ({ ...prev, address: '' }));
-            }}
-            error={errors.address}
-            disabled={isSaving}
-            multiline
-            rows={5}
-          />
-
-          <ProfileField
-            label="Bio"
-            value={bio}
-            placeholder="Write a short professional bio"
-            onChange={(event) => {
-              setBio(event.target.value);
-              setErrors((prev) => ({ ...prev, bio: '' }));
-            }}
-            error={errors.bio}
-            disabled={isSaving}
-            multiline
-            rows={5}
-          />
-        </div>
+        <ProfileField
+          label="Location"
+          value={location}
+          placeholder="Enter your city or area"
+          onChange={(event) => {
+            setLocation(event.target.value);
+            setErrors((prev) => ({ ...prev, location: '' }));
+          }}
+          error={errors.location}
+          disabled={isSaving}
+          multiline
+          rows={4}
+        />
 
         <div className="flex justify-end">
           <button

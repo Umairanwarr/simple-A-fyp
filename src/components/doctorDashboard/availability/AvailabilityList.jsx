@@ -66,13 +66,14 @@ export default function AvailabilityList({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[820px]">
+          <table className="w-full text-left min-w-[940px]">
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em]">Date</th>
                 <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em]">From</th>
                 <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em]">To</th>
                 <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em]">Mode</th>
+                <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em]">Offline Address</th>
                 <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em]">Fee</th>
                 <th className="px-3 py-3 text-[12px] font-bold text-[#9CA3AF] uppercase tracking-[0.1em] text-right">Actions</th>
               </tr>
@@ -87,6 +88,11 @@ export default function AvailabilityList({
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${getModeBadgeClassName(slot.consultationMode)}`}>
                       {formatModeLabel(slot.consultationMode)}
                     </span>
+                  </td>
+                  <td className="px-3 py-4 text-[13px] font-medium text-[#4B5563] max-w-[280px] truncate" title={slot.offlineAddress || ''}>
+                    {slot.consultationMode === 'offline'
+                      ? (slot.offlineAddress || 'Not set')
+                      : '-'}
                   </td>
                   <td className="px-3 py-4 text-[14px] font-semibold text-[#1F2432]">{formatFeeInRupees(slot.priceInRupees)}</td>
                   <td className="px-3 py-4">

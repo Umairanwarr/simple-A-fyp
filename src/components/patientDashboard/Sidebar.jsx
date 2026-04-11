@@ -3,6 +3,7 @@ import React from 'react';
 export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabChange }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', iconSrc: '/dashboard.svg' },
+    { id: 'profile', label: 'Profile', iconSrc: '/profile.svg' },
     { id: 'appointments', label: 'Appointments', iconSrc: '/appoinments.svg' },
     { id: 'explore', label: 'Explore', iconSrc: '/explore.svg' },
     { id: 'favorites', label: 'Favorites', iconSrc: '/fav.svg' },

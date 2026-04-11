@@ -7,6 +7,7 @@ import SignIn from './pages/auth/SignIn';
 import VerificationCode from './pages/auth/VerificationCode';
 import ResetPassword from './pages/auth/ResetPassword';
 import PatientDashboard from './pages/patientDashboard/Dashboard';
+import PatientProfile from './pages/patientDashboard/Profile';
 import PatientAppointments from './pages/patientDashboard/Appointments';
 import PatientExplore from './pages/patientDashboard/Explore';
 import PatientFavorites from './pages/patientDashboard/Favorites';
@@ -18,6 +19,7 @@ import DoctorDashboard from './pages/doctorDashboard/Dashboard';
 import DoctorProfile from './pages/doctorDashboard/Profile';
 import DoctorReviewsPage from './pages/doctorDashboard/Reviews';
 import DoctorSchedule from './pages/doctorDashboard/Schedule';
+import DoctorAppointments from './pages/doctorDashboard/Appointments';
 import DoctorClinic from './pages/doctorDashboard/Clinic';
 import DoctorAvailability from './pages/doctorDashboard/Availability';
 import DoctorStreaming from './pages/doctorDashboard/Streaming';
@@ -73,6 +75,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
               <PatientDashboard />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/dashboard/profile"
+          element={(
+            <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
+              <PatientProfile />
             </RequireRoleAuth>
           )}
         />
@@ -161,6 +171,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
               <DoctorSchedule />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/doctor/dashboard/appointments"
+          element={(
+            <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
+              <DoctorAppointments />
             </RequireRoleAuth>
           )}
         />

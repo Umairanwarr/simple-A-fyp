@@ -159,11 +159,11 @@ export default function AppointmentHistory() {
             </div>
 
             <div className="mt-5 pt-5 border-t border-gray-100 flex items-center gap-3">
-              <div className="w-[52px] h-[52px] bg-transparent shrink-0 flex items-end">
+              <div className="w-[52px] h-[52px] rounded-full overflow-hidden bg-[#F3F4F6] border border-gray-100 shrink-0">
                 <img
                   src={appointment.doctor.image}
                   alt={appointment.doctor.name}
-                  className="w-[120%] h-[120%] object-contain object-bottom -ml-2"
+                  className="w-full h-full object-cover object-center"
                 />
               </div>
               <div>
