@@ -367,11 +367,10 @@ export default function MySchedulePage() {
                               return (
                                 <div
                                   key={appointment.id}
-                                  className={`rounded-xl border px-3 py-2.5 shadow-sm ${
-                                    isCancelled
+                                  className={`rounded-xl border px-3 py-2.5 shadow-sm ${isCancelled
                                       ? 'bg-[#FEE2E2] border-[#FCA5A5]'
                                       : 'bg-[#DFF4F1] border-[#A7E3DB]'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center justify-between gap-2">
                                     <p className={`text-[14px] font-bold ${isCancelled ? 'text-[#991B1B]' : 'text-[#1F2432]'}`}>
