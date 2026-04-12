@@ -1,20 +1,21 @@
 import React from 'react';
-import { getClinicSessionProfile } from '../../utils/authSession';
+import { getMedicalStoreSessionProfile } from '../../utils/authSession';
 
 const tabTitles = {
-  analytics: 'Clinic Performance Analytics',
-  staff: 'Medical Staff Management',
-  subscriptions: 'Facility Plans & Advertising',
-  media: 'Promotional Assets & Media',
-  streaming: 'Clinic-Wide Broadcasting',
+  analytics: 'Store Analytics',
+  inventory: 'Inventory Management',
+  subscriptions: 'Subscription & Ads Manager',
+  orders: 'Order & Prescription Management',
+  media: 'Media Uploading',
+  delivery: 'Delivery Logistics'
 };
 
-export default function ClinicHeader({ onMenuClick, activeTab, onAvatarClick }) {
+export default function StoreHeader({ onMenuClick, activeTab, onAvatarClick }) {
   const {
-    name: clinicName,
-    email: clinicEmail,
-    avatarUrl: clinicAvatarUrl
-  } = getClinicSessionProfile();
+    name: storeName,
+    email: storeEmail,
+    avatarUrl: storeAvatarUrl
+  } = getMedicalStoreSessionProfile();
 
   return (
     <header className="flex items-center justify-between gap-4 py-6 md:py-8 lg:py-10 bg-[#FAFAFB]/80 backdrop-blur-md sticky top-0 z-40 transition-all duration-300 w-full min-w-0">
@@ -28,8 +29,8 @@ export default function ClinicHeader({ onMenuClick, activeTab, onAvatarClick }) 
         </button>
 
         <div className="hidden sm:block min-w-0">
-          <h1 className="text-[20px] md:text-[22px] lg:text-[26px] font-semibold text-[#1F2432] tracking-tight truncate">{tabTitles[activeTab] || 'Clinic Dashboard'}</h1>
-          <p className="text-[12px] lg:text-[13px] text-gray-400 font-medium tracking-wide truncate">Manage your facility operations efficiently</p>
+          <h1 className="text-[20px] md:text-[22px] lg:text-[26px] font-semibold text-[#1F2432] tracking-tight truncate">{tabTitles[activeTab] || 'Medical Store Dashboard'}</h1>
+          <p className="text-[12px] lg:text-[13px] text-gray-400 font-medium tracking-wide truncate">Manage your store operations efficiently</p>
         </div>
       </div>
 
@@ -50,12 +51,12 @@ export default function ClinicHeader({ onMenuClick, activeTab, onAvatarClick }) 
           <span className="absolute top-3.5 right-3.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
 
-        {/* Clinic Profile */}
+        {/* Store Profile */}
         <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-gray-200">
           <div className="hidden sm:block text-right">
-            <p className="text-[14px] font-bold text-[#1F2432]">{clinicName}</p>
+            <p className="text-[14px] font-bold text-[#1F2432]">{storeName}</p>
             <p className="text-[11px] font-bold text-[#1EBDB8] uppercase tracking-[0.1em]">
-              {clinicEmail || 'Facility Admin'}
+              {storeEmail || 'Store Admin'}
             </p>
           </div>
           <button
@@ -66,8 +67,8 @@ export default function ClinicHeader({ onMenuClick, activeTab, onAvatarClick }) 
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#1EBDB8] to-[#1CAAAE] p-0.5 shadow-lg group-hover:scale-105 transition-transform duration-300">
               <div className="w-full h-full bg-white rounded-2xl overflow-hidden border-2 border-white">
                 <img 
-                  src={clinicAvatarUrl}
-                  alt={clinicName}
+                  src={storeAvatarUrl}
+                  alt={storeName}
                   className="w-full h-full object-cover"
                 />
               </div>

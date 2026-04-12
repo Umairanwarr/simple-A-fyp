@@ -15,6 +15,10 @@ import PatientHistory from './pages/patientDashboard/History';
 import PatientChats from './pages/patientDashboard/Chats';
 import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
+import ClinicStaff from './pages/clinicDashboard/Staff';
+import ClinicSubscriptions from './pages/clinicDashboard/Subscriptions';
+import ClinicMedia from './pages/clinicDashboard/Media';
+import ClinicStreaming from './pages/clinicDashboard/Streaming';
 import DoctorDashboard from './pages/doctorDashboard/Dashboard';
 import DoctorProfile from './pages/doctorDashboard/Profile';
 import DoctorReviewsPage from './pages/doctorDashboard/Reviews';
@@ -27,6 +31,11 @@ import DoctorSubscriptions from './pages/doctorDashboard/Subscriptions';
 import DoctorPrescriptions from './pages/doctorDashboard/Prescriptions';
 import DoctorMedia from './pages/doctorDashboard/Media';
 import StoreDashboard from './pages/storeDashboard/Dashboard';
+import StoreInventory from './pages/storeDashboard/Inventory';
+import StoreSubscriptions from './pages/storeDashboard/Subscriptions';
+import StoreOrders from './pages/storeDashboard/Orders';
+import StoreMedia from './pages/storeDashboard/Media';
+import StoreDelivery from './pages/storeDashboard/Delivery';
 import AdminLogin from './pages/admin/adminLogin/AdminLogin';
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard';
 import Patients from './pages/admin/dashboard/users/Patients';
@@ -143,6 +152,38 @@ function App() {
           )}
         />
         <Route
+          path="/clinic/dashboard/staff"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicStaff />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/clinic/dashboard/subscriptions"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicSubscriptions />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/clinic/dashboard/media"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicMedia />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/clinic/dashboard/streaming"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicStreaming />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
           path="/doctor/dashboard"
           element={(
             <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
@@ -235,6 +276,46 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
               <StoreDashboard />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/inventory"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreInventory />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/subscriptions"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreSubscriptions />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/orders"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreOrders />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/media"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreMedia />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/delivery"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreDelivery />
             </RequireRoleAuth>
           )}
         />

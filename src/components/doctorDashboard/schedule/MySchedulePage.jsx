@@ -262,8 +262,8 @@ export default function MySchedulePage() {
   }, [normalizedAppointments]);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-[30px] border border-gray-100 shadow-sm">
+    <div className="space-y-6 w-full min-w-0">
+      <div className="bg-white p-6 rounded-[30px] border border-gray-100 shadow-sm w-full min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="inline-flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 bg-[#FCFCFD]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#1EBDB8]">
@@ -306,13 +306,13 @@ export default function MySchedulePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[30px] border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[30px] border border-gray-100 shadow-sm overflow-hidden w-full min-w-0">
         {isLoading ? (
           <div className="px-6 py-10 text-center text-[14px] font-medium text-gray-500">
             Loading your schedule...
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full custom-scrollbar">
             <div className="min-w-[1080px]">
               <div
                 className="grid border-b border-gray-200"

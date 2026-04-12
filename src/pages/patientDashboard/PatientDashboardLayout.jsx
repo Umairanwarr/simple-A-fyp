@@ -437,8 +437,8 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
         onLogout={handleLogout}
       />
 
-      <div className="flex-1 ml-0 lg:ml-[260px] flex flex-col relative h-screen w-full">
-        <div className="px-5 sm:px-10 lg:px-14 flex-1 h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex-1 min-w-0 ml-0 lg:ml-[260px] flex flex-col relative h-screen">
+        <div className="px-5 sm:px-10 lg:px-14 flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <Header
             onMenuClick={() => setIsSidebarOpen(true)}
             onAvatarClick={handleOpenAvatarModal}

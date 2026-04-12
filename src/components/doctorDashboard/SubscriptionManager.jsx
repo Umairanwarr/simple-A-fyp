@@ -53,7 +53,7 @@ export default function SubscriptionManager() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-4 lg:gap-5 xl:gap-8 max-w-[1340px] mx-auto items-stretch">
         {plans.map((plan, idx) => (
           <div key={idx} className="flex flex-col h-full group pt-10">
-            <div className={`flex-1 bg-[#1F2432] flex flex-col relative transition-all duration-300 border border-white/5 hover:border-[#1EBDB8]/40 hover:shadow-2xl rounded-[24px] sm:rounded-[32px] overflow-hidden ${plan.isPopular ? 'ring-2 ring-[#1EBDB8]/30 -mt-10 mb-0' : 'mt-0'}`}>
+            <div className={`flex-1 bg-[#1F2432] flex flex-col relative transition-all duration-300 border border-white/5 hover:border-[#1EBDB8]/40 hover:shadow-2xl rounded-[24px] sm:rounded-[32px] overflow-hidden ${plan.isPopular ? 'ring-2 ring-[#1EBDB8]/30 md:-mt-10 md:mb-0' : 'mt-0'}`}>
               
               {/* Integrated Header Bar */}
               {plan.isPopular && (
@@ -62,22 +62,22 @@ export default function SubscriptionManager() {
                 </div>
               )}
               
-              <div className="flex-1 p-5 sm:p-6 lg:p-7 xl:p-10 flex flex-col">
+              <div className="flex-1 p-5 md:p-4 lg:p-5 xl:p-8 flex flex-col">
                 <div className="mb-5 sm:mb-8">
-                  <div className="flex flex-col min-[1200px]:flex-row min-[1200px]:items-center justify-between gap-2 mb-2">
-                    <div className="flex items-baseline gap-2 flex-wrap min-w-0">
-                      <h3 className="text-[18px] sm:text-[20px] lg:text-[22px] xl:text-[24px] font-bold text-white tracking-tight leading-none truncate">{plan.name}</h3>
-                      <span className="text-[11px] lg:text-[13px] xl:text-[14px] text-white/30 font-medium">{plan.label}</span>
+                  <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2 mb-2">
+                    <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
+                      <h3 className="text-[18px] md:text-[16px] lg:text-[18px] xl:text-[24px] font-bold text-white tracking-tight leading-none break-words">{plan.name}</h3>
+                      <span className="text-[11px] md:text-[10px] lg:text-[11px] xl:text-[14px] text-white/30 font-medium">{plan.label}</span>
                     </div>
                     {plan.isActive && (
-                      <span className="inline-block self-start min-[1200px]:self-auto text-[8px] xl:text-[9px] font-bold text-[#1EBDB8] bg-[#1EBDB8]/10 px-2.5 py-1 rounded-full uppercase tracking-wider border border-[#1EBDB8]/20 shrink-0">
+                      <span className="inline-block self-start xl:self-auto text-[8px] xl:text-[9px] font-bold text-[#1EBDB8] bg-[#1EBDB8]/10 px-2 py-1 rounded-full uppercase tracking-wider border border-[#1EBDB8]/20 shrink-0">
                         Active
                       </span>
                     )}
                   </div>
-                  <div className="mt-4 sm:mt-6 flex flex-col min-[1400px]:flex-row min-[1400px]:items-baseline gap-1">
-                    <span className="text-[24px] sm:text-[30px] lg:text-[34px] xl:text-[48px] font-bold text-white leading-none break-all">${plan.price}</span>
-                    <span className="text-[11px] lg:text-[13px] xl:text-[16px] font-medium text-white/30 tracking-tight">/month</span>
+                  <div className="mt-4 sm:mt-6 flex flex-col xl:flex-row xl:items-baseline gap-1">
+                    <span className="text-[24px] md:text-[22px] lg:text-[28px] xl:text-[44px] font-bold text-white leading-none tracking-tight">${plan.price}</span>
+                    <span className="text-[11px] md:text-[10px] lg:text-[12px] xl:text-[15px] font-medium text-white/30 tracking-tight">/month</span>
                   </div>
                 </div>
 
@@ -98,8 +98,8 @@ export default function SubscriptionManager() {
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className={`text-[10px] sm:text-[11px] xl:text-[13px] font-medium leading-[1.3] ${feature.value === 'No' ? 'text-white/25' : 'text-white/45'}`}>{feature.label}</span>
-                        <span className={`text-[12px] sm:text-[14px] xl:text-[15px] font-semibold leading-[1.3] truncate ${feature.value === 'No' ? 'text-white/15' : 'text-white/90'}`}>{feature.value}</span>
+                        <span className={`text-[10px] md:text-[9px] lg:text-[11px] xl:text-[13px] font-medium leading-[1.3] ${feature.value === 'No' ? 'text-white/25' : 'text-white/45'}`}>{feature.label}</span>
+                        <span className={`text-[12px] md:text-[11px] lg:text-[12px] xl:text-[15px] font-semibold leading-[1.4] break-words ${feature.value === 'No' ? 'text-white/15' : 'text-white/90'}`}>{feature.value}</span>
                       </div>
                     </li>
                   ))}
@@ -108,13 +108,13 @@ export default function SubscriptionManager() {
                 <div className="mt-auto pt-4">
                   {plan.isActive ? (
                     <div className="flex justify-center">
-                      <div className="w-18 h-18 sm:w-22 sm:h-22 xl:w-26 xl:h-26 rounded-full border-2 border-white/10 flex items-center justify-center text-center p-2 sm:p-3 bg-white/5">
-                        <span className="text-[10px] sm:text-[12px] xl:text-[13px] font-bold text-white/30 leading-tight">Already using</span>
+                      <div className="w-[72px] h-[72px] md:w-[64px] md:h-[64px] lg:w-[88px] lg:h-[88px] xl:w-[104px] xl:h-[104px] rounded-full border-2 border-white/10 flex items-center justify-center text-center p-2 bg-white/5 shrink-0">
+                        <span className="text-[10px] md:text-[9px] lg:text-[11px] xl:text-[13px] font-bold text-white/30 leading-tight">Already using</span>
                       </div>
                     </div>
                   ) : (
                     <button
-                      className="w-full py-3.5 sm:py-4 xl:py-4.5 rounded-[14px] sm:rounded-[24px] font-bold text-[15px] sm:text-[17px] bg-[#1EBDB8] text-white hover:bg-[#1CAAAE] shadow-[0_12px_24px_-8px_rgba(30,189,184,0.4)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
+                      className="w-full py-3.5 md:py-3 lg:py-4 xl:py-4.5 rounded-[14px] md:rounded-[16px] lg:rounded-[20px] xl:rounded-[24px] font-bold text-[15px] md:text-[13px] lg:text-[15px] xl:text-[17px] bg-[#1EBDB8] text-white hover:bg-[#1CAAAE] shadow-[0_12px_24px_-8px_rgba(30,189,184,0.4)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
                     >
                       {plan.buttonText}
                     </button>

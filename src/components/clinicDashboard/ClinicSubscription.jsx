@@ -3,79 +3,100 @@ import React from 'react';
 export default function ClinicSubscription() {
   const plans = [
     { 
-      name: 'Standard Clinic', 
-      price: '49', 
-      features: ['Up to 5 Doctors', 'Basic Clinic Analytics', 'Digital Prescriptions'],
-      description: 'Ideal for small private clinics and specialty centers.',
-      buttonText: 'Current Plan',
+      name: 'Platinum (Basic)', 
+      price: '0', 
+      features: [
+        'Ranking Boost: Low', 
+        'Media Uploads: 2 Images', 
+        'Video Calls: No',
+        'Live Streaming: No',
+        'Ads Manager: Limited',
+        'Analytics: Basic'
+      ],
+      description: 'Ideal for basic visibility and starting out.',
+      buttonText: 'Already using',
       isActive: true 
     },
     { 
-      name: 'Premium Facility', 
-      price: '199', 
-      features: ['Up to 25 Doctors', 'Advanced Staff Analytics', 'Promotional Media Ad Credits'],
-      description: 'Best for growing multi-specialty medical centers.',
+      name: 'Gold (Pro)', 
+      price: '9.99', 
+      features: [
+        'Ranking Boost: Medium', 
+        'Media: 5 Images + 1 Video', 
+        'Video Calls: Yes (1-on-1)', 
+        'Live Streaming: No',
+        'Ads Manager: Standard', 
+        'Analytics: Standard'
+      ],
+      description: 'Best for growing clinics needing premium placement.',
       buttonText: 'Upgrade Now',
       isPopular: true 
     },
     { 
-      name: 'Diamond Network', 
-      price: '499', 
-      features: ['Unlimited Doctors', 'Full Network Analytics', 'Clinic-Wide Live Streaming'],
-      description: 'The ultimate solution for hospital networks and large facilities.',
+      name: 'Diamond (Premium)', 
+      price: '29.99', 
+      features: [
+        'Ranking Boost: High', 
+        'Media Uploads: Unlimited Media', 
+        'Video Calls: Yes (1-on-1)', 
+        'Live Streaming: Yes (Multi-Guest)', 
+        'Ads Manager: Full Control', 
+        'Analytics: Advanced'
+      ],
+      description: 'The ultimate solution for full network presence.',
       buttonText: 'Upgrade Now' 
     },
   ];
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 pb-10">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch px-4">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-10 min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch px-4 min-w-0">
         {plans.map((plan, idx) => (
-          <div key={idx} className="flex flex-col h-full group">
+          <div key={idx} className="flex flex-col h-full group min-w-0">
             {/* Simple Badge */}
             {plan.isPopular ? (
-              <div className="bg-[#1EBDB8] text-white text-[11px] font-bold py-2 px-6 rounded-t-2xl text-center uppercase tracking-wider">
+              <div className="bg-[#1EBDB8] text-white text-[11px] font-bold py-2 px-6 rounded-t-2xl text-center uppercase tracking-wider shrink-0">
                 Most Popular
               </div>
             ) : (
-              <div className="h-[35px]" />
+              <div className="h-[35px] shrink-0" />
             )}
             
-            <div className={`flex-1 bg-[#1F2432] p-8 flex flex-col relative transition-all duration-300 border border-white/5 hover:border-[#1EBDB8]/40 hover:shadow-2xl ${plan.isPopular ? 'rounded-b-2xl ring-1 ring-[#1EBDB8]/10' : 'rounded-2xl'}`}>
+            <div className={`flex-1 bg-[#1F2432] p-6 lg:p-8 flex flex-col relative transition-all duration-300 border border-white/5 hover:border-[#1EBDB8]/40 hover:shadow-2xl min-w-0 ${plan.isPopular ? 'rounded-b-2xl ring-1 ring-[#1EBDB8]/10' : 'rounded-2xl'}`}>
               
-              <div className="mb-8 text-left">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
+              <div className="mb-6 lg:mb-8 text-left min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 min-w-0">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white truncate">{plan.name}</h3>
                   {plan.isActive && (
-                    <span className="text-[10px] font-bold text-[#1EBDB8] bg-[#1EBDB8]/10 px-2 py-0.5 rounded-md uppercase tracking-wider border border-[#1EBDB8]/20">
+                    <span className="text-[10px] font-bold text-[#1EBDB8] bg-[#1EBDB8]/10 px-2 py-0.5 rounded-md uppercase tracking-wider border border-[#1EBDB8]/20 shrink-0">
                       Active
                     </span>
                   )}
                 </div>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-1 mt-4">
                   <span className="text-3xl font-bold text-white leading-none">${plan.price}</span>
-                  <span className="text-sm font-medium text-white/50">/mo</span>
+                  <span className="text-xs font-medium text-white/50">/mo</span>
                 </div>
-                <p className="mt-3 text-[13px] text-white/40 leading-relaxed font-medium">{plan.description}</p>
+                <p className="mt-3 text-[12px] lg:text-[13px] text-white/40 leading-relaxed font-medium min-w-0 break-words">{plan.description}</p>
               </div>
 
-              <div className="h-px bg-white/5 w-full mb-8" />
+              <div className="h-px bg-white/5 w-full mb-6 lg:mb-8" />
 
-              <ul className="space-y-4 mb-10 flex-1">
+              <ul className="space-y-3 lg:space-y-4 mb-8 lg:mb-10 flex-1 min-w-0">
                 {plan.features.map((feature, fidx) => (
-                  <li key={fidx} className="flex items-start gap-2.5">
-                    <div className="shrink-0 w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[#1EBDB8] border border-white/10 mt-0.5">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <li key={fidx} className="flex items-start gap-2.5 min-w-0">
+                    <div className="shrink-0 w-4 h-4 lg:w-5 lg:h-5 rounded-full bg-white/5 flex items-center justify-center text-[#1EBDB8] border border-white/10 mt-0.5">
+                      <svg width="10" height="10" className="lg:w-[12px] lg:h-[12px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <span className="text-[14px] text-white/80 font-normal leading-relaxed">{feature}</span>
+                    <span className="text-[13px] lg:text-[14px] text-white/80 font-normal leading-[1.4] break-words">{feature}</span>
                   </li>
                 ))}
               </ul>
 
               <button
-                className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`w-full py-3 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-300 mt-auto shrink-0 ${
                   plan.isActive
                     ? 'bg-white/5 text-white/30 cursor-default border border-white/5'
                     : 'bg-[#1EBDB8] text-white hover:bg-[#1CAAAE] shadow-lg hover:shadow-[#1EBDB8]/30 hover:-translate-y-1'

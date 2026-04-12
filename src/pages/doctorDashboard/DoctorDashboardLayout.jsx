@@ -214,8 +214,8 @@ export default function DoctorDashboardLayout({ activeTab = 'analytics', childre
         onLogout={handleLogout}
       />
 
-      <div className="flex-1 ml-0 lg:ml-[260px] flex flex-col relative h-screen w-full">
-        <div className="px-5 sm:px-10 lg:px-14 flex-1 h-full overflow-y-auto overflow-x-hidden pb-10 custom-scrollbar">
+      <div className="flex-1 min-w-0 ml-0 lg:ml-[260px] flex flex-col relative h-screen">
+        <div className="px-5 sm:px-10 lg:px-14 flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden pb-10 custom-scrollbar">
           <Header
             onMenuClick={() => setIsSidebarOpen(true)}
             activeTab={activeTab}
