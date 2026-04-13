@@ -30,6 +30,7 @@ import DoctorStreaming from './pages/doctorDashboard/Streaming';
 import DoctorSubscriptions from './pages/doctorDashboard/Subscriptions';
 import DoctorPrescriptions from './pages/doctorDashboard/Prescriptions';
 import DoctorMedia from './pages/doctorDashboard/Media';
+import DoctorChats from './pages/doctorDashboard/Chats';
 import StoreDashboard from './pages/storeDashboard/Dashboard';
 import StoreInventory from './pages/storeDashboard/Inventory';
 import StoreSubscriptions from './pages/storeDashboard/Subscriptions';
@@ -42,6 +43,9 @@ import Patients from './pages/admin/dashboard/users/Patients';
 import Doctors from './pages/admin/dashboard/users/Doctors';
 import Clinics from './pages/admin/dashboard/users/Clinics';
 import Stores from './pages/admin/dashboard/users/Stores';
+import SubscriptionPricing from './pages/admin/dashboard/subscriptions/SubscriptionPricing';
+import PremiumUsers from './pages/admin/dashboard/subscriptions/PremiumUsers';
+import MediaModeration from './pages/admin/dashboard/media/MediaModeration';
 import DoctorReviews from './pages/admin/dashboard/reviews/DoctorReviews';
 import BugReports from './pages/admin/dashboard/bugs/BugReports';
 import RequireAdminAuth from './components/admin/auth/RequireAdminAuth';
@@ -248,6 +252,14 @@ function App() {
           )}
         />
         <Route
+          path="/doctor/dashboard/chats"
+          element={(
+            <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
+              <DoctorChats />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
           path="/doctor/dashboard/subscriptions"
           element={(
             <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
@@ -364,6 +376,30 @@ function App() {
           element={(
             <RequireAdminAuth>
               <Stores />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/subscription-pricing"
+          element={(
+            <RequireAdminAuth>
+              <SubscriptionPricing />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/premium-users"
+          element={(
+            <RequireAdminAuth>
+              <PremiumUsers />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/media-moderation"
+          element={(
+            <RequireAdminAuth>
+              <MediaModeration />
             </RequireAdminAuth>
           )}
         />

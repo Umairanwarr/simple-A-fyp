@@ -521,6 +521,139 @@ export const fetchDoctorAppointments = async (token) => {
   });
 };
 
+export const fetchDoctorSubscriptionPricing = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/doctor/subscription-pricing', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const fetchDoctorSubscriptionStatus = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/doctor/subscription/status', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const createDoctorSubscriptionCheckoutSession = async (token, payload = {}) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/doctor/subscription/checkout-session', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
+  });
+};
+
+export const confirmDoctorSubscriptionCheckoutSession = async (token, sessionId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!sessionId) {
+    throw new Error('Stripe session id is required');
+  }
+
+  return apiRequest('/auth/doctor/subscription/confirm', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ sessionId })
+  });
+};
+
+export const cancelDoctorSubscription = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/doctor/subscription/cancel', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const fetchDoctorMediaLibrary = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/doctor/media', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const uploadDoctorMedia = async (token, file) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!file) {
+    throw new Error('Media file is required');
+  }
+
+  const formData = new FormData();
+  formData.append('media', file);
+
+  const response = await fetch(`${API_BASE_URL}/auth/doctor/media`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.message || 'Could not upload media');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+};
+
+export const deleteDoctorMedia = async (token, mediaId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!mediaId) {
+    throw new Error('Media id is required');
+  }
+
+  return apiRequest(`/auth/doctor/media/${mediaId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
 export const cancelDoctorUpcomingAppointment = async (token, appointmentId) => {
   if (!token) {
     throw new Error('Unauthorized: Missing token');
@@ -535,6 +668,24 @@ export const cancelDoctorUpcomingAppointment = async (token, appointmentId) => {
     headers: {
       Authorization: `Bearer ${token}`
     }
+  });
+};
+
+export const rescheduleDoctorAppointment = async (token, appointmentId, payload = {}) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!appointmentId) {
+    throw new Error('Appointment id is required');
+  }
+
+  return apiRequest(`/auth/doctor/appointments/${appointmentId}/reschedule`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
   });
 };
 
@@ -820,6 +971,80 @@ export const fetchAdminStats = async (token) => {
     headers: {
       Authorization: `Bearer ${token}`
     }
+  });
+};
+
+export const fetchAdminDoctorMediaModeration = async (token, { status = 'pending', query = '' } = {}) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  const searchParams = new URLSearchParams();
+
+  if (String(status || '').trim()) {
+    searchParams.set('status', String(status || '').trim());
+  }
+
+  if (String(query || '').trim()) {
+    searchParams.set('q', String(query || '').trim());
+  }
+
+  const queryString = searchParams.toString();
+  const endpointPath = `/auth/admin/media-moderation${queryString ? `?${queryString}` : ''}`;
+
+  return apiRequest(endpointPath, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const reviewAdminDoctorMedia = async (token, mediaId, status, note = '') => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!mediaId) {
+    throw new Error('Media id is required');
+  }
+
+  return apiRequest(`/auth/admin/media-moderation/${mediaId}/review`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      status,
+      note
+    })
+  });
+};
+
+export const fetchAdminDoctorSubscriptionPricing = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/admin/subscription-pricing/doctor', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const updateAdminDoctorSubscriptionPricing = async (token, payload = {}) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/admin/subscription-pricing/doctor', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
   });
 };
 

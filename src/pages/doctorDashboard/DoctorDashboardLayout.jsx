@@ -36,6 +36,7 @@ const TAB_PATHS = {
 export default function DoctorDashboardLayout({ activeTab = 'analytics', children }) {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [, setDoctorSessionVersion] = useState(0);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isAvatarMandatory, setIsAvatarMandatory] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -50,6 +51,18 @@ export default function DoctorDashboardLayout({ activeTab = 'analytics', childre
       setIsAvatarMandatory(true);
       setIsAvatarModalOpen(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleDoctorSessionUpdated = () => {
+      setDoctorSessionVersion((currentVersion) => currentVersion + 1);
+    };
+
+    window.addEventListener('doctor-session-updated', handleDoctorSessionUpdated);
+
+    return () => {
+      window.removeEventListener('doctor-session-updated', handleDoctorSessionUpdated);
+    };
   }, []);
 
   useEffect(() => {

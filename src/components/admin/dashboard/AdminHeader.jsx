@@ -121,9 +121,17 @@ export default function AdminHeader({ onMenuClick }) {
   }, []);
 
   const getNotificationTargetPath = (notification) => {
-    return String(notification?.type || '').trim().toLowerCase() === 'bug_report_submitted'
-      ? '/admin/bug-reports'
-      : '/admin/reviews';
+    const notificationType = String(notification?.type || '').trim().toLowerCase();
+
+    if (notificationType === 'bug_report_submitted') {
+      return '/admin/bug-reports';
+    }
+
+    if (notificationType === 'doctor_media_uploaded') {
+      return '/admin/media-moderation';
+    }
+
+    return '/admin/reviews';
   };
 
   const markReviewNotificationsAsRead = async () => {
@@ -239,7 +247,7 @@ export default function AdminHeader({ onMenuClick }) {
 
               {!loadingNotifications && reviewNotificationPreview.length === 0 && pendingNotificationPreview.length === 0 && (
                 <div className="px-2 py-4 text-[12px] font-medium text-gray-500">
-                  No new review, bug report, or pending application notifications right now.
+                  No new review, media upload, bug report, or pending application notifications right now.
                 </div>
               )}
 
@@ -311,7 +319,7 @@ export default function AdminHeader({ onMenuClick }) {
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-4 gap-2 mt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -331,6 +339,16 @@ export default function AdminHeader({ onMenuClick }) {
                 className="text-[12px] font-bold text-[#1EBDB8] py-2 rounded-lg hover:bg-[#1EBDB8]/10 transition-colors"
               >
                 View Bugs
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  markReviewNotificationsAsRead();
+                  navigate('/admin/media-moderation');
+                }}
+                className="text-[12px] font-bold text-[#1EBDB8] py-2 rounded-lg hover:bg-[#1EBDB8]/10 transition-colors"
+              >
+                View Media
               </button>
               <button
                 type="button"

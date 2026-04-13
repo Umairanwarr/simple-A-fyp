@@ -121,6 +121,43 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
             </div>
 
             <a 
+              href="/admin/subscription-pricing"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/subscription-pricing') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1v22"></path>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              Subscription Pricing
+            </a>
+
+            <a
+              href="/admin/premium-users"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/premium-users') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 3 7 3 17 12 22 21 17 21 7 12 2"></polygon>
+                <path d="M12 8v8"></path>
+                <path d="M8.5 10.5 12 8l3.5 2.5"></path>
+              </svg>
+              Premium Users
+            </a>
+
+            <a
+              href="/admin/media-moderation"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/media-moderation') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                <path d="M8 21h8"></path>
+                <path d="M12 17v4"></path>
+                <circle cx="8" cy="9" r="1.6"></circle>
+                <path d="m22 13-4.5-4.5-6 6-3-3L2 17"></path>
+              </svg>
+              Media Moderation
+            </a>
+
+            <a 
               href="/admin/reviews"
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/reviews') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
             >

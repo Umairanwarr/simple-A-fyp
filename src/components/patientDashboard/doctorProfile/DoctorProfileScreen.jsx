@@ -243,6 +243,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
   const [selectedMode, setSelectedMode] = useState('online');
   const [selectedSlotId, setSelectedSlotId] = useState('');
   const [activeTab, setActiveTab] = useState('about');
+  const [previewMedia, setPreviewMedia] = useState(null);
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState(createDefaultBookingForm());
   const [isBookingProcessing, setIsBookingProcessing] = useState(false);
@@ -281,6 +282,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         setLoadError('');
         setSelectedSlotId('');
         setIsBookingFormOpen(false);
+        setPreviewMedia(null);
         setBookingForm(createDefaultBookingForm());
         setIsBookingProcessing(false);
 
@@ -377,6 +379,24 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       setIsBookingFormOpen(false);
     }
   }, [isBookingFormOpen, selectedSlot]);
+
+  useEffect(() => {
+    if (!previewMedia) {
+      return undefined;
+    }
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setPreviewMedia(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapeKey);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [previewMedia]);
 
   const handleBookingFieldChange = (field) => (event) => {
     const value = event?.target?.value || '';
@@ -697,7 +717,8 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
+    <>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
       {/* Left Column (Profile info) */}
       <section className="bg-transparent p-4 sm:p-6 lg:p-8 shrink-0">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 mb-10">
@@ -710,11 +731,13 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
             <p className="text-[22px] font-semibold text-[#1F2432]">{doctor.specialty} Primary Care Doctor</p>
             <p className="text-[18px] font-medium text-[#6B7280]">{doctor.location || 'Doctors Address'}</p>
             <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 text-[16px] font-medium">
-                <span className="text-red-500">Closed</span>
-                <span className="text-[#9CA3AF]">•</span>
-                <span className="text-[#6B7280]">Opens 9 AM Mon</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span className="text-[#1F2432] font-semibold">{doctor.rating || '0.00'}</span>
+              <span className="text-[#9CA3AF]">•</span>
+              <span className="text-[#6B7280]">{doctor.reviews || '0 reviews'}</span>
             </div>
-            {/* Keeping rating hidden based on image layout */}
           </div>
         </div>
 
@@ -729,6 +752,17 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
             }`}
           >
             About
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('gallery')}
+            className={`pb-3 text-[16px] font-bold border-b-2 transition-colors ${
+              activeTab === 'gallery'
+                ? 'border-[#1F2432] text-[#1F2432]'
+                : 'border-transparent text-[#6B7280] hover:text-[#1F2432]'
+            }`}
+          >
+            Gallery
           </button>
           <button
             type="button"
@@ -775,6 +809,37 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                       </div>
                       <p className="text-[14px] text-[#4B5563] leading-relaxed">{review.comment}</p>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'gallery' && (
+            <div className="space-y-4">
+              <h2 className="text-[19px] font-bold text-[#1F2432]">Gallery</h2>
+
+              {!Array.isArray(doctor.gallery) || doctor.gallery.length === 0 ? (
+                <div className="bg-[#F9FAFB] rounded-xl p-6 text-center border border-gray-100">
+                  <p className="text-[14px] font-medium text-[#6B7280]">No gallery media yet.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {doctor.gallery.map((mediaItem) => (
+                    <button
+                      key={mediaItem.id}
+                      type="button"
+                      onClick={() => setPreviewMedia(mediaItem)}
+                      className="rounded-xl overflow-hidden border border-gray-100 bg-white text-left hover:shadow-md transition-shadow"
+                    >
+                      <div className="h-44 bg-gray-100">
+                        {String(mediaItem?.mediaType || '').trim().toLowerCase() === 'video' ? (
+                          <video src={mediaItem.url} className="w-full h-full object-cover" muted />
+                        ) : (
+                          <img src={mediaItem.url} alt="Doctor media" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -884,6 +949,39 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
           </button>
         ) : null}
       </section>
-    </div>
+      </div>
+
+      {previewMedia ? (
+        <div
+          className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setPreviewMedia(null)}
+        >
+          <div
+            className="relative w-full max-w-5xl max-h-[90vh] bg-[#0B1020] rounded-2xl overflow-hidden border border-white/15"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewMedia(null)}
+              className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-black/45 text-white hover:bg-black/60"
+              aria-label="Close preview"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <div className="w-full h-full max-h-[90vh] flex items-center justify-center bg-black">
+              {String(previewMedia?.mediaType || '').trim().toLowerCase() === 'video' ? (
+                <video src={previewMedia.url} controls autoPlay className="w-full h-full max-h-[90vh] object-contain" />
+              ) : (
+                <img src={previewMedia.url} alt="Gallery preview" className="w-full h-full max-h-[90vh] object-contain" />
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
