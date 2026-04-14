@@ -1,189 +1,317 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
 export default function VideoRoom({ channelName, token, appId, onEndCall }) {
-  const [localAudioTrack, setLocalAudioTrack] = useState(null);
-  const [localVideoTrack, setLocalVideoTrack] = useState(null);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [isVideoMuted, setIsVideoMuted] = useState(false);
-  const [remoteUsers, setRemoteUsers] = useState([]);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [remoteUsers, setRemoteUsers] = useState({});
+  const [joined, setJoined] = useState(false);
+
   const localPlayerRef = useRef(null);
   const clientRef = useRef(null);
+  const audioTrackRef = useRef(null);
+  const videoTrackRef = useRef(null);
 
+  // ─── Init Agora ───
   useEffect(() => {
-    let isMounted = true;
-    // Set Log Level to reduce noise
     AgoraRTC.setLogLevel(3);
     const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     clientRef.current = client;
 
-    const initAgora = async () => {
+    const handleUserPublished = async (user, mediaType) => {
+      await client.subscribe(user, mediaType);
+
+      if (mediaType === 'audio' && user.audioTrack) {
+        user.audioTrack.play();
+      }
+
+      setRemoteUsers(prev => ({ ...prev, [user.uid]: user }));
+    };
+
+    const handleUserUnpublished = (user, mediaType) => {
+      // Only update the user reference, don't remove them
+      setRemoteUsers(prev => ({ ...prev, [user.uid]: user }));
+    };
+
+    const handleUserLeft = (user) => {
+      setRemoteUsers(prev => {
+        const next = { ...prev };
+        delete next[user.uid];
+        return next;
+      });
+    };
+
+    client.on('user-published', handleUserPublished);
+    client.on('user-unpublished', handleUserUnpublished);
+    client.on('user-left', handleUserLeft);
+
+    const init = async () => {
       try {
-        client.on("user-published", async (user, mediaType) => {
-          await client.subscribe(user, mediaType);
-          
-          if (mediaType === 'audio') {
-            user.audioTrack.play();
-          }
+        await client.join(appId, channelName, token, null);
 
-          if (isMounted) {
-            setRemoteUsers(prev => {
-              const users = prev.filter(u => u.uid !== user.uid);
-              return [...users, user];
-            });
-          }
-        });
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        const videoTrack = await AgoraRTC.createCameraVideoTrack();
 
-        client.on("user-unpublished", (user) => {
-          if (isMounted) {
-            setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-          }
-        });
+        audioTrackRef.current = audioTrack;
+        videoTrackRef.current = videoTrack;
 
-        client.on("user-left", (user) => {
-          if (isMounted) {
-            setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-          }
-        });
+        await client.publish([audioTrack, videoTrack]);
 
-        const uid = await client.join(appId, channelName, token, null);
-        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-        
-        if (isMounted) {
-          setLocalAudioTrack(audioTrack);
-          setLocalVideoTrack(videoTrack);
-          await client.publish([audioTrack, videoTrack]);
+        if (localPlayerRef.current) {
+          videoTrack.play(localPlayerRef.current);
         }
+
+        setJoined(true);
       } catch (err) {
-        console.error("Agora Error", err);
+        console.error('Agora init error:', err);
       }
     };
 
-    initAgora();
+    init();
 
     return () => {
-      isMounted = false;
-      client.removeAllListeners();
-      if (localAudioTrack) {
-        localAudioTrack.stop();
-        localAudioTrack.close();
+      client.off('user-published', handleUserPublished);
+      client.off('user-unpublished', handleUserUnpublished);
+      client.off('user-left', handleUserLeft);
+
+      if (audioTrackRef.current) {
+        audioTrackRef.current.stop();
+        audioTrackRef.current.close();
+        audioTrackRef.current = null;
       }
-      if (localVideoTrack) {
-        localVideoTrack.stop();
-        localVideoTrack.close();
+      if (videoTrackRef.current) {
+        videoTrackRef.current.stop();
+        videoTrackRef.current.close();
+        videoTrackRef.current = null;
       }
-      if (clientRef.current) {
-        clientRef.current.leave();
-      }
+      client.leave().catch(() => {});
     };
-  }, [channelName, token, appId]);
+  }, [appId, channelName, token]);
 
-  useEffect(() => {
-    if (localVideoTrack && localPlayerRef.current) {
-      localVideoTrack.play(localPlayerRef.current);
+  // ─── Toggle Mic ───
+  const toggleAudio = useCallback(async () => {
+    const track = audioTrackRef.current;
+    if (!track) return;
+
+    if (isAudioMuted) {
+      await track.setEnabled(true);
+      setIsAudioMuted(false);
+    } else {
+      await track.setEnabled(false);
+      setIsAudioMuted(true);
     }
-  }, [localVideoTrack]);
+  }, [isAudioMuted]);
 
-  const toggleAudio = async () => {
-    if (localAudioTrack) {
-      await localAudioTrack.setMuted(!isAudioMuted);
-      setIsAudioMuted(!isAudioMuted);
+  // ─── Toggle Camera ───
+  const toggleVideo = useCallback(async () => {
+    const track = videoTrackRef.current;
+    if (!track) return;
+
+    if (isVideoOff) {
+      await track.setEnabled(true);
+      if (localPlayerRef.current) {
+        track.play(localPlayerRef.current);
+      }
+      setIsVideoOff(false);
+    } else {
+      await track.setEnabled(false);
+      setIsVideoOff(true);
     }
-  };
+  }, [isVideoOff]);
 
-  const toggleVideo = async () => {
-    if (localVideoTrack) {
-      await localVideoTrack.setMuted(!isVideoMuted);
-      setIsVideoMuted(!isVideoMuted);
-    }
-  };
-
-  // Robust fallback: if they don't hear audio, they can click anywhere to forcefully resume AudioContext
-  const forceResumeAudio = () => {
-    remoteUsers.forEach(u => {
-      if (u.audioTrack && !u.audioTrack.isPlaying) {
-        u.audioTrack.play();
+  // ─── Force resume any blocked remote audio when user clicks ───
+  const forceResumeAudio = useCallback(() => {
+    Object.values(remoteUsers).forEach(u => {
+      if (u.audioTrack) {
+        try { u.audioTrack.play(); } catch(e) {}
       }
     });
-  };
+  }, [remoteUsers]);
+
+  const remoteUserList = Object.values(remoteUsers);
 
   return (
-    <div className="absolute inset-0 z-50 bg-[#1F2432] flex flex-col rounded-[32px] overflow-hidden" onClick={forceResumeAudio}>
-      <div className="flex-1 relative flex gap-4 p-4">
-        {/* Render Remote Fullscreen */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/90 pointer-events-none">
-          {remoteUsers.map(user => (
-            <div key={user.uid} className="w-full h-full">
-              <RemoteVideoTrack user={user} />
-            </div>
-          ))}
-          {remoteUsers.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="w-16 h-16 rounded-full border-4 border-[#1EBDB8] border-t-transparent animate-spin"></div>
-              <span className="text-white/80 font-medium text-lg tracking-wide">Waiting for other party to join...</span>
+    <div
+      style={{
+        position: 'absolute', inset: 0, zIndex: 50,
+        background: '#1F2432', display: 'flex', flexDirection: 'column',
+        borderRadius: '24px', overflow: 'hidden',
+      }}
+      onClick={forceResumeAudio}
+    >
+      {/* ─── Video Area ─── */}
+      <div style={{ flex: 1, position: 'relative', display: 'flex', gap: '16px', padding: '16px' }}>
+        {/* Remote user fullscreen */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.9)',
+        }}>
+          {remoteUserList.length > 0 ? (
+            remoteUserList.map(user => (
+              <div key={user.uid} style={{ width: '100%', height: '100%' }}>
+                <RemoteVideoPlayer user={user} />
+              </div>
+            ))
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '50%',
+                border: '4px solid #1EBDB8', borderTopColor: 'transparent',
+                animation: 'spin 1s linear infinite',
+              }} />
+              <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: '18px' }}>
+                Waiting for other party to join...
+              </span>
             </div>
           )}
         </div>
-         
-        {/* Render local */}
-        <div className="relative w-1/4 h-1/4 min-w-[120px] min-h-[160px] max-w-[200px] max-h-[260px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl z-10 self-end mt-auto pointer-events-auto">
-          <div ref={localPlayerRef} className={`w-full h-full object-cover ${isVideoMuted ? 'hidden' : ''}`}></div>
-          {isVideoMuted && <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 4h.01" /></svg></div>}
-          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full flex gap-2 items-center">
-             {isAudioMuted && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>}
-            <span className="text-white text-xs font-bold tracking-wide">You {isAudioMuted ? '(Muted)' : ''}</span>
+
+        {/* Local user PIP */}
+        <div style={{
+          position: 'relative', width: '25%', height: '25%',
+          minWidth: '120px', minHeight: '160px', maxWidth: '200px', maxHeight: '260px',
+          background: '#1f2937', borderRadius: '16px', overflow: 'hidden',
+          border: '2px solid rgba(255,255,255,0.2)',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+          zIndex: 10, alignSelf: 'flex-end', marginTop: 'auto',
+        }}>
+          <div
+            ref={localPlayerRef}
+            style={{
+              width: '100%', height: '100%',
+              display: isVideoOff ? 'none' : 'block',
+            }}
+          />
+          {isVideoOff && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#111827', color: '#fff', fontSize: '32px',
+            }}>
+              📷
+            </div>
+          )}
+          <div style={{
+            position: 'absolute', bottom: '8px', left: '8px',
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+            padding: '4px 10px', borderRadius: '999px',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            {isAudioMuted && (
+              <div style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: '#ef4444', animation: 'pulse 2s infinite',
+              }} />
+            )}
+            <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>
+              You{isAudioMuted ? ' (Muted)' : ''}
+            </span>
           </div>
         </div>
       </div>
-      <div className="px-6 py-6 border-t border-white/10 bg-[#1a1f2c] flex justify-center items-center gap-6 relative z-20 pointer-events-auto">
-        <button 
-          onClick={toggleAudio}
-          className={`w-14 h-14 rounded-full flex justify-center items-center transition-all shadow-lg hover:scale-105 active:scale-95 ${isAudioMuted ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+
+      {/* ─── Controls Bar ─── */}
+      <div style={{
+        padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.1)',
+        background: '#1a1f2c', display: 'flex', justifyContent: 'center',
+        alignItems: 'center', gap: '20px', position: 'relative', zIndex: 20,
+      }}>
+        {/* Mic Toggle */}
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleAudio(); }}
+          style={{
+            width: '56px', height: '56px', borderRadius: '50%', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isAudioMuted ? '#ef4444' : '#374151',
+            transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+          }}
+          title={isAudioMuted ? 'Unmute' : 'Mute'}
         >
           {isAudioMuted ? (
-            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 14.14V11a7 7 0 00-14 0v3.14m14 0a1 1 0 01-1 1H6a1 1 0 01-1-1v-3.14m14 0v4.86a2 2 0 01-2 2H7a2 2 0 01-2-2v-4.86" /><line x1="3" y1="3" x2="21" y2="21" /></svg>
+            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" />
+              <path d="M17 16.95A7 7 0 015 12v-2m14 0v2c0 .76-.12 1.49-.34 2.18" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
           ) : (
-            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" /></svg>
+            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+              <path d="M19 10v2a7 7 0 01-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
           )}
         </button>
 
-        <button 
-          onClick={onEndCall} 
-          className="w-16 h-16 bg-red-600 rounded-[24px] flex justify-center items-center hover:bg-red-700 transition-all shadow-[0px_10px_20px_rgba(239,68,68,0.4)] hover:scale-105 active:scale-95 group"
+        {/* End Call */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onEndCall(); }}
+          style={{
+            width: '64px', height: '64px', borderRadius: '20px', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#dc2626',
+            transition: 'all 0.2s', boxShadow: '0 10px 20px rgba(239,68,68,0.4)',
+          }}
+          title="End Call"
         >
-          <svg width="28" height="28" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className="rotate-[135deg] group-hover:rotate-180 transition-transform duration-300">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"></path>
+          <svg width="28" height="28" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ transform: 'rotate(135deg)' }}>
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
           </svg>
         </button>
 
-        <button 
-          onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full flex justify-center items-center transition-all shadow-lg hover:scale-105 active:scale-95 ${isVideoMuted ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+        {/* Camera Toggle */}
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleVideo(); }}
+          style={{
+            width: '56px', height: '56px', borderRadius: '50%', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isVideoOff ? '#ef4444' : '#374151',
+            transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+          }}
+          title={isVideoOff ? 'Turn On Camera' : 'Turn Off Camera'}
         >
-          {isVideoMuted ? (
-            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 10l5-4v12l-5-4v-4z"/><rect x="4" y="6" width="11" height="12" rx="2" /><line x1="3" y1="3" x2="21" y2="21" /></svg>
+          {isVideoOff ? (
+            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M16 16v1a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2h2m5.66 0H14a2 2 0 012 2v3.34" />
+              <line x1="23" y1="7" x2="17" y2="11" />
+              <line x1="23" y1="17" x2="17" y2="13" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
           ) : (
-            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 10l5-4v12l-5-4v-4z"/><rect x="4" y="6" width="11" height="12" rx="2" /></svg>
+            <svg width="24" height="24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
           )}
         </button>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+      `}</style>
     </div>
   );
 }
 
-const RemoteVideoTrack = ({ user }) => {
+/* ─── Remote Video Player ─── */
+const RemoteVideoPlayer = ({ user }) => {
   const ref = useRef(null);
-  
+
   useEffect(() => {
     if (user && user.videoTrack && ref.current) {
       user.videoTrack.play(ref.current);
     }
-    return () => {
-      if (user && user.videoTrack) {
-        user.videoTrack.stop();
-      }
-    };
-  }, [user]);
+  }, [user, user?.videoTrack]);
 
-  return <div ref={ref} className="w-full h-full pointer-events-auto"></div>;
+  useEffect(() => {
+    if (user && user.audioTrack) {
+      user.audioTrack.play();
+    }
+  }, [user, user?.audioTrack]);
+
+  return <div ref={ref} style={{ width: '100%', height: '100%' }} />;
 };
