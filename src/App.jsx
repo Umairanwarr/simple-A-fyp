@@ -13,6 +13,7 @@ import PatientExplore from './pages/patientDashboard/Explore';
 import PatientFavorites from './pages/patientDashboard/Favorites';
 import PatientHistory from './pages/patientDashboard/History';
 import PatientChats from './pages/patientDashboard/Chats';
+import PatientLiveStreams from './pages/patientDashboard/LiveStreams';
 import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
 import ClinicStaff from './pages/clinicDashboard/Staff';
@@ -144,6 +145,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
               <PatientDoctorProfile />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/dashboard/livestreams"
+          element={(
+            <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
+              <PatientLiveStreams />
             </RequireRoleAuth>
           )}
         />

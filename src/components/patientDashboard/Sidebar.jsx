@@ -9,6 +9,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
     { id: 'favorites', label: 'Favorites', iconSrc: '/fav.svg' },
     { id: 'history', label: 'History', iconSrc: '/history.svg' },
     { id: 'chats', label: 'Chats', iconSrc: '/chat.svg' },
+    { id: 'livestreams', label: 'Live Streams', iconSvg: true },
   ];
 
   return (
@@ -58,7 +59,13 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
               }`}
               >
                 <div className={`flex justify-center items-center w-[22px] h-[22px] ${isActive ? 'opacity-100' : 'opacity-60 grayscale'}`}>
-                  <img src={item.iconSrc} alt={item.label} className="w-full h-full object-contain" />
+                  {item.iconSvg ? (
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                    </svg>
+                  ) : (
+                    <img src={item.iconSrc} alt={item.label} className="w-full h-full object-contain" />
+                  )}
                 </div>
                 <span className={`text-[17px] font-medium tracking-wide ${isActive ? 'font-semibold' : ''}`}>
                   {item.label}

@@ -35,7 +35,9 @@ const getTabTitle = (activeTab) => {
     case 'history':
       return 'History';
     case 'chats':
-      return 'Chats';
+      return 'My Chats';
+    case 'livestreams':
+      return 'Live Streams';
     default:
       return 'Dashboard';
   }

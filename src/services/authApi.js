@@ -1265,3 +1265,77 @@ export const reviewAdminMedicalStoreApplication = async (token, storeId, status,
     });
   }
 };
+
+// ─── Live Stream APIs ───
+
+export const createLiveStream = async (token, payload) => {
+  return apiRequest('/livestream/create', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchMyStreams = async (token) => {
+  return apiRequest('/livestream/my-streams', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const startLiveStream = async (token, streamId) => {
+  return apiRequest(`/livestream/${streamId}/start`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const endLiveStream = async (token, streamId) => {
+  return apiRequest(`/livestream/${streamId}/end`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const deleteLiveStream = async (token, streamId) => {
+  return apiRequest(`/livestream/${streamId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchActiveStreams = async (token) => {
+  return apiRequest('/livestream/active', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const joinLiveStream = async (token, streamId) => {
+  return apiRequest(`/livestream/${streamId}/join`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const joinAsGuest = async (token, streamId) => {
+  return apiRequest(`/livestream/${streamId}/join-as-guest`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const getHostToken = async (token, streamId) => {
+  return apiRequest(`/livestream/${streamId}/host-token`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const inviteGuestToStream = async (token, streamId, payload) => {
+  return apiRequest(`/livestream/${streamId}/invite`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
