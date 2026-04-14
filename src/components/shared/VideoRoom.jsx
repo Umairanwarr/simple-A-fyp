@@ -19,10 +19,15 @@ export default function VideoRoom({ channelName, token, appId, onEndCall }) {
       try {
         client.on("user-published", async (user, mediaType) => {
           await client.subscribe(user, mediaType);
+          
+          if (mediaType === 'audio') {
+            user.audioTrack.play();
+          }
+
           if (isMounted) {
             setRemoteUsers(prev => {
-              if (prev.find(u => u.uid === user.uid)) return [...prev];
-              return [...prev, user];
+              const users = prev.filter(u => u.uid !== user.uid);
+              return [...users, user];
             });
           }
         });
@@ -121,10 +126,15 @@ const RemoteVideoTrack = ({ user }) => {
   const ref = useRef(null);
   
   useEffect(() => {
-    if (user.videoTrack && ref.current) {
+    if (user && user.videoTrack && ref.current) {
       user.videoTrack.play(ref.current);
     }
-  }, [user.videoTrack]);
+    return () => {
+      if (user && user.videoTrack) {
+        user.videoTrack.stop();
+      }
+    };
+  }, [user]);
 
   return <div ref={ref} className="w-full h-full pointer-events-auto"></div>;
 };
