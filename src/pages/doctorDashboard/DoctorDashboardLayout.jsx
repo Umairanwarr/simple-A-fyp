@@ -30,7 +30,8 @@ const TAB_PATHS = {
   streaming: '/doctor/dashboard/streaming',
   subscriptions: '/doctor/dashboard/subscriptions',
   prescriptions: '/doctor/dashboard/prescriptions',
-  media: '/doctor/dashboard/media'
+  media: '/doctor/dashboard/media',
+  chats: '/doctor/dashboard/chats'
 };
 
 export default function DoctorDashboardLayout({ activeTab = 'analytics', children }) {

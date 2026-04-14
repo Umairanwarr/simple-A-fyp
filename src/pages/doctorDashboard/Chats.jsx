@@ -4,7 +4,7 @@ import ChatScreen from '../../components/shared/ChatScreen';
 
 export default function DoctorChats() {
   return (
-    <DoctorDashboardLayout activeTab="analytics">
+    <DoctorDashboardLayout activeTab="chats">
       <ChatScreen role="doctor" tokenKey="doctorToken" userKey="doctor" />
     </DoctorDashboardLayout>
   );
