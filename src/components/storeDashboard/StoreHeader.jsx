@@ -18,7 +18,7 @@ export default function StoreHeader({ onMenuClick, activeTab, onAvatarClick }) {
   } = getMedicalStoreSessionProfile();
 
   return (
-    <header className="flex items-center justify-between gap-4 py-6 md:py-8 lg:py-10 bg-[#FAFAFB]/80 backdrop-blur-md sticky top-0 z-40 transition-all duration-300 w-full min-w-0">
+    <header className="flex items-center justify-between gap-4 py-6 md:py-8 lg:py-10 bg-[#FAFAFB]/80 backdrop-blur-md sticky top-0 z-[30] transition-all duration-300 w-full min-w-0">
       <div className="flex items-center gap-4 min-w-0 flex-1">
         {/* Mobile Menu Button */}
         <button 

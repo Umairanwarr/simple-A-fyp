@@ -156,7 +156,7 @@ export default function MediaModeration() {
           <div>
             <h1 className="text-[24px] font-bold text-gray-900">Media Moderation</h1>
             <p className="text-[14px] text-gray-500 font-medium mt-1">
-              Review doctor media uploads and approve or reject them.
+              Review doctor and medical store media uploads and approve or reject them.
             </p>
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function MediaModeration() {
               type="text"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by doctor name or email..."
+              placeholder="Search by name or email..."
               className="w-full bg-[#FAFAFA] text-[#4B5563] text-[14px] font-medium py-2.5 pl-10 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 border border-gray-200 focus:border-[#1EBDB8] transition-all"
             />
           </div>
@@ -219,7 +219,7 @@ export default function MediaModeration() {
               <thead>
                 <tr className="bg-gray-50/70 border-b border-gray-100">
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Media</th>
-                  <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Doctor</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Uploader</th>
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Type</th>
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Uploaded</th>
@@ -262,8 +262,23 @@ export default function MediaModeration() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-[14px] font-bold text-gray-900">{mediaItem.doctorName}</p>
-                        <p className="text-[12px] font-medium text-gray-600 mt-0.5">{mediaItem.doctorEmail}</p>
+                        {mediaItem.uploaderRole === 'medical-store' ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#ECFCFB] text-[#1EBDB8] border border-[#1EBDB8]/20">Medical Store</span>
+                            </div>
+                            <p className="text-[14px] font-bold text-gray-900">{mediaItem.storeName || 'Store'}</p>
+                            <p className="text-[12px] font-medium text-gray-600 mt-0.5">{mediaItem.storeEmail || 'N/A'}</p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">Doctor</span>
+                            </div>
+                            <p className="text-[14px] font-bold text-gray-900">{mediaItem.doctorName}</p>
+                            <p className="text-[12px] font-medium text-gray-600 mt-0.5">{mediaItem.doctorEmail}</p>
+                          </>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-[13px] font-semibold text-gray-700">{formatStatusLabel(mediaItem.mediaType)}</td>
                       <td className="px-6 py-4">
