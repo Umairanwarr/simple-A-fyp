@@ -38,10 +38,15 @@ export default function AdminDashboard() {
   const [totalDoctors, setTotalDoctors] = useState('0');
   const [totalClinics, setTotalClinics] = useState('0');
   const [totalMedicalStores, setTotalMedicalStores] = useState('0');
+  const [totalGoldDoctors, setTotalGoldDoctors] = useState('0');
+  const [totalDiamondDoctors, setTotalDiamondDoctors] = useState('0');
   const [totalAppointments, setTotalAppointments] = useState('0');
   const [totalBookingRevenue, setTotalBookingRevenue] = useState(0);
+  const [totalAppointmentRevenue, setTotalAppointmentRevenue] = useState(0);
+  const [totalSubscriptionRevenue, setTotalSubscriptionRevenue] = useState(0);
   const [totalAdminCommission, setTotalAdminCommission] = useState(0);
   const [recentCommissions, setRecentCommissions] = useState([]);
+  const [premiumUsers, setPremiumUsers] = useState([]);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -57,10 +62,15 @@ export default function AdminDashboard() {
         setTotalDoctors(String(data.approvedDoctors ?? 0));
         setTotalClinics(String(data.totalClinics ?? 0));
         setTotalMedicalStores(String(data.totalMedicalStores ?? 0));
+        setTotalGoldDoctors(String(data.totalGoldDoctors ?? 0));
+        setTotalDiamondDoctors(String(data.totalDiamondDoctors ?? 0));
         setTotalAppointments(String(data.totalConfirmedAppointments ?? 0));
         setTotalBookingRevenue(Number(data.totalBookingRevenueInRupees ?? 0));
+        setTotalAppointmentRevenue(Number(data.appointmentBookingRevenueInRupees ?? 0));
+        setTotalSubscriptionRevenue(Number(data.totalSubscriptionRevenueInRupees ?? 0));
         setTotalAdminCommission(Number(data.totalAdminCommissionInRupees ?? 0));
         setRecentCommissions(Array.isArray(data.recentCommissions) ? data.recentCommissions : []);
+        setPremiumUsers(Array.isArray(data.premiumUsers) ? data.premiumUsers : []);
       } catch (error) {
         // Keep static fallback values if stats endpoint is unavailable.
       }
@@ -72,9 +82,12 @@ export default function AdminDashboard() {
   const stats = [
     { title: 'Total Patients', value: totalPatients, change: '+0%', isPositive: true },
     { title: 'Total Doctors', value: totalDoctors, change: '+0%', isPositive: true },
+    { title: 'Gold Doctors', value: totalGoldDoctors, change: '+0%', isPositive: true },
+    { title: 'Diamond Doctors', value: totalDiamondDoctors, change: '+0%', isPositive: true },
     { title: 'Total Clinics', value: totalClinics, change: '+0%', isPositive: true },
     { title: 'Medical Stores', value: totalMedicalStores, change: '+0%', isPositive: true },
     { title: 'Confirmed Bookings', value: totalAppointments, change: '+0%', isPositive: true },
+    { title: 'Subscription Revenue', value: formatCurrency(totalSubscriptionRevenue), change: '+0%', isPositive: true },
     { title: 'Admin Commission', value: formatCurrency(totalAdminCommission), change: '+0%', isPositive: true },
   ];
 
@@ -159,7 +172,16 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
             <h2 className="text-[18px] font-bold text-gray-900">Recent Commission Entries</h2>
             <p className="text-[13px] font-semibold text-gray-500">
-              Booking Revenue: <span className="text-gray-900">{formatCurrency(totalBookingRevenue)}</span>
+              Platform Revenue: <span className="text-gray-900">{formatCurrency(totalBookingRevenue)}</span>
+            </p>
+          </div>
+
+          <div className="mb-5 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+            <p className="text-[13px] font-semibold text-gray-600">
+              Appointment Revenue: <span className="text-gray-900">{formatCurrency(totalAppointmentRevenue)}</span>
+            </p>
+            <p className="text-[13px] font-semibold text-gray-600">
+              Subscription Revenue: <span className="text-gray-900">{formatCurrency(totalSubscriptionRevenue)}</span>
             </p>
           </div>
 
@@ -189,6 +211,60 @@ export default function AdminDashboard() {
                       <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-600">{formatDateLabel(commission.paidAt)}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+            <h2 className="text-[18px] font-bold text-gray-900">Premium Users</h2>
+            <p className="text-[13px] font-semibold text-gray-500">
+              Active paid users: <span className="text-gray-900">{premiumUsers.length}</span>
+            </p>
+          </div>
+
+          {premiumUsers.length === 0 ? (
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-10 text-center">
+              <p className="text-[14px] font-medium text-gray-500">No active Gold or Diamond users right now.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[980px] text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Doctor</th>
+                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Contact</th>
+                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Specialization</th>
+                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Plan</th>
+                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Purchased</th>
+                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Expires</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {premiumUsers.map((premiumUser) => {
+                    const normalizedPlan = String(premiumUser?.currentPlan || '').trim().toLowerCase();
+                    const planLabel = normalizedPlan ? `${normalizedPlan.charAt(0).toUpperCase()}${normalizedPlan.slice(1)}` : 'N/A';
+
+                    return (
+                      <tr key={premiumUser.id} className="border-b border-gray-100 last:border-b-0">
+                        <td className="py-3.5 pr-4 text-[14px] font-semibold text-gray-900">{premiumUser.fullName}</td>
+                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-700">
+                          <div>{premiumUser.email}</div>
+                          <div className="text-[12px] text-gray-500 mt-0.5">{premiumUser.phone}</div>
+                        </td>
+                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-700">{premiumUser.specialization}</td>
+                        <td className="py-3.5 pr-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#1EBDB8]/10 text-[#0F766E] border border-[#1EBDB8]/20">
+                            {planLabel}
+                          </span>
+                        </td>
+                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-600">{formatDateLabel(premiumUser.purchasedAt)}</td>
+                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-600">{formatDateLabel(premiumUser.planExpiresAt)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

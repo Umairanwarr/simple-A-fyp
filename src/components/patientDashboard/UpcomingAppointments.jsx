@@ -123,7 +123,7 @@ export default function UpcomingAppointments() {
         return previousAppointments.filter((appointment) => String(appointment?.id) !== String(appointmentToCancel.id));
       });
 
-      toast.success(response?.message || 'Appointment cancelled. No refund will be processed.');
+      toast.success(response?.message || 'Appointment cancelled successfully.');
       window.dispatchEvent(new Event('patient-appointment-updated'));
       window.dispatchEvent(new Event('doctor-appointment-updated'));
       setAppointmentToCancel(null);
@@ -201,7 +201,7 @@ export default function UpcomingAppointments() {
           <div className="relative w-full max-w-md rounded-[28px] bg-white p-6 sm:p-7 shadow-[0px_20px_50px_rgba(0,0,0,0.2)] border border-gray-100">
             <h3 className="text-[#111827] text-[22px] font-extrabold tracking-tight">Cancel Appointment?</h3>
             <p className="mt-3 text-[#4B5563] text-[15px] leading-relaxed">
-              If you cancel this appointment, you will not get refund.
+              Full refund is available only if you cancel within 15 minutes of booking. After that window, no refund is processed.
             </p>
 
             <div className="mt-7 flex items-center justify-end gap-3">

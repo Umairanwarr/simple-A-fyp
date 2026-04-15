@@ -33,7 +33,8 @@ const TAB_PATHS = {
   explore: '/dashboard/explore',
   favorites: '/dashboard/favorites',
   history: '/dashboard/history',
-  chats: '/dashboard/chats'
+  chats: '/dashboard/chats',
+  livestreams: '/dashboard/livestreams'
 };
 
 const isValidObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || '').trim());

@@ -13,6 +13,7 @@ import PatientExplore from './pages/patientDashboard/Explore';
 import PatientFavorites from './pages/patientDashboard/Favorites';
 import PatientHistory from './pages/patientDashboard/History';
 import PatientChats from './pages/patientDashboard/Chats';
+import PatientLiveStreams from './pages/patientDashboard/LiveStreams';
 import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
 import ClinicStaff from './pages/clinicDashboard/Staff';
@@ -30,6 +31,7 @@ import DoctorStreaming from './pages/doctorDashboard/Streaming';
 import DoctorSubscriptions from './pages/doctorDashboard/Subscriptions';
 import DoctorPrescriptions from './pages/doctorDashboard/Prescriptions';
 import DoctorMedia from './pages/doctorDashboard/Media';
+import DoctorChats from './pages/doctorDashboard/Chats';
 import StoreDashboard from './pages/storeDashboard/Dashboard';
 import StoreInventory from './pages/storeDashboard/Inventory';
 import StoreSubscriptions from './pages/storeDashboard/Subscriptions';
@@ -42,6 +44,9 @@ import Patients from './pages/admin/dashboard/users/Patients';
 import Doctors from './pages/admin/dashboard/users/Doctors';
 import Clinics from './pages/admin/dashboard/users/Clinics';
 import Stores from './pages/admin/dashboard/users/Stores';
+import SubscriptionPricing from './pages/admin/dashboard/subscriptions/SubscriptionPricing';
+import PremiumUsers from './pages/admin/dashboard/subscriptions/PremiumUsers';
+import MediaModeration from './pages/admin/dashboard/media/MediaModeration';
 import DoctorReviews from './pages/admin/dashboard/reviews/DoctorReviews';
 import BugReports from './pages/admin/dashboard/bugs/BugReports';
 import RequireAdminAuth from './components/admin/auth/RequireAdminAuth';
@@ -140,6 +145,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
               <PatientDoctorProfile />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/dashboard/livestreams"
+          element={(
+            <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
+              <PatientLiveStreams />
             </RequireRoleAuth>
           )}
         />
@@ -244,6 +257,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
               <DoctorStreaming />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/doctor/dashboard/chats"
+          element={(
+            <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
+              <DoctorChats />
             </RequireRoleAuth>
           )}
         />
@@ -364,6 +385,30 @@ function App() {
           element={(
             <RequireAdminAuth>
               <Stores />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/subscription-pricing"
+          element={(
+            <RequireAdminAuth>
+              <SubscriptionPricing />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/premium-users"
+          element={(
+            <RequireAdminAuth>
+              <PremiumUsers />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/media-moderation"
+          element={(
+            <RequireAdminAuth>
+              <MediaModeration />
             </RequireAdminAuth>
           )}
         />

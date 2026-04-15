@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { fetchDoctorSchedule } from '../../../services/authApi';
+import {
+  fetchDoctorAvailability,
+  fetchDoctorSchedule,
+  rescheduleDoctorAppointment
+} from '../../../services/authApi';
 
 const DAYS_IN_WEEK = 7;
 const DEFAULT_START_HOUR = 9;
@@ -110,10 +115,45 @@ const formatModeLabel = (modeValue) => {
   return String(modeValue || '').toLowerCase() === 'offline' ? 'Clinic' : 'Online';
 };
 
+const getSlotStartTimestamp = ({ date, fromTime }) => {
+  const parsedDate = new Date(`${String(date || '').trim()}T${String(fromTime || '').trim()}:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 0;
+  }
+
+  return parsedDate.getTime();
+};
+
+const formatScheduleDateLabel = (dateValue) => {
+  const parsedDate = new Date(`${String(dateValue || '').trim()}T00:00:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return String(dateValue || '').trim();
+  }
+
+  return parsedDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+const formatScheduleSlotLabel = ({ date, fromTime, toTime, consultationMode }) => {
+  return `${formatScheduleDateLabel(date)} • ${fromTime} - ${toTime} • ${formatModeLabel(consultationMode)}`;
+};
+
 export default function MySchedulePage() {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState(null);
+  const [availableRescheduleSlots, setAvailableRescheduleSlots] = useState([]);
+  const [selectedRescheduleSlotId, setSelectedRescheduleSlotId] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [isRescheduleSlotsLoading, setIsRescheduleSlotsLoading] = useState(false);
+  const [isRescheduleSubmitting, setIsRescheduleSubmitting] = useState(false);
 
   const weekStartDate = useMemo(() => getWeekStart(selectedDate), [selectedDate]);
   const weekDates = useMemo(() => {
@@ -189,6 +229,7 @@ export default function MySchedulePage() {
         const startMinutes = toMinutes(fromTime);
         const rawEndMinutes = toMinutes(toTime);
         const endMinutes = rawEndMinutes > startMinutes ? rawEndMinutes : (startMinutes + 30);
+        const startTimestamp = appointmentDay.getTime() + (startMinutes * 60 * 1000);
 
         if (!appointmentDay || !fromTime || !toTime) {
           return null;
@@ -209,12 +250,53 @@ export default function MySchedulePage() {
           startMinutes,
           endMinutes,
           startHour: Math.floor(startMinutes / 60),
-          sortTimestamp: appointmentDay.getTime() + startMinutes
+          startTimestamp,
+          sortTimestamp: startTimestamp
         };
       })
       .filter(Boolean)
       .sort((firstEntry, secondEntry) => firstEntry.sortTimestamp - secondEntry.sortTimestamp);
   }, [appointments]);
+
+  const reschedulableAppointments = useMemo(() => {
+    const nowTimestamp = Date.now();
+
+    return normalizedAppointments.filter((appointment) => {
+      return appointment.bookingStatus !== 'cancelled' && appointment.startTimestamp > nowTimestamp;
+    });
+  }, [normalizedAppointments]);
+
+  const filteredRescheduleSlots = useMemo(() => {
+    const currentSlotSignature = appointmentToReschedule
+      ? [
+        String(appointmentToReschedule?.appointmentDate || '').trim(),
+        String(appointmentToReschedule?.fromTime || '').trim(),
+        String(appointmentToReschedule?.toTime || '').trim(),
+        String(appointmentToReschedule?.consultationMode || '').trim().toLowerCase() || 'online'
+      ].join('|')
+      : '';
+    const seenSignatures = new Set();
+
+    return availableRescheduleSlots.filter((slot) => {
+      const slotSignature = [
+        String(slot?.date || '').trim(),
+        String(slot?.fromTime || '').trim(),
+        String(slot?.toTime || '').trim(),
+        String(slot?.consultationMode || '').trim().toLowerCase() || 'online'
+      ].join('|');
+
+      if (!slotSignature || slotSignature === currentSlotSignature) {
+        return false;
+      }
+
+      if (seenSignatures.has(slotSignature)) {
+        return false;
+      }
+
+      seenSignatures.add(slotSignature);
+      return true;
+    });
+  }, [appointmentToReschedule, availableRescheduleSlots]);
 
   const defaultHours = useMemo(() => {
     return {
@@ -261,6 +343,173 @@ export default function MySchedulePage() {
     return groupedMap;
   }, [normalizedAppointments]);
 
+  const closeRescheduleModal = useCallback(() => {
+    if (isRescheduleSubmitting) {
+      return;
+    }
+
+    setAppointmentToReschedule(null);
+    setAvailableRescheduleSlots([]);
+    setSelectedRescheduleSlotId('');
+    setRescheduleReason('');
+    setIsRescheduleSlotsLoading(false);
+  }, [isRescheduleSubmitting]);
+
+  useEffect(() => {
+    if (filteredRescheduleSlots.some((slot) => String(slot?.id) === String(selectedRescheduleSlotId))) {
+      return;
+    }
+
+    setSelectedRescheduleSlotId(filteredRescheduleSlots[0]?.id || '');
+  }, [filteredRescheduleSlots, selectedRescheduleSlotId]);
+
+  const openRescheduleModal = useCallback(async (appointment = null) => {
+    if (isRescheduleSubmitting || isRescheduleSlotsLoading) {
+      return;
+    }
+
+    const requestedAppointmentId = String(appointment?.id || '').trim();
+    const fallbackAppointment = reschedulableAppointments[0] || null;
+    const selectedAppointment = requestedAppointmentId
+      ? reschedulableAppointments.find((entry) => String(entry?.id) === requestedAppointmentId) || null
+      : fallbackAppointment;
+
+    if (!selectedAppointment) {
+      toast.error('No upcoming booked appointments available for rescheduling');
+      return;
+    }
+
+    const doctorToken = localStorage.getItem('doctorToken');
+
+    if (!doctorToken) {
+      toast.error('Session expired. Please sign in again.');
+      return;
+    }
+
+    setAppointmentToReschedule(selectedAppointment);
+    setAvailableRescheduleSlots([]);
+    setSelectedRescheduleSlotId('');
+    setRescheduleReason('');
+    setIsRescheduleSlotsLoading(true);
+
+    try {
+      const response = await fetchDoctorAvailability(doctorToken);
+      const rawSlots = Array.isArray(response?.slots) ? response.slots : [];
+      const nowTimestamp = Date.now();
+
+      const futureSlots = rawSlots
+        .map((slot) => ({
+          id: String(slot?.id || '').trim(),
+          date: String(slot?.date || '').trim(),
+          fromTime: String(slot?.fromTime || '').trim(),
+          toTime: String(slot?.toTime || '').trim(),
+          consultationMode: String(slot?.consultationMode || '').trim() || 'online',
+          priceInRupees: Math.max(0, Math.trunc(Number(slot?.priceInRupees || 0)))
+        }))
+        .filter((slot) => {
+          if (!slot.id || !slot.date || !slot.fromTime || !slot.toTime) {
+            return false;
+          }
+
+          return getSlotStartTimestamp({
+            date: slot.date,
+            fromTime: slot.fromTime
+          }) > nowTimestamp;
+        })
+        .sort((firstSlot, secondSlot) => {
+          return getSlotStartTimestamp({
+            date: firstSlot.date,
+            fromTime: firstSlot.fromTime
+          }) - getSlotStartTimestamp({
+            date: secondSlot.date,
+            fromTime: secondSlot.fromTime
+          });
+        });
+
+      setAvailableRescheduleSlots(futureSlots);
+
+      if (futureSlots.length > 0) {
+        setSelectedRescheduleSlotId(futureSlots[0].id);
+      }
+    } catch (error) {
+      toast.error(error?.message || 'Could not load future slots for rescheduling');
+      setAppointmentToReschedule(null);
+    } finally {
+      setIsRescheduleSlotsLoading(false);
+    }
+  }, [isRescheduleSlotsLoading, isRescheduleSubmitting, reschedulableAppointments]);
+
+  const handleReschedulePatientChange = useCallback((event) => {
+    const nextAppointmentId = String(event?.target?.value || '').trim();
+
+    if (!nextAppointmentId) {
+      return;
+    }
+
+    const selectedAppointment = reschedulableAppointments.find((entry) => String(entry?.id) === nextAppointmentId);
+
+    if (selectedAppointment) {
+      setAppointmentToReschedule(selectedAppointment);
+      setSelectedRescheduleSlotId('');
+    }
+  }, [reschedulableAppointments]);
+
+  const handleAddSlotClick = useCallback(() => {
+    closeRescheduleModal();
+    navigate('/doctor/dashboard/availability');
+  }, [closeRescheduleModal, navigate]);
+
+  const handleConfirmReschedule = useCallback(async () => {
+    if (!appointmentToReschedule?.id || isRescheduleSubmitting) {
+      return;
+    }
+
+    if (!selectedRescheduleSlotId) {
+      toast.error('Please select a new slot to reschedule the appointment');
+      return;
+    }
+
+    const normalizedReason = String(rescheduleReason || '').trim();
+
+    if (normalizedReason.length < 5) {
+      toast.error('Please provide a clear reason (minimum 5 characters)');
+      return;
+    }
+
+    const doctorToken = localStorage.getItem('doctorToken');
+
+    if (!doctorToken) {
+      toast.error('Session expired. Please sign in again.');
+      return;
+    }
+
+    try {
+      setIsRescheduleSubmitting(true);
+
+      const response = await rescheduleDoctorAppointment(doctorToken, appointmentToReschedule.id, {
+        newSlotId: selectedRescheduleSlotId,
+        reason: normalizedReason
+      });
+
+      toast.success(response?.message || 'Appointment rescheduled successfully');
+      closeRescheduleModal();
+      await loadSchedule({ shouldShowLoading: false, shouldToastError: false });
+      window.dispatchEvent(new Event('doctor-appointment-updated'));
+      window.dispatchEvent(new Event('patient-appointment-updated'));
+    } catch (error) {
+      toast.error(error?.message || 'Could not reschedule appointment');
+    } finally {
+      setIsRescheduleSubmitting(false);
+    }
+  }, [
+    appointmentToReschedule,
+    closeRescheduleModal,
+    isRescheduleSubmitting,
+    loadSchedule,
+    rescheduleReason,
+    selectedRescheduleSlotId
+  ]);
+
   return (
     <div className="space-y-6 w-full min-w-0">
       <div className="bg-white p-6 rounded-[30px] border border-gray-100 shadow-sm w-full min-w-0">
@@ -299,7 +548,20 @@ export default function MySchedulePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => openRescheduleModal()}
+              disabled={
+                isLoading
+                || isRescheduleSubmitting
+                || isRescheduleSlotsLoading
+                || reschedulableAppointments.length === 0
+              }
+              className="inline-flex items-center justify-center px-3.5 py-2 rounded-xl border border-[#1EBDB8]/30 bg-[#ECFEFF] text-[#0F766E] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#CFFAFE] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Reschedule
+            </button>
             <span className="text-[12px] font-bold text-gray-500 uppercase tracking-[0.1em]">My Schedule</span>
             <span className="text-[13px] font-semibold text-[#4B5563]">{formatRangeLabel(weekStartDate, weekEndDate)}</span>
           </div>
@@ -363,6 +625,7 @@ export default function MySchedulePage() {
                           <div className="space-y-2">
                             {slotAppointments.map((appointment) => {
                               const isCancelled = appointment.bookingStatus === 'cancelled';
+                              const canRescheduleAppointment = !isCancelled && appointment.startTimestamp > Date.now();
 
                               return (
                                 <div
@@ -390,6 +653,19 @@ export default function MySchedulePage() {
                                   <p className={`text-[11px] font-semibold mt-1 ${isCancelled ? 'text-[#991B1B]' : 'text-[#155E75]'}`}>
                                     {appointment.fromTime} - {appointment.toTime} · {formatModeLabel(appointment.consultationMode)}
                                   </p>
+
+                                  {canRescheduleAppointment ? (
+                                    <div className="pt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => openRescheduleModal(appointment)}
+                                        disabled={isRescheduleSubmitting || isRescheduleSlotsLoading}
+                                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-white border border-[#1EBDB8]/50 text-[#0F766E] text-[10px] font-bold uppercase tracking-[0.06em] hover:bg-[#ECFEFF] disabled:opacity-60 disabled:cursor-not-allowed"
+                                      >
+                                        Reschedule
+                                      </button>
+                                    </div>
+                                  ) : null}
                                 </div>
                               );
                             })}
@@ -404,6 +680,143 @@ export default function MySchedulePage() {
           </div>
         )}
       </div>
+
+      {appointmentToReschedule ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center px-2 sm:px-4 py-3 sm:py-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            onClick={closeRescheduleModal}
+            disabled={isRescheduleSubmitting}
+            aria-label="Close reschedule modal"
+          />
+
+          <div className="relative w-full max-w-[680px] max-h-[92vh] overflow-y-auto rounded-[28px] bg-white p-5 sm:p-7 shadow-[0px_20px_50px_rgba(0,0,0,0.2)] border border-gray-100">
+            <h3 className="text-[#111827] text-[24px] font-extrabold tracking-tight">Reschedule Appointment</h3>
+            <p className="mt-2 text-[#4B5563] text-[14px] leading-relaxed">
+              Select a new slot and provide a reason. The patient will be notified by both app notification and email.
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <div className="space-y-2">
+                <label htmlFor="reschedule-patient" className="text-[14px] font-semibold text-[#1F2432]">Patient Appointment</label>
+                <select
+                  id="reschedule-patient"
+                  value={String(appointmentToReschedule?.id || '')}
+                  onChange={handleReschedulePatientChange}
+                  disabled={isRescheduleSubmitting || reschedulableAppointments.length === 0}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/20 disabled:opacity-60"
+                >
+                  {reschedulableAppointments.map((appointment) => (
+                    <option key={appointment.id} value={appointment.id}>
+                      {`${appointment.patientName} • ${formatScheduleSlotLabel({
+                        date: appointment.appointmentDate,
+                        fromTime: appointment.fromTime,
+                        toTime: appointment.toTime,
+                        consultationMode: appointment.consultationMode
+                      })}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-[#F9FAFB] p-4 space-y-2">
+                <p className="text-[13px] text-[#6B7280] font-semibold uppercase tracking-[0.08em]">Selected Patient</p>
+                <p className="text-[16px] font-bold text-[#1F2432]">{appointmentToReschedule.patientName}</p>
+                <p className="text-[13px] text-[#4B5563]">{appointmentToReschedule.patientEmail}</p>
+                <p className="text-[13px] text-[#4B5563]">Current Slot: {
+                  formatScheduleSlotLabel({
+                    date: appointmentToReschedule.appointmentDate,
+                    fromTime: appointmentToReschedule.fromTime,
+                    toTime: appointmentToReschedule.toTime,
+                    consultationMode: appointmentToReschedule.consultationMode
+                  })
+                }</p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="reschedule-slot" className="text-[14px] font-semibold text-[#1F2432]">New Slot</label>
+
+                {isRescheduleSlotsLoading ? (
+                  <div className="rounded-xl border border-gray-200 bg-[#F9FAFB] px-4 py-3 text-[13px] text-[#6B7280] font-medium">
+                    Loading available future slots...
+                  </div>
+                ) : filteredRescheduleSlots.length === 0 ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800 font-medium">
+                    <p>No alternative slots are available for this patient right now.</p>
+                    <button
+                      type="button"
+                      onClick={handleAddSlotClick}
+                      className="mt-2 inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-amber-600 text-white text-[12px] font-semibold hover:bg-amber-700 transition-colors"
+                    >
+                      Add Slot
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="reschedule-slot"
+                    value={selectedRescheduleSlotId}
+                    onChange={(event) => setSelectedRescheduleSlotId(String(event?.target?.value || ''))}
+                    disabled={isRescheduleSubmitting}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/20 disabled:opacity-60"
+                  >
+                    {filteredRescheduleSlots.map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {`${formatScheduleSlotLabel({
+                          date: slot.date,
+                          fromTime: slot.fromTime,
+                          toTime: slot.toTime,
+                          consultationMode: slot.consultationMode
+                        })}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <p className="text-[12px] text-[#6B7280]">
+                  Patient keeps the original paid fee. Selecting a higher-priced slot does not charge extra.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="reschedule-reason" className="text-[14px] font-semibold text-[#1F2432]">Reason</label>
+                <textarea
+                  id="reschedule-reason"
+                  value={rescheduleReason}
+                  onChange={(event) => setRescheduleReason(String(event?.target?.value || '').slice(0, 500))}
+                  placeholder="Enter reason for rescheduling"
+                  disabled={isRescheduleSubmitting}
+                  rows={4}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/20 disabled:opacity-60"
+                />
+                <p className="text-[12px] text-[#6B7280]">Minimum 5 characters.</p>
+              </div>
+            </div>
+
+            <div className="mt-7 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeRescheduleModal}
+                disabled={isRescheduleSubmitting}
+                className="px-4 py-2 rounded-full border border-gray-300 text-[#374151] text-[14px] font-semibold transition hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmReschedule}
+                disabled={isRescheduleSubmitting || isRescheduleSlotsLoading}
+                className="px-4 py-2 rounded-full bg-[#1EBDB8] text-white text-[14px] font-semibold transition hover:bg-[#0FAAA7] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isRescheduleSubmitting ? 'Rescheduling...' : 'Confirm Reschedule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
