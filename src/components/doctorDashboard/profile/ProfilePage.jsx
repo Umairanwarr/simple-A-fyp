@@ -3,7 +3,9 @@ import { toast } from 'react-toastify';
 import {
   fetchDoctorProfile,
   updateDoctorAvatar,
-  updateDoctorProfile
+  updateDoctorProfile,
+  fetchDoctorBankAccount,
+  saveDoctorBankAccount
 } from '../../../services/authApi';
 import { getDoctorSessionProfile, saveSessionUser } from '../../../utils/authSession';
 import ProfileField from './components/ProfileField';
@@ -15,6 +17,7 @@ const MISSING_FIELD_LABELS = {
   phone: 'Phone Number',
   address: 'Clinic Address',
   bio: 'Bio',
+  bank_account: 'Bank Account Details'
 };
 
 const getDoctorTokenOrThrow = () => {
@@ -55,6 +58,12 @@ export default function ProfilePage({ onProfileUpdated }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+
+  // Bank account state
+  const [bankAccountTitle, setBankAccountTitle] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [isSavingBank, setIsSavingBank] = useState(false);
 
   const hydrateProfile = (data) => {
     const profile = data?.profile || {};
@@ -106,6 +115,20 @@ export default function ProfilePage({ onProfileUpdated }) {
     };
 
     loadProfile();
+
+    // Load bank account info
+    const loadBankAccount = async () => {
+      try {
+        const token = getDoctorTokenOrThrow();
+        const data = await fetchDoctorBankAccount(token);
+        if (data.bankAccount) {
+          setBankAccountTitle(String(data.bankAccount.accountTitle || ''));
+          setBankAccountNumber(String(data.bankAccount.accountNumber || ''));
+          setBankName(String(data.bankAccount.bankName || ''));
+        }
+      } catch {}
+    };
+    loadBankAccount();
 
     return () => {
       isMounted = false;
@@ -377,6 +400,71 @@ export default function ProfilePage({ onProfileUpdated }) {
           </button>
         </div>
       </form>
+
+      {/* Bank Account Section */}
+      <div className="bg-white p-6 sm:p-7 rounded-[30px] border border-gray-100 shadow-sm space-y-5">
+        <div>
+          <h3 className="text-[20px] font-bold text-[#1F2432]">Bank Account</h3>
+          <p className="text-[13px] text-[#9CA3AF] font-medium mt-1">
+            Add your bank account details to withdraw your earnings. Minimum withdrawal is PKR 5,000.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <ProfileField
+            label="Account Title"
+            value={bankAccountTitle}
+            placeholder="e.g. Dr. Ahmed Ali"
+            onChange={e => setBankAccountTitle(e.target.value)}
+            disabled={isSavingBank}
+          />
+          <ProfileField
+            label="Account Number / IBAN"
+            value={bankAccountNumber}
+            placeholder="e.g. PK36SCBL0000001123456702"
+            onChange={e => setBankAccountNumber(e.target.value)}
+            disabled={isSavingBank}
+          />
+          <ProfileField
+            label="Bank Name"
+            value={bankName}
+            placeholder="e.g. HBL, UBL, Meezan Bank"
+            onChange={e => setBankName(e.target.value)}
+            disabled={isSavingBank}
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={isSavingBank}
+            onClick={async () => {
+              if (!bankAccountTitle.trim() || !bankAccountNumber.trim() || !bankName.trim()) {
+                return toast.error('All bank account fields are required');
+              }
+              try {
+                setIsSavingBank(true);
+                const token = getDoctorTokenOrThrow();
+                await saveDoctorBankAccount(token, {
+                  accountTitle: bankAccountTitle.trim(),
+                  accountNumber: bankAccountNumber.trim(),
+                  bankName: bankName.trim()
+                });
+                toast.success('Bank account saved successfully');
+                const profileData = await fetchDoctorProfile(token);
+                hydrateProfile(profileData);
+              } catch (err) {
+                toast.error(err.message || 'Could not save bank account');
+              } finally {
+                setIsSavingBank(false);
+              }
+            }}
+            className="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#1EBDB8] hover:bg-[#1CAAAE] disabled:opacity-60 disabled:cursor-not-allowed text-white text-[13px] font-bold"
+          >
+            {isSavingBank ? 'Saving...' : 'Save Bank Account'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

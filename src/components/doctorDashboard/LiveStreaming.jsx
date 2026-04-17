@@ -498,8 +498,8 @@ const S = {
   },
   input: {
     width: '100%', padding: '12px 14px', borderRadius: '12px',
-    border: '1.5px solid #e5e7eb', fontSize: '14px', outline: 'none',
-    transition: 'border 0.2s', boxSizing: 'border-box',
+    border: '1.5px solid #e5e7eb', fontSize: '14px', color: '#111827',
+    outline: 'none', transition: 'border 0.2s', boxSizing: 'border-box',
   },
   cancelBtn: {
     flex: 1, padding: '12px', borderRadius: '14px', border: '1.5px solid #e5e7eb',

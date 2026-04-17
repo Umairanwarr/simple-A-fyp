@@ -5,12 +5,14 @@ export default function AvailabilityForm({
   isEditing,
   isSubmitting,
   isBlocked,
+  currentPlan,
   blockMessage,
   onChange,
   onSubmit,
   onCancelEdit
 }) {
   const isDisabled = isSubmitting || isBlocked;
+  const isPremium = ['gold', 'diamond'].includes(String(currentPlan).toLowerCase());
 
   return (
     <div className="bg-white p-6 sm:p-7 rounded-[30px] border border-gray-100 shadow-sm">
@@ -37,7 +39,7 @@ export default function AvailabilityForm({
       </div>
 
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-        <label className="flex flex-col gap-2 md:col-span-2">
+        <label className="flex flex-col gap-2 md:col-span-1">
           <span className="text-[13px] font-bold text-[#6B7280]">Date</span>
           <input
             type="date"
@@ -73,7 +75,7 @@ export default function AvailabilityForm({
           />
         </label>
 
-        <label className="flex flex-col gap-2">
+        <label className="flex flex-col gap-2 md:col-span-2">
           <span className="text-[13px] font-bold text-[#6B7280]">Consultation Mode</span>
           <select
             value={form.consultationMode}
@@ -82,7 +84,8 @@ export default function AvailabilityForm({
             className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl px-4 py-3 text-[14px] font-medium text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/20"
             required
           >
-            <option value="online">Online</option>
+            <option value="online">Online (Text)</option>
+            {isPremium && <option value="video">Online (Video Call)</option>}
             <option value="offline">Offline (Clinic Visit)</option>
           </select>
         </label>

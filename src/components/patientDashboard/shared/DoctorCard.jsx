@@ -12,7 +12,46 @@ export default function DoctorCard({
 }) {
   const cardClassName = containerClassName
     || 'bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative';
-  const isActionDisabled = typeof onActionClick !== 'function';
+
+  const isStore = doctor.type === 'store';
+  
+  // Logic to check if store is open
+  const isStoreOpen = React.useMemo(() => {
+    if (!isStore || !doctor.availability) return true;
+
+    try {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const [startStr, endStr] = doctor.availability.split('-').map(s => s.trim());
+      
+      const parseTimeToMinutes = (timeStr) => {
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        
+        return hours * 60 + minutes;
+      };
+
+      const startMinutes = parseTimeToMinutes(startStr);
+      const endMinutes = parseTimeToMinutes(endStr);
+
+      if (startMinutes < endMinutes) {
+        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+      } else {
+        // Overnight range (e.g., 10 PM - 2 AM)
+        return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+      }
+    } catch (e) {
+      console.error('Error parsing operating hours:', e);
+      return true; // Default to open if parsing fails
+    }
+  }, [isStore, doctor.availability]);
+
+  const effectiveActionLabel = isStore && !isStoreOpen ? 'Store Closed' : actionLabel;
+  const isActionDisabled = typeof onActionClick !== 'function' || (isStore && !isStoreOpen);
 
   return (
     <div className={cardClassName}>
@@ -53,7 +92,7 @@ export default function DoctorCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5 mb-5 shrink-0">
+      <div className="flex flex-col gap-2.5 mb-3 shrink-0">
         <div className="flex items-center gap-2 text-[#6B7280]">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -62,7 +101,9 @@ export default function DoctorCard({
           <span className="text-[12px] font-medium">{doctor.location}</span>
         </div>
         <div className="flex gap-2 text-[11px]">
-          <span className="font-bold text-[#1F2937]">Next Available</span>
+          <span className="font-bold text-[#1F2937]">
+            {doctor.type === 'store' ? 'Operating Hours' : 'Next Available'}
+          </span>
           <span className="font-bold text-[#1F2937]">{doctor.availability}</span>
         </div>
       </div>
@@ -71,9 +112,13 @@ export default function DoctorCard({
         type="button"
         disabled={isActionDisabled}
         onClick={() => onActionClick?.(doctor)}
-        className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] disabled:opacity-60 disabled:cursor-not-allowed text-white py-3.5 rounded-[10px] font-bold text-[14px] transition-colors mt-auto shadow-sm"
+        className={`w-full py-3.5 rounded-[10px] font-bold text-[14px] transition-colors mt-auto shadow-sm ${
+          isStore && !isStoreOpen 
+            ? 'bg-gray-400 cursor-not-allowed text-white' 
+            : 'bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white'
+        }`}
       >
-        {actionLabel}
+        {effectiveActionLabel}
       </button>
     </div>
   );

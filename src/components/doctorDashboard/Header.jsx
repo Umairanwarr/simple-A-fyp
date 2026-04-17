@@ -95,7 +95,7 @@ export default function Header({
 
           <div className="pointer-events-none absolute right-0 top-[calc(100%+12px)] z-40 w-[340px] rounded-[20px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] opacity-0 invisible translate-y-2 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto">
             <div className="px-4 py-3 border-b border-gray-100">
-              <h3 className="text-[14px] font-bold text-[#1F2432]">Booking Notifications</h3>
+              <h3 className="text-[14px] font-bold text-[#1F2432]">Recent Notifications</h3>
             </div>
 
             <div className="max-h-[320px] overflow-y-auto">
@@ -104,7 +104,7 @@ export default function Header({
               ) : null}
 
               {!isNotificationsLoading && safeNotifications.length === 0 ? (
-                <p className="px-4 py-6 text-[13px] text-[#6B7280] font-medium text-center">No booking updates yet.</p>
+                <p className="px-4 py-6 text-[13px] text-[#6B7280] font-medium text-center">No new notifications yet.</p>
               ) : null}
 
               {!isNotificationsLoading && safeNotifications.map((notification) => (

@@ -14,13 +14,17 @@ const formatReadableDate = (rawDate) => {
 };
 
 const formatModeLabel = (mode) => {
-  return String(mode || '').toLowerCase() === 'offline' ? 'Offline (Clinic Visit)' : 'Online';
+  const m = String(mode || '').toLowerCase();
+  if (m === 'offline') return 'Offline (Clinic Visit)';
+  if (m === 'video') return 'Online (Video Call)';
+  return 'Online (Text)';
 };
 
 const getModeBadgeClassName = (mode) => {
-  return String(mode || '').toLowerCase() === 'offline'
-    ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
-    : 'bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]';
+  const m = String(mode || '').toLowerCase();
+  if (m === 'offline') return 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]';
+  if (m === 'video') return 'bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]';
+  return 'bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]';
 };
 
 const formatFeeInRupees = (value) => {

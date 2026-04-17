@@ -3,13 +3,21 @@ import { toast } from 'react-toastify';
 import AdminLayout from '../AdminLayout';
 import {
   fetchAdminDoctorSubscriptionPricing,
-  updateAdminDoctorSubscriptionPricing
+  updateAdminDoctorSubscriptionPricing,
+  fetchAdminStoreSubscriptionPricing,
+  updateAdminStoreSubscriptionPricing
 } from '../../../../services/authApi';
 
-const DEFAULT_FORM_VALUES = {
+const DEFAULT_DOCTOR_PRICING = {
   platinumPriceInRupees: '0',
   goldPriceInRupees: '999',
   diamondPriceInRupees: '2999'
+};
+
+const DEFAULT_STORE_PRICING = {
+  platinumPriceInRupees: '0',
+  goldPriceInRupees: '1499',
+  diamondPriceInRupees: '3999'
 };
 
 const readPricingValue = (pricingPayload, key, legacyKey) => {
@@ -18,248 +26,196 @@ const readPricingValue = (pricingPayload, key, legacyKey) => {
 
 const toPriceInputValue = (value, fallbackValue) => {
   const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue) || numericValue < 0) {
-    return String(fallbackValue);
-  }
-
+  if (!Number.isFinite(numericValue) || numericValue < 0) return String(fallbackValue);
   return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2);
 };
 
 const parsePriceValue = (value) => {
   const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue) || numericValue < 0) {
-    return null;
-  }
-
+  if (!Number.isFinite(numericValue) || numericValue < 0) return null;
   return Number(numericValue.toFixed(2));
 };
 
 const formatUpdatedAtLabel = (value) => {
-  if (!value) {
-    return 'Not updated yet';
-  }
-
+  if (!value) return 'Not updated yet';
   const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Not updated yet';
-  }
-
-  return parsedDate.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  });
+  if (Number.isNaN(parsedDate.getTime())) return 'Not updated yet';
+  return parsedDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 };
 
 export default function SubscriptionPricing() {
-  const [formValues, setFormValues] = useState(DEFAULT_FORM_VALUES);
-  const [updatedAt, setUpdatedAt] = useState('');
+  const [doctorForm, setDoctorForm] = useState(DEFAULT_DOCTOR_PRICING);
+  const [doctorUpdatedAt, setDoctorUpdatedAt] = useState('');
+  const [storeForm, setStoreForm] = useState(DEFAULT_STORE_PRICING);
+  const [storeUpdatedAt, setStoreUpdatedAt] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingDoctor, setIsSavingDoctor] = useState(false);
+  const [isSavingStore, setIsSavingStore] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) return;
 
-    const loadPricing = async () => {
-      const adminToken = localStorage.getItem('adminToken');
-
-      if (!adminToken) {
-        if (isMounted) {
-          setFormValues(DEFAULT_FORM_VALUES);
-          setIsLoading(false);
-        }
-
-        return;
-      }
-
+    const loadData = async () => {
       try {
-        if (isMounted) {
-          setIsLoading(true);
-        }
+        setIsLoading(true);
+        const [docRes, storeRes] = await Promise.all([
+          fetchAdminDoctorSubscriptionPricing(adminToken),
+          fetchAdminStoreSubscriptionPricing(adminToken)
+        ]);
 
-        const response = await fetchAdminDoctorSubscriptionPricing(adminToken);
-        const pricing = response?.pricing || {};
-
-        if (!isMounted) {
-          return;
-        }
-
-        setFormValues({
-          platinumPriceInRupees: toPriceInputValue(
-            readPricingValue(pricing, 'platinumPriceInRupees', 'platinumPriceInUsd'),
-            0
-          ),
-          goldPriceInRupees: toPriceInputValue(
-            readPricingValue(pricing, 'goldPriceInRupees', 'goldPriceInUsd'),
-            999
-          ),
-          diamondPriceInRupees: toPriceInputValue(
-            readPricingValue(pricing, 'diamondPriceInRupees', 'diamondPriceInUsd'),
-            2999
-          )
+        const dp = docRes?.pricing || {};
+        setDoctorForm({
+          platinumPriceInRupees: toPriceInputValue(dp.platinumPriceInRupees, 0),
+          goldPriceInRupees: toPriceInputValue(dp.goldPriceInRupees, 999),
+          diamondPriceInRupees: toPriceInputValue(dp.diamondPriceInRupees, 2999)
         });
-        setUpdatedAt(String(pricing?.updatedAt || ''));
+        setDoctorUpdatedAt(String(dp?.updatedAt || ''));
+
+        const sp = storeRes?.pricing || {};
+        setStoreForm({
+          platinumPriceInRupees: toPriceInputValue(sp.platinumPriceInRupees, 0),
+          goldPriceInRupees: toPriceInputValue(sp.goldPriceInRupees, 1499),
+          diamondPriceInRupees: toPriceInputValue(sp.diamondPriceInRupees, 3999)
+        });
+        setStoreUpdatedAt(String(sp?.updatedAt || ''));
       } catch (error) {
-        if (isMounted) {
-          toast.error(error?.message || 'Could not load subscription pricing');
-        }
+        toast.error(error?.message || 'Error loading pricing');
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
-
-    loadPricing();
-
-    return () => {
-      isMounted = false;
-    };
+    loadData();
   }, []);
 
-  const hasInvalidValues = useMemo(() => {
-    return Object.values(formValues).some((value) => parsePriceValue(value) === null);
-  }, [formValues]);
+  const handleDocChange = (field) => (e) => setDoctorForm({ ...doctorForm, [field]: e.target.value });
+  const handleStoreChange = (field) => (e) => setStoreForm({ ...storeForm, [field]: e.target.value });
 
-  const handleInputChange = (field) => (event) => {
-    const nextValue = event.target.value;
-
-    setFormValues((previousValues) => ({
-      ...previousValues,
-      [field]: nextValue
-    }));
-  };
-
-  const handleSave = async () => {
-    const adminToken = localStorage.getItem('adminToken');
-
-    if (!adminToken) {
-      toast.error('Please login as admin first');
-      return;
-    }
-
+  const handleSaveDoc = async () => {
+    const token = localStorage.getItem('adminToken');
     const payload = {
-      platinumPriceInRupees: parsePriceValue(formValues.platinumPriceInRupees),
-      goldPriceInRupees: parsePriceValue(formValues.goldPriceInRupees),
-      diamondPriceInRupees: parsePriceValue(formValues.diamondPriceInRupees)
+      platinumPriceInRupees: parsePriceValue(doctorForm.platinumPriceInRupees),
+      goldPriceInRupees: parsePriceValue(doctorForm.goldPriceInRupees),
+      diamondPriceInRupees: parsePriceValue(doctorForm.diamondPriceInRupees)
     };
-
-    if (Object.values(payload).some((priceValue) => priceValue === null)) {
-      toast.error('All prices must be valid non-negative numbers');
-      return;
-    }
+    if (Object.values(payload).some(v => v === null)) return toast.error('Check doc prices');
 
     try {
-      setIsSaving(true);
-      const response = await updateAdminDoctorSubscriptionPricing(adminToken, payload);
-      const pricing = response?.pricing || {};
-
-      setFormValues({
-        platinumPriceInRupees: toPriceInputValue(
-          readPricingValue(pricing, 'platinumPriceInRupees', 'platinumPriceInUsd'),
-          payload.platinumPriceInRupees
-        ),
-        goldPriceInRupees: toPriceInputValue(
-          readPricingValue(pricing, 'goldPriceInRupees', 'goldPriceInUsd'),
-          payload.goldPriceInRupees
-        ),
-        diamondPriceInRupees: toPriceInputValue(
-          readPricingValue(pricing, 'diamondPriceInRupees', 'diamondPriceInUsd'),
-          payload.diamondPriceInRupees
-        )
-      });
-      setUpdatedAt(String(pricing?.updatedAt || new Date().toISOString()));
-      toast.success(response?.message || 'Subscription pricing updated');
-    } catch (error) {
-      toast.error(error?.message || 'Could not update subscription pricing');
+      setIsSavingDoctor(true);
+      const res = await updateAdminDoctorSubscriptionPricing(token, payload);
+      setDoctorUpdatedAt(String(res?.pricing?.updatedAt || new Date().toISOString()));
+      toast.success('Doctor pricing updated!');
+    } catch (e) {
+      toast.error(e.message);
     } finally {
-      setIsSaving(false);
+      setIsSavingDoctor(false);
+    }
+  };
+
+  const handleSaveStore = async () => {
+    const token = localStorage.getItem('adminToken');
+    const payload = {
+      platinumPriceInRupees: parsePriceValue(storeForm.platinumPriceInRupees),
+      goldPriceInRupees: parsePriceValue(storeForm.goldPriceInRupees),
+      diamondPriceInRupees: parsePriceValue(storeForm.diamondPriceInRupees)
+    };
+    if (Object.values(payload).some(v => v === null)) return toast.error('Check store prices');
+
+    try {
+      setIsSavingStore(true);
+      const res = await updateAdminStoreSubscriptionPricing(token, payload);
+      setStoreUpdatedAt(String(res?.pricing?.updatedAt || new Date().toISOString()));
+      toast.success('Store pricing updated!');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setIsSavingStore(false);
     }
   };
 
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900">Doctor Subscription Pricing</h1>
-            <p className="text-[14px] text-gray-500 font-medium mt-1">
-              Update the monthly prices shown in the doctor dashboard subscriptions page (PKR).
-            </p>
+      <div className="flex flex-col gap-10 max-w-[1240px]">
+        {/* Doctor Section */}
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-[24px] font-bold text-gray-900">Doctor Subscriptions</h1>
+              <p className="text-[14px] text-gray-500 font-medium mt-1">Configure monthly PKR rates for medical practitioners.</p>
+            </div>
+            <span className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 text-[12px] font-semibold">
+              Updated: {formatUpdatedAtLabel(doctorUpdatedAt)}
+            </span>
           </div>
-          <span className="inline-flex items-center gap-2 self-start sm:self-auto px-3 py-1.5 rounded-full bg-[#1EBDB8]/10 text-[#0F766E] text-[12px] font-semibold border border-[#1EBDB8]/20">
-            Last updated: {formatUpdatedAtLabel(updatedAt)}
-          </span>
+
+          <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-7">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                  { id: 'platinum', label: 'Platinum (Basic)', val: doctorForm.platinumPriceInRupees },
+                  { id: 'gold', label: 'Gold (Pro)', val: doctorForm.goldPriceInRupees },
+                  { id: 'diamond', label: 'Diamond (Premium)', val: doctorForm.diamondPriceInRupees }
+              ].map(plan => (
+                <div key={plan.id} className="flex flex-col gap-2 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">{plan.label}</span>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Rs</span>
+                    <input 
+                      type="number" 
+                      value={plan.val} 
+                      onChange={handleDocChange(`${plan.id}PriceInRupees`)}
+                      className="w-full bg-white py-2.5 pl-10 pr-4 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1EBDB8]/20 outline-none font-semibold text-gray-900" 
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end mt-6 pt-6 border-t border-gray-100">
+               <button onClick={handleSaveDoc} disabled={isSavingDoctor || isLoading} className="bg-[#1EBDB8] text-white px-8 py-2.5 rounded-xl font-bold hover:bg-[#1AA9A5] transition-colors disabled:opacity-50">
+                  {isSavingDoctor ? 'Saving...' : 'Save Doctor Prices'}
+               </button>
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-2xl p-6 sm:p-7 flex flex-col gap-6">
-          {isLoading ? (
-            <p className="text-[14px] font-medium text-gray-500">Loading pricing...</p>
-          ) : null}
-
-          {!isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
-                <span className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Platinum (Basic)</span>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[14px] font-bold">Rs</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formValues.platinumPriceInRupees}
-                    onChange={handleInputChange('platinumPriceInRupees')}
-                    className="w-full bg-white text-[15px] text-gray-900 font-semibold py-2.5 pl-12 pr-3 rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-[#1EBDB8]/40"
-                  />
-                </div>
-              </label>
-
-              <label className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
-                <span className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Gold (Pro)</span>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[14px] font-bold">Rs</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formValues.goldPriceInRupees}
-                    onChange={handleInputChange('goldPriceInRupees')}
-                    className="w-full bg-white text-[15px] text-gray-900 font-semibold py-2.5 pl-12 pr-3 rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-[#1EBDB8]/40"
-                  />
-                </div>
-              </label>
-
-              <label className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
-                <span className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Diamond (Premium)</span>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[14px] font-bold">Rs</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formValues.diamondPriceInRupees}
-                    onChange={handleInputChange('diamondPriceInRupees')}
-                    className="w-full bg-white text-[15px] text-gray-900 font-semibold py-2.5 pl-12 pr-3 rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-[#1EBDB8]/40"
-                  />
-                </div>
-              </label>
+        {/* Store Section */}
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-[24px] font-bold text-gray-900">Medical Store Subscriptions</h1>
+              <p className="text-[14px] text-gray-500 font-medium mt-1">Configure monthly PKR rates for pharmacies and medical stores.</p>
             </div>
-          ) : null}
+            <span className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 text-[12px] font-semibold">
+              Updated: {formatUpdatedAtLabel(storeUpdatedAt)}
+            </span>
+          </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isLoading || isSaving || hasInvalidValues}
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#1EBDB8] text-white text-[14px] font-bold hover:bg-[#1AA9A5] disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'Saving...' : 'Save Prices'}
-            </button>
+          <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-7">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                  { id: 'platinum', label: 'Platinum (Basic)', val: storeForm.platinumPriceInRupees },
+                  { id: 'gold', label: 'Gold (Pro)', val: storeForm.goldPriceInRupees },
+                  { id: 'diamond', label: 'Diamond (Premium)', val: storeForm.diamondPriceInRupees }
+              ].map(plan => (
+                <div key={plan.id} className="flex flex-col gap-2 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">{plan.label}</span>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Rs</span>
+                    <input 
+                      type="number" 
+                      value={plan.val} 
+                      onChange={handleStoreChange(`${plan.id}PriceInRupees`)}
+                      className="w-full bg-white py-2.5 pl-10 pr-4 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1EBDB8]/20 outline-none font-semibold text-gray-900" 
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end mt-6 pt-6 border-t border-gray-100">
+               <button onClick={handleSaveStore} disabled={isSavingStore || isLoading} className="bg-[#1EBDB8] text-white px-8 py-2.5 rounded-xl font-bold hover:bg-[#1AA9A5] transition-colors disabled:opacity-50">
+                  {isSavingStore ? 'Saving...' : 'Save Store Prices'}
+               </button>
+            </div>
           </div>
         </div>
       </div>

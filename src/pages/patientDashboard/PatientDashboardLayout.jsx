@@ -34,6 +34,7 @@ const TAB_PATHS = {
   favorites: '/dashboard/favorites',
   history: '/dashboard/history',
   chats: '/dashboard/chats',
+  prescriptions: '/dashboard/prescriptions',
   livestreams: '/dashboard/livestreams'
 };
 
@@ -133,12 +134,12 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
         }
 
         const doctors = Array.isArray(data?.doctors) ? data.doctors : [];
-        const idsFromApi = Array.isArray(data?.favoriteDoctorIds)
-          ? data.favoriteDoctorIds.map((doctorId) => String(doctorId))
-          : doctors.map((doctor) => String(doctor.id));
+        const doctorIds = Array.isArray(data?.favoriteDoctorIds) ? data.favoriteDoctorIds : [];
+        const storeIds = Array.isArray(data?.favoriteStoreIds) ? data.favoriteStoreIds : [];
+        const combinedIds = [...doctorIds, ...storeIds].map(id => String(id));
 
         setFavoriteDoctors(doctors);
-        setFavoriteDoctorIds(idsFromApi);
+        setFavoriteDoctorIds(combinedIds);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -293,12 +294,12 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
         ? await removePatientFavoriteDoctor(patientToken, doctorId)
         : await addPatientFavoriteDoctor(patientToken, doctorId);
       const doctorsFromApi = Array.isArray(response?.doctors) ? response.doctors : [];
-      const idsFromApi = Array.isArray(response?.favoriteDoctorIds)
-        ? response.favoriteDoctorIds.map((favoriteDoctorId) => String(favoriteDoctorId))
-        : doctorsFromApi.map((favoriteDoctor) => String(favoriteDoctor.id));
+      const doctorIds = Array.isArray(response?.favoriteDoctorIds) ? response.favoriteDoctorIds : [];
+      const storeIds = Array.isArray(response?.favoriteStoreIds) ? response.favoriteStoreIds : [];
+      const combinedIds = [...doctorIds, ...storeIds].map(id => String(id));
 
       setFavoriteDoctors(doctorsFromApi);
-      setFavoriteDoctorIds(idsFromApi);
+      setFavoriteDoctorIds(combinedIds);
     } catch (error) {
       toast.error(error?.message || 'Could not update favorite doctors');
     } finally {
@@ -454,7 +455,9 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
           </div>
         </div>
 
-        <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        {activeTab !== 'chats' && (
+          <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        )}
       </div>
 
       <AppointmentReviewPromptModal

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchConversations, fetchMessages, sendMessageRest } from '../../services/chatApi';
+import { fetchConversations, fetchMessages, fetchPartnerInfo, sendMessageRest } from '../../services/chatApi';
 import { connectSocket, getSocket } from '../../services/socket';
 import { getPatientSessionProfile, getDoctorSessionProfile } from '../../utils/authSession';
 import { apiRequest } from '../../services/apiClient';
@@ -196,7 +196,20 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
         if (existing) {
           setActivePartner(existing);
         } else {
-          setActivePartner({ partnerId: String(initId), partnerName: '' });
+          // Set a stub and immediately resolve the name/avatar from the backend
+          setActivePartner({ partnerId: String(initId), partnerName: '', partnerAvatar: '' });
+          if (token) {
+            fetchPartnerInfo(token, initId)
+              .then((info) => {
+                if (!mounted) return;
+                setActivePartner({
+                  partnerId: String(initId),
+                  partnerName: info.partnerName || '',
+                  partnerAvatar: info.partnerAvatar || ''
+                });
+              })
+              .catch(() => {}); // Keep the stub if lookup fails
+          }
         }
         setShowMobileChat(true);
         initialPartnerIdRef.current = null;
@@ -1118,7 +1131,6 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
                       alt={c.partnerName || 'User'}
                       className="chat-conv-avatar"
                     />
-                    <div className="chat-conv-online-dot" />
                   </div>
                   <div className="chat-conv-info">
                     <div className="chat-conv-top-row">
@@ -1168,7 +1180,6 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
                     <p className="chat-room-partner-name">
                       {activePartner.partnerName || activePartner.partnerId}
                     </p>
-                    <div className="chat-room-partner-status">Online</div>
                   </div>
                 </div>
                 <div className="chat-room-header-actions">
@@ -1211,24 +1222,10 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
 
                     return (
                       <div key={item.key} className={`chat-message-row ${fromMe ? 'sent' : 'received'}`}>
-                        {!fromMe && (
-                          <img
-                            src={buildAvatar(activePartner.partnerName || 'User', '1EBDB8', activePartner.partnerAvatar)}
-                            alt="avatar"
-                            className="chat-msg-avatar"
-                          />
-                        )}
                         <div className={`chat-msg-bubble ${fromMe ? 'sent' : 'received'}`}>
                           <div className="chat-msg-text">{m.content}</div>
                           <div className="chat-msg-time">{formatMessageTime(m.createdAt)}</div>
                         </div>
-                        {fromMe && (
-                          <img
-                            src={buildAvatar(sessionProfile.name || 'Me', '1EBDB8', sessionProfile.avatarUrl)}
-                            alt="avatar"
-                            className="chat-msg-avatar"
-                          />
-                        )}
                       </div>
                     );
                   })

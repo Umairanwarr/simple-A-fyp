@@ -230,9 +230,21 @@ export default function MySchedulePage() {
         const rawEndMinutes = toMinutes(toTime);
         const endMinutes = rawEndMinutes > startMinutes ? rawEndMinutes : (startMinutes + 30);
         const startTimestamp = appointmentDay.getTime() + (startMinutes * 60 * 1000);
+        const endTimestamp = appointmentDay.getTime() + (endMinutes * 60 * 1000);
+        const now = Date.now();
 
         if (!appointmentDay || !fromTime || !toTime) {
           return null;
+        }
+
+        const isCancelled = String(appointment?.bookingStatus || '').trim().toLowerCase() === 'cancelled';
+        let currentStatus = 'upcoming';
+        if (isCancelled) {
+          currentStatus = 'cancelled';
+        } else if (now >= endTimestamp) {
+          currentStatus = 'completed';
+        } else if (now >= startTimestamp && now < endTimestamp) {
+          currentStatus = 'ongoing';
         }
 
         return {
@@ -244,9 +256,8 @@ export default function MySchedulePage() {
           fromTime,
           toTime,
           consultationMode: String(appointment?.consultationMode || '').trim().toLowerCase() || 'online',
-          bookingStatus: String(appointment?.bookingStatus || '').trim().toLowerCase() === 'cancelled'
-            ? 'cancelled'
-            : 'confirmed',
+          bookingStatus: isCancelled ? 'cancelled' : 'confirmed',
+          currentStatus,
           startMinutes,
           endMinutes,
           startHour: Math.floor(startMinutes / 60),
@@ -624,33 +635,63 @@ export default function MySchedulePage() {
                         ) : (
                           <div className="space-y-2">
                             {slotAppointments.map((appointment) => {
-                              const isCancelled = appointment.bookingStatus === 'cancelled';
-                              const canRescheduleAppointment = !isCancelled && appointment.startTimestamp > Date.now();
+                              const isCancelled = appointment.currentStatus === 'cancelled';
+                              const isOngoing = appointment.currentStatus === 'ongoing';
+                              const isCompleted = appointment.currentStatus === 'completed';
+                              const isUpcoming = appointment.currentStatus === 'upcoming';
+                              const canRescheduleAppointment = isUpcoming;
+
+                              let bgClass = 'bg-[#DFF4F1] border-[#A7E3DB]';
+                              let badgeTextClass = 'text-[#0F766E]';
+                              let label = 'Upcoming';
+                              let titleClass = 'text-[#1F2432]';
+                              let textClass1 = 'text-[#334155]';
+                              let textClass2 = 'text-[#155E75]';
+
+                              if (isCancelled) {
+                                bgClass = 'bg-[#FEE2E2] border-[#FCA5A5]';
+                                badgeTextClass = 'text-[#B91C1C]';
+                                label = 'Cancelled';
+                                titleClass = 'text-[#991B1B]';
+                                textClass1 = 'text-[#B45309]';
+                                textClass2 = 'text-[#991B1B]';
+                              } else if (isOngoing) {
+                                bgClass = 'bg-[#DCFCE7] border-[#86EFAC]';
+                                badgeTextClass = 'text-[#166534]';
+                                label = 'Ongoing';
+                                titleClass = 'text-[#14532D]';
+                                textClass1 = 'text-[#166534]';
+                                textClass2 = 'text-[#14532D]';
+                              } else if (isCompleted) {
+                                bgClass = 'bg-[#F3F4F6] border-[#D1D5DB]';
+                                badgeTextClass = 'text-[#4B5563]';
+                                label = 'Completed';
+                                titleClass = 'text-[#374151]';
+                                textClass1 = 'text-[#6B7280]';
+                                textClass2 = 'text-[#4B5563]';
+                              }
 
                               return (
                                 <div
                                   key={appointment.id}
-                                  className={`rounded-xl border px-3 py-2.5 shadow-sm ${isCancelled
-                                      ? 'bg-[#FEE2E2] border-[#FCA5A5]'
-                                      : 'bg-[#DFF4F1] border-[#A7E3DB]'
-                                    }`}
+                                  className={`rounded-xl border px-3 py-2.5 shadow-sm ${bgClass}`}
                                 >
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className={`text-[14px] font-bold ${isCancelled ? 'text-[#991B1B]' : 'text-[#1F2432]'}`}>
+                                    <p className={`text-[14px] font-bold ${titleClass}`}>
                                       {appointment.patientName}
                                     </p>
-                                    <span className={`text-[10px] font-bold uppercase tracking-[0.08em] ${isCancelled ? 'text-[#B91C1C]' : 'text-[#0F766E]'}`}>
-                                      {isCancelled ? 'Cancelled' : 'Booked'}
+                                    <span className={`text-[10px] font-bold uppercase tracking-[0.08em] ${badgeTextClass}`}>
+                                      {label}
                                     </span>
                                   </div>
 
-                                  <p className={`text-[11px] mt-1 truncate ${isCancelled ? 'text-[#B45309]' : 'text-[#334155]'}`}>
+                                  <p className={`text-[11px] mt-1 truncate ${textClass1}`}>
                                     {appointment.patientEmail}
                                   </p>
-                                  <p className={`text-[11px] truncate ${isCancelled ? 'text-[#B45309]' : 'text-[#334155]'}`}>
+                                  <p className={`text-[11px] truncate ${textClass1}`}>
                                     {appointment.patientPhoneNumber}
                                   </p>
-                                  <p className={`text-[11px] font-semibold mt-1 ${isCancelled ? 'text-[#991B1B]' : 'text-[#155E75]'}`}>
+                                  <p className={`text-[11px] font-semibold mt-1 ${textClass2}`}>
                                     {appointment.fromTime} - {appointment.toTime} · {formatModeLabel(appointment.consultationMode)}
                                   </p>
 

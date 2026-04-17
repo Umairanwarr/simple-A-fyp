@@ -19,7 +19,11 @@ import { getPatientSessionProfile } from '../../../utils/authSession';
 const APPOINTMENT_TYPE_OPTIONS = [
   {
     id: 'online',
-    label: 'Online'
+    label: 'Online (Text)'
+  },
+  {
+    id: 'video',
+    label: 'Online (Video)'
   },
   {
     id: 'offline',
@@ -209,9 +213,9 @@ const formatCurrency = (amountValue) => {
   }).format(safeAmount);
 };
 
-const createDefaultBookingForm = () => {
+const createDefaultBookingForm = (profile = null) => {
   return {
-    phoneNumber: '',
+    phoneNumber: profile?.phoneNumber || '',
     streetAddress: '',
     aptSuite: '',
     city: '',
@@ -225,19 +229,21 @@ const buildModeSlots = (value) => {
   if (!value || typeof value !== 'object') {
     return {
       online: [],
+      video: [],
       offline: []
     };
   }
 
   return {
     online: Array.isArray(value.online) ? value.online : [],
+    video: Array.isArray(value.video) ? value.video : [],
     offline: Array.isArray(value.offline) ? value.offline : []
   };
 };
 
 export default function DoctorProfileScreen({ doctorId, onBack }) {
   const [doctor, setDoctor] = useState(null);
-  const [slotsByMode, setSlotsByMode] = useState({ online: [], offline: [] });
+  const [slotsByMode, setSlotsByMode] = useState({ online: [], video: [], offline: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [selectedMode, setSelectedMode] = useState('online');
@@ -245,9 +251,9 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
   const [activeTab, setActiveTab] = useState('about');
   const [previewMedia, setPreviewMedia] = useState(null);
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
-  const [bookingForm, setBookingForm] = useState(createDefaultBookingForm());
-  const [isBookingProcessing, setIsBookingProcessing] = useState(false);
   const patientProfile = useMemo(() => getPatientSessionProfile(), []);
+  const [bookingForm, setBookingForm] = useState(() => createDefaultBookingForm(patientProfile));
+  const [isBookingProcessing, setIsBookingProcessing] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -256,7 +262,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       if (!doctorId) {
         if (isMounted) {
           setDoctor(null);
-          setSlotsByMode({ online: [], offline: [] });
+          setSlotsByMode({ online: [], video: [], offline: [] });
           setLoadError('Doctor profile could not be opened.');
           setIsLoading(false);
         }
@@ -269,7 +275,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       if (!patientToken) {
         if (isMounted) {
           setDoctor(null);
-          setSlotsByMode({ online: [], offline: [] });
+          setSlotsByMode({ online: [], video: [], offline: [] });
           setLoadError('Please sign in again to continue.');
           setIsLoading(false);
         }
@@ -283,7 +289,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         setSelectedSlotId('');
         setIsBookingFormOpen(false);
         setPreviewMedia(null);
-        setBookingForm(createDefaultBookingForm());
+        setBookingForm(createDefaultBookingForm(patientProfile));
         setIsBookingProcessing(false);
 
         const data = await fetchPatientDoctorProfile(patientToken, doctorId);
@@ -298,6 +304,8 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
 
         if (normalizedSlots.online.length > 0) {
           setSelectedMode('online');
+        } else if (normalizedSlots.video.length > 0) {
+          setSelectedMode('video');
         } else if (normalizedSlots.offline.length > 0) {
           setSelectedMode('offline');
         } else {
@@ -309,7 +317,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         }
 
         setDoctor(null);
-        setSlotsByMode({ online: [], offline: [] });
+        setSlotsByMode({ online: [], video: [], offline: [] });
         setLoadError(error?.message || 'Could not load doctor profile right now');
       } finally {
         if (isMounted) {
@@ -326,7 +334,9 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
   }, [doctorId]);
 
   const selectedModeSlots = useMemo(() => {
-    return selectedMode === 'offline' ? slotsByMode.offline : slotsByMode.online;
+    if (selectedMode === 'offline') return slotsByMode.offline;
+    if (selectedMode === 'video') return slotsByMode.video;
+    return slotsByMode.online;
   }, [selectedMode, slotsByMode]);
 
   const selectedSlot = useMemo(() => {
@@ -334,7 +344,9 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
   }, [selectedModeSlots, selectedSlotId]);
 
   const selectedAppointmentTypeLabel = useMemo(() => {
-    return selectedMode === 'offline' ? 'Offline (Clinic Visit)' : 'Online Consultation';
+    if (selectedMode === 'offline') return 'Offline (Clinic Visit)';
+    if (selectedMode === 'video') return 'Online Video Call';
+    return 'Online Text Consultation';
   }, [selectedMode]);
 
   const selectedSlotFeeLabel = useMemo(() => {
@@ -484,13 +496,14 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       setSlotsByMode((previousSlots) => {
         return {
           online: previousSlots.online.filter((slot) => String(slot.id) !== bookedSlotId),
+          video: previousSlots.video.filter((slot) => String(slot.id) !== bookedSlotId),
           offline: previousSlots.offline.filter((slot) => String(slot.id) !== bookedSlotId)
         };
       });
 
       setSelectedSlotId('');
       setIsBookingFormOpen(false);
-      setBookingForm(createDefaultBookingForm());
+      setBookingForm(createDefaultBookingForm(patientProfile));
       toast.success('Appointment booked and payment confirmed successfully');
       window.dispatchEvent(new Event('patient-appointment-updated'));
       window.dispatchEvent(new Event('doctor-appointment-updated'));
@@ -728,7 +741,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
 
           <div className="space-y-1.5 text-center sm:text-left mt-2">
             <h1 className="text-[32px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{doctor.name}</h1>
-            <p className="text-[22px] font-semibold text-[#1F2432]">{doctor.specialty} Primary Care Doctor</p>
+            <p className="text-[22px] font-semibold text-[#1F2432]">{doctor.specialty}</p>
             <p className="text-[18px] font-medium text-[#6B7280]">{doctor.location || 'Doctors Address'}</p>
             <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 text-[16px] font-medium">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -858,10 +871,13 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         <div className="space-y-4 mt-8">
           <h3 className="text-[18px] font-medium text-[#1F2432]">Scheduling details</h3>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {APPOINTMENT_TYPE_OPTIONS.map((option) => {
               const isSelected = selectedMode === option.id;
-              const slotCount = option.id === 'online' ? slotsByMode.online.length : slotsByMode.offline.length;
+              let slotCount = 0;
+              if (option.id === 'online') slotCount = slotsByMode.online.length;
+              else if (option.id === 'video') slotCount = slotsByMode.video.length;
+              else slotCount = slotsByMode.offline.length;
 
               return (
                 <button
@@ -915,7 +931,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                         {formatSlotDate(slot.date)}
                     </div>
                     <div className="bg-[#1EBDB8] text-white text-[13px] font-semibold w-full py-3 h-1/2 flex items-center justify-center">
-                        1 appts
+                        {formatCurrency(slot.priceInRupees)}
                     </div>
                   </button>
                 );

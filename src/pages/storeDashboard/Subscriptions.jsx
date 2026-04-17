@@ -1,11 +1,11 @@
 import React from 'react';
 import StoreDashboardLayout from './StoreDashboardLayout';
-import StoreSubscriptions from '../../components/storeDashboard/StoreSubscriptions';
+import SubscriptionManager from '../../components/storeDashboard/SubscriptionManager';
 
 export default function Subscriptions() {
   return (
     <StoreDashboardLayout activeTab="subscriptions">
-      <StoreSubscriptions />
+      <SubscriptionManager />
     </StoreDashboardLayout>
   );
 }

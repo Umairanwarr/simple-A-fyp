@@ -20,7 +20,8 @@ const TAB_PATHS = {
   subscriptions: '/store/dashboard/subscriptions',
   orders: '/store/dashboard/orders',
   media: '/store/dashboard/media',
-  delivery: '/store/dashboard/delivery'
+  delivery: '/store/dashboard/delivery',
+  profile: '/store/dashboard/profile'
 };
 
 export default function StoreDashboardLayout({ activeTab = 'analytics', children }) {
@@ -45,8 +46,7 @@ export default function StoreDashboardLayout({ activeTab = 'analytics', children
   };
 
   const handleOpenAvatarModal = () => {
-    setIsAvatarMandatory(!hasSessionAvatar('medicalStore'));
-    setIsAvatarModalOpen(true);
+    navigate('/store/dashboard/profile');
   };
 
   const handleCloseAvatarModal = () => {

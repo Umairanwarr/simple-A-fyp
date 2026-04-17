@@ -245,7 +245,9 @@ export default function DoctorDashboardLayout({ activeTab = 'analytics', childre
           </main>
         </div>
 
-        <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        {activeTab !== 'chats' && (
+          <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        )}
       </div>
 
       <style jsx="true">{`
