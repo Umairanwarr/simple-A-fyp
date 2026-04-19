@@ -578,6 +578,40 @@ export const loginPatientWithGoogle = async (idToken) => {
   });
 };
 
+export const fetchPatientStoreOrders = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/patient/orders', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchPendingStoreReview = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/patient/store-review/pending', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const submitStoreReview = async (token, orderId, { rating, comment }) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest(`/auth/patient/store-review/${orderId}/submit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ rating, comment })
+  });
+};
+
+export const skipStoreReview = async (token, orderId) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest(`/auth/patient/store-review/${orderId}/skip`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ confirmSkip: true })
+  });
+};
+
 export const loginDoctor = async ({ email, password, otp }) => {
   return apiRequest('/auth/doctor/login', {
     method: 'POST',

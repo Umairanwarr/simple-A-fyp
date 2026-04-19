@@ -15,6 +15,7 @@ import PatientHistory from './pages/patientDashboard/History';
 import PatientChats from './pages/patientDashboard/Chats';
 import PatientLiveStreams from './pages/patientDashboard/LiveStreams';
 import PatientPrescriptions from './pages/patientDashboard/Prescriptions';
+import PatientOrders from './pages/patientDashboard/Orders';
 import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
 import PatientStoreProfile from './pages/patientDashboard/StoreProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
@@ -150,6 +151,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
               <PatientPrescriptions />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/dashboard/orders"
+          element={(
+            <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
+              <PatientOrders />
             </RequireRoleAuth>
           )}
         />

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import Sidebar from '../../components/patientDashboard/Sidebar';
 import Header from '../../components/patientDashboard/Header';
 import AppointmentReviewPromptModal from '../../components/patientDashboard/AppointmentReviewPromptModal';
+import StoreReviewPromptModal from '../../components/patientDashboard/StoreReviewPromptModal';
 import AvatarUploadModal from '../../components/shared/AvatarUploadModal';
 import ReportBugButton from '../../components/shared/ReportBugButton';
 import ReportBugModal from '../../components/shared/ReportBugModal';
@@ -12,6 +13,9 @@ import {
   fetchPatientFavoriteDoctors,
   fetchPatientNotifications,
   fetchPatientPendingReviewAppointment,
+  fetchPendingStoreReview,
+  submitStoreReview,
+  skipStoreReview,
   markPatientNotificationsRead,
   removePatientFavoriteDoctor,
   skipPatientAppointmentReview,
@@ -35,6 +39,7 @@ const TAB_PATHS = {
   history: '/dashboard/history',
   chats: '/dashboard/chats',
   prescriptions: '/dashboard/prescriptions',
+  orders: '/dashboard/orders',
   livestreams: '/dashboard/livestreams'
 };
 
@@ -57,6 +62,9 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
   const [isReviewActionProcessing, setIsReviewActionProcessing] = useState(false);
   const [isBugReportModalOpen, setIsBugReportModalOpen] = useState(false);
   const [isSubmittingBugReport, setIsSubmittingBugReport] = useState(false);
+  // Store review state
+  const [pendingStoreReviewOrder, setPendingStoreReviewOrder] = useState(null);
+  const [isStoreReviewProcessing, setIsStoreReviewProcessing] = useState(false);
 
   const loadPatientNotifications = useCallback(async ({ shouldShowLoading = false } = {}) => {
     const patientToken = localStorage.getItem('patientToken');
@@ -88,18 +96,30 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
 
   const loadPendingReviewAppointment = useCallback(async () => {
     const patientToken = localStorage.getItem('patientToken');
-
-    if (!patientToken) {
-      setPendingReviewAppointment(null);
-      return;
-    }
-
+    if (!patientToken) { setPendingReviewAppointment(null); return; }
     try {
       const data = await fetchPatientPendingReviewAppointment(patientToken);
       setPendingReviewAppointment(data?.appointment || null);
-    } catch (error) {
-      setPendingReviewAppointment(null);
-    }
+    } catch { setPendingReviewAppointment(null); }
+  }, []);
+
+  const loadPendingStoreReview = useCallback(async () => {
+    const patientToken = localStorage.getItem('patientToken');
+    if (!patientToken) { setPendingStoreReviewOrder(null); return; }
+    try {
+      const data = await fetchPendingStoreReview(patientToken);
+      if (data?.order) {
+        setPendingStoreReviewOrder({
+          id: String(data.order._id),
+          store: {
+            name: data.order.storeId?.name || 'Medical Store',
+            avatarUrl: data.order.storeId?.avatarDocument?.url || null
+          }
+        });
+      } else {
+        setPendingStoreReviewOrder(null);
+      }
+    } catch { setPendingStoreReviewOrder(null); }
   }, []);
 
   useEffect(() => {
@@ -194,33 +214,59 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
 
   useEffect(() => {
     let isMounted = true;
-
-    const loadPendingReviewSafely = async () => {
-      if (!isMounted) {
-        return;
-      }
-
-      await loadPendingReviewAppointment();
-    };
-
-    loadPendingReviewSafely();
-
-    const pollingIntervalId = window.setInterval(() => {
-      loadPendingReviewSafely();
-    }, 30000);
-
-    const refreshHandler = () => {
-      loadPendingReviewSafely();
-    };
-
-    window.addEventListener('patient-appointment-updated', refreshHandler);
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(pollingIntervalId);
-      window.removeEventListener('patient-appointment-updated', refreshHandler);
-    };
+    const load = async () => { if (isMounted) await loadPendingReviewAppointment(); };
+    load();
+    const polling = window.setInterval(load, 30000);
+    const handler = () => load();
+    window.addEventListener('patient-appointment-updated', handler);
+    return () => { isMounted = false; window.clearInterval(polling); window.removeEventListener('patient-appointment-updated', handler); };
   }, [loadPendingReviewAppointment]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => { if (isMounted) await loadPendingStoreReview(); };
+    load();
+    const polling = window.setInterval(load, 30000);
+    const handler = () => load();
+    window.addEventListener('patient-order-updated', handler);
+    return () => { isMounted = false; window.clearInterval(polling); window.removeEventListener('patient-order-updated', handler); };
+  }, [loadPendingStoreReview]);
+
+  const handleSubmitStoreReview = async ({ rating, comment }) => {
+    const orderId = String(pendingStoreReviewOrder?.id || '').trim();
+    const patientToken = localStorage.getItem('patientToken');
+    if (!orderId || !patientToken) return;
+    try {
+      setIsStoreReviewProcessing(true);
+      await submitStoreReview(patientToken, orderId, { rating, comment });
+      toast.success('Thank you. Your store review has been submitted.');
+      setPendingStoreReviewOrder(null);
+      window.dispatchEvent(new Event('patient-order-updated'));
+      await loadPendingStoreReview();
+    } catch (error) {
+      toast.error(error?.message || 'Could not submit review right now');
+    } finally {
+      setIsStoreReviewProcessing(false);
+    }
+  };
+
+  const handleSkipStoreReview = async () => {
+    const orderId = String(pendingStoreReviewOrder?.id || '').trim();
+    const patientToken = localStorage.getItem('patientToken');
+    if (!orderId || !patientToken) return;
+    try {
+      setIsStoreReviewProcessing(true);
+      await skipStoreReview(patientToken, orderId);
+      toast.success('Review skipped.');
+      setPendingStoreReviewOrder(null);
+      window.dispatchEvent(new Event('patient-order-updated'));
+      await loadPendingStoreReview();
+    } catch (error) {
+      toast.error(error?.message || 'Could not skip review right now');
+    } finally {
+      setIsStoreReviewProcessing(false);
+    }
+  };
 
   const handleLogout = () => {
     clearRoleSession({ tokenKey: 'patientToken', userKey: 'patient' });
@@ -466,6 +512,14 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
         isSubmitting={isReviewActionProcessing}
         onSubmit={handleSubmitAppointmentReview}
         onSkip={handleSkipAppointmentReview}
+      />
+
+      <StoreReviewPromptModal
+        isOpen={Boolean(pendingStoreReviewOrder) && !pendingReviewAppointment}
+        order={pendingStoreReviewOrder}
+        isSubmitting={isStoreReviewProcessing}
+        onSubmit={handleSubmitStoreReview}
+        onSkip={handleSkipStoreReview}
       />
 
       <AvatarUploadModal
