@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { connectSocket, getSocket } from '../../services/socket';
 
-export default function LiveStreamRoom({ streamId, channelName, token, appId, isHost, streamTitle, hostName, onLeave, onEndStream }) {
+export default function LiveStreamRoom({ streamId, channelName, token, appId, isHost, isAdmin, streamTitle, hostName, onLeave, onEndStream }) {
   const [remoteUsers, setRemoteUsers] = useState({});
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -10,6 +10,9 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isLive, setIsLive] = useState(true);
+  const [adminTerminatedReason, setAdminTerminatedReason] = useState(null);
+  const [showAdminEndModal, setShowAdminEndModal] = useState(false);
+  const [adminEndReason, setAdminEndReason] = useState('');
 
   // Co-Host Management
   const [streamRole, setStreamRole] = useState(isHost ? 'host' : 'viewer');
@@ -17,9 +20,14 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
   const [activeCoHostId, setActiveCoHostId] = useState(null);
   const [requestStatus, setRequestStatus] = useState(null);
 
-  const profile = JSON.parse(localStorage.getItem('doctor') || localStorage.getItem('patient') || '{}');
+  const profile = JSON.parse(
+    localStorage.getItem('doctor') ||
+    localStorage.getItem('patient') ||
+    localStorage.getItem('admin') ||
+    '{}'
+  );
   const myId = profile._id || profile.id;
-  const myName = profile.fullName || profile.firstName || 'User';
+  const myName = profile.fullName || profile.firstName || profile.name || 'Admin';
 
   const localPlayerRef = useRef(null);
   const clientRef = useRef(null);
@@ -85,7 +93,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
     // Socket: join stream room for viewer count + chat
     let socket = getSocket();
     if (!socket) {
-      const tkn = localStorage.getItem('doctorToken') || localStorage.getItem('patientToken');
+      const tkn = localStorage.getItem('adminToken') || localStorage.getItem('doctorToken') || localStorage.getItem('patientToken');
       if (tkn) socket = connectSocket(tkn);
     }
     
@@ -103,6 +111,17 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
       socket.on('livestream:ended', (data) => {
         if (data.channelName === channelName) {
           setIsLive(false);
+        }
+      });
+
+      socket.on('livestream:admin-terminated', (data) => {
+        if (data.channelName === channelName) {
+          setAdminTerminatedReason(data.reason);
+          setIsLive(false);
+          // If this is the host, trigger onEndStream so the stream is cleaned up
+          if (isHost && onEndStream) {
+            onEndStream();
+          }
         }
       });
 
@@ -188,6 +207,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
         socket.off('livestream:viewer-count');
         socket.off('livestream:chat-message');
         socket.off('livestream:ended');
+        socket.off('livestream:admin-terminated');
         socket.off('livestream:cohost-request');
         socket.off('livestream:cohost-accepted');
         socket.off('livestream:cohost-rejected');
@@ -241,15 +261,23 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
 
     let socket = getSocket();
     if (!socket) {
-      const tkn = localStorage.getItem('doctorToken') || localStorage.getItem('patientToken');
+      const tkn = localStorage.getItem('adminToken') || localStorage.getItem('doctorToken') || localStorage.getItem('patientToken');
       if (tkn) socket = connectSocket(tkn);
     }
 
     if (socket) {
-      const profile = JSON.parse(localStorage.getItem('doctor') || localStorage.getItem('patient') || '{}');
+      const senderProfile = JSON.parse(
+        localStorage.getItem('doctor') ||
+        localStorage.getItem('patient') ||
+        localStorage.getItem('admin') ||
+        '{}'
+      );
+      const senderName = isAdmin
+        ? 'Admin'
+        : senderProfile.fullName || senderProfile.firstName || 'User';
       socket.emit('livestream:chat', {
         channelName,
-        senderName: profile.fullName || profile.firstName || 'User',
+        senderName: senderName,
         message: msg
       });
     }
@@ -263,6 +291,25 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
       if (onEndStream) onEndStream();
     } else {
       onLeave();
+    }
+  };
+
+  const handleAdminEndStream = async () => {
+    if (!adminEndReason.trim()) return;
+    try {
+      const { adminTerminateLiveStream } = await import('../../services/authApi');
+      const adminTkn = localStorage.getItem('adminToken');
+      await adminTerminateLiveStream(adminTkn, streamId, adminEndReason);
+      
+      const socket = getSocket();
+      if (socket) {
+        socket.emit('livestream:admin-terminate', { channelName, reason: adminEndReason });
+      }
+      
+      setShowAdminEndModal(false);
+      onLeave();
+    } catch (err) {
+      console.error('Failed to terminate stream as admin:', err);
     }
   };
 
@@ -333,11 +380,38 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
   if (!isLive && !isHost) {
     return (
       <div style={S.overlay}>
-        <div style={{ textAlign: 'center', color: '#fff' }}>
+        <div style={{ textAlign: 'center', color: '#fff', padding: '0 20px' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>📡</div>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>Stream Has Ended</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '24px' }}>The host has ended this live stream.</p>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
+            {adminTerminatedReason ? 'Stream Terminated' : 'Stream Has Ended'}
+          </h2>
+          <p style={{ color: adminTerminatedReason ? '#fca5a5' : 'rgba(255,255,255,0.6)', marginBottom: '24px', fontSize: '16px', maxWidth: '400px', margin: '0 auto 24px auto' }}>
+            {adminTerminatedReason 
+              ? `This stream was terminated by an Admin. Reason: ${adminTerminatedReason}` 
+              : 'The host has ended this live stream.'}
+          </p>
           <button onClick={onLeave} style={S.primaryBtn}>Return</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Host view when terminated by Admin
+  if (!isLive && isHost && adminTerminatedReason) {
+    return (
+      <div style={S.overlay}>
+        <div style={{ textAlign: 'center', color: '#fff', padding: '0 20px', maxWidth: '500px', background: '#1f2937', padding: '40px', borderRadius: '16px', border: '1px solid #ef4444' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px', color: '#ef4444' }}>
+            Stream Terminated by Admin
+          </h2>
+          <p style={{ color: '#fca5a5', marginBottom: '24px', fontSize: '15px' }}>
+            Your stream was forcefully ended by an administrator for the following reason:
+          </p>
+          <div style={{ background: '#374151', padding: '16px', borderRadius: '8px', marginBottom: '24px', fontStyle: 'italic' }}>
+            "{adminTerminatedReason}"
+          </div>
+          <button onClick={onLeave} style={S.primaryBtn}>Return to Dashboard</button>
         </div>
       </div>
     );
@@ -455,6 +529,12 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
             ) : (
               <button onClick={onLeave} style={S.endBtn}>Leave Stream</button>
             )}
+
+            {isAdmin && (
+              <button onClick={() => setShowAdminEndModal(true)} style={{ ...S.endBtn, background: '#ef4444', marginLeft: '12px', border: '2px solid #b91c1c' }}>
+                End as Admin
+              </button>
+            )}
           </div>
         </div>
 
@@ -493,6 +573,28 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
           </div>
         </div>
       </div>
+
+      {/* Admin End Modal */}
+      {showAdminEndModal && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#1e293b', width: '400px', padding: '24px', borderRadius: '16px', border: '1px solid #334155' }}>
+            <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Terminate Live Stream</h3>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '16px' }}>Provide a reason for terminating this stream. This will be shown to all viewers and the host.</p>
+            <input 
+               type="text" 
+               placeholder="e.g. Violation of community guidelines"
+               value={adminEndReason}
+               onChange={e => setAdminEndReason(e.target.value)}
+               style={{ width: '100%', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '12px', borderRadius: '8px', marginBottom: '24px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setShowAdminEndModal(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '8px 16px' }}>Cancel</button>
+              <button onClick={handleAdminEndStream} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: '8px', padding: '8px 24px', cursor: 'pointer', fontWeight: 600 }}>Terminate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }

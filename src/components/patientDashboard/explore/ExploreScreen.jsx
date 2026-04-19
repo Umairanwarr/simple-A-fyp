@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import DoctorCard from '../shared/DoctorCard';
 import { exploreSpecialties, patientDoctorDirectory } from '../data/doctorDirectory';
-import { fetchPatientExploreDoctors } from '../../../services/authApi';
+import { fetchPatientExploreDoctors, fetchPatientExploreStores } from '../../../services/authApi';
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
 const isValidObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || '').trim());
@@ -10,16 +10,19 @@ export default function ExploreScreen({
   favoriteDoctorIds = [],
   favoriteActionDoctorIds = [],
   onToggleFavoriteDoctor,
-  onScheduleDoctor
+  onScheduleDoctor,
+  onOrderFromStore
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
-  const [remoteDoctors, setRemoteDoctors] = useState([]);
-  const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
-  const [doctorLoadError, setDoctorLoadError] = useState('');
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
   const favoriteDoctorIdSet = useMemo(() => {
     return new Set((Array.isArray(favoriteDoctorIds) ? favoriteDoctorIds : []).map((doctorId) => String(doctorId)));
   }, [favoriteDoctorIds]);
+
   const favoriteActionDoctorIdSet = useMemo(() => {
     return new Set((Array.isArray(favoriteActionDoctorIds) ? favoriteActionDoctorIds : []).map((doctorId) => String(doctorId)));
   }, [favoriteActionDoctorIds]);
@@ -52,36 +55,41 @@ export default function ExploreScreen({
       ].join(' ').toLowerCase();
 
       return queryTokens.some((token) => searchableText.includes(token));
-    });
+    }).map(d => ({ ...d, type: 'doctor' }));
   }, [searchQuery, selectedSpecialty, hasSpecialtyFilter]);
 
   useEffect(() => {
     let isMounted = true;
     const delayTimer = setTimeout(async () => {
       try {
-        setIsLoadingDoctors(true);
-        setDoctorLoadError('');
+        setIsLoading(true);
+        setLoadError('');
 
-        const data = await fetchPatientExploreDoctors({
-          query: searchQuery,
-          specialty: hasQuery ? '' : selectedSpecialty
-        });
+        // Fetch both doctors and stores in parallel
+        const [doctorData, storeData] = await Promise.all([
+          fetchPatientExploreDoctors({
+            query: searchQuery,
+            specialty: hasQuery ? '' : selectedSpecialty
+          }),
+          fetchPatientExploreStores({
+            query: searchQuery
+          })
+        ]);
 
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          const combined = [
+            ...(Array.isArray(doctorData?.doctors) ? doctorData.doctors : []),
+            ...(Array.isArray(storeData?.stores) ? storeData.stores : [])
+          ];
+          setResults(combined);
         }
-
-        setRemoteDoctors(Array.isArray(data?.doctors) ? data.doctors : []);
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        setDoctorLoadError(error?.message || 'Could not load doctors right now');
-        setRemoteDoctors([]);
+        if (!isMounted) return;
+        setLoadError(error?.message || 'Could not load search results right now');
+        setResults([]);
       } finally {
         if (isMounted) {
-          setIsLoadingDoctors(false);
+          setIsLoading(false);
         }
       }
     }, 220);
@@ -93,39 +101,42 @@ export default function ExploreScreen({
   }, [searchQuery, selectedSpecialty, hasQuery]);
 
   const shouldShowSearchResults = hasQuery || hasSpecialtyFilter;
-  const effectiveDoctors = remoteDoctors.length > 0 ? remoteDoctors : fallbackDoctors;
-  const doctorsToDisplay = shouldShowSearchResults
-    ? effectiveDoctors
-    : effectiveDoctors.slice(0, 3);
+  const effectiveResults = results.length > 0 ? results : fallbackDoctors;
+
+  const resultsToDisplay = shouldShowSearchResults
+    ? effectiveResults
+    : effectiveResults.slice(0, 3);
 
   return (
     <div className="space-y-8 pb-24">
-      <div className="bg-[#1F2432] rounded-full pl-5 pr-2 py-2.5 flex items-center gap-3 shadow-sm">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search disease, hospitals"
-          className="flex-1 bg-transparent text-white placeholder:text-white/60 text-[15px] outline-none"
-        />
+      <div className="flex flex-col gap-6">
+        <div className="bg-[#1F2432] rounded-full pl-5 pr-2 py-2.5 flex items-center gap-3 shadow-sm">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search disease, specialists, or medical stores"
+            className="flex-1 bg-transparent text-white placeholder:text-white/60 text-[15px] outline-none"
+          />
 
-        <div className="hidden md:flex items-center gap-2 text-white/85 text-[14px] font-semibold border-l border-white/25 pl-4 pr-2">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          <span>Mountain View, CA</span>
+          <div className="hidden md:flex items-center gap-2 text-white/85 text-[14px] font-semibold border-l border-white/25 pl-4 pr-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span>Mountain View, CA</span>
+          </div>
+
+          <button
+            type="button"
+            className="w-14 h-14 rounded-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white flex items-center justify-center transition-colors"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
         </div>
-
-        <button
-          type="button"
-          className="w-14 h-14 rounded-full bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white flex items-center justify-center transition-colors"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </button>
       </div>
 
       {!hasQuery && (
@@ -165,33 +176,38 @@ export default function ExploreScreen({
           {shouldShowSearchResults ? 'Search Results' : 'Sponsored'}
         </h2>
 
-        {doctorLoadError && (
+        {loadError && (
           <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
-            <p className="text-[13px] font-medium text-amber-700">{doctorLoadError}</p>
+            <p className="text-[13px] font-medium text-amber-700">{loadError}</p>
           </div>
         )}
 
-        {isLoadingDoctors ? (
+        {isLoading ? (
           <div className="bg-white border border-gray-100 rounded-[20px] p-8 text-center">
-            <p className="text-[16px] font-bold text-[#4B5563]">Searching doctors...</p>
+            <p className="text-[16px] font-bold text-[#4B5563]">Searching...</p>
           </div>
-        ) : doctorsToDisplay.length === 0 ? (
+        ) : resultsToDisplay.length === 0 ? (
           <div className="bg-white border border-gray-100 rounded-[20px] p-8 text-center">
-            <p className="text-[16px] font-bold text-[#4B5563]">No doctors found</p>
-            <p className="text-[13px] text-[#9CA3AF] mt-1">Try another search term or specialty filter.</p>
+            <p className="text-[16px] font-bold text-[#4B5563]">No results found</p>
+            <p className="text-[13px] text-[#9CA3AF] mt-1">Try another search term or filter.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {doctorsToDisplay.map((doctor) => (
+            {resultsToDisplay.map((item) => (
               <DoctorCard
-                key={doctor.id}
-                doctor={doctor}
-                showFavorite={shouldShowSearchResults && Boolean(onToggleFavoriteDoctor) && isValidObjectId(doctor.id)}
-                isFavorite={favoriteDoctorIdSet.has(String(doctor.id))}
-                isFavoritePending={favoriteActionDoctorIdSet.has(String(doctor.id))}
+                key={`${item.type}-${item.id}`}
+                doctor={item}
+                showFavorite={shouldShowSearchResults && Boolean(onToggleFavoriteDoctor) && isValidObjectId(item.id)}
+                isFavorite={favoriteDoctorIdSet.has(String(item.id))}
+                isFavoritePending={favoriteActionDoctorIdSet.has(String(item.id))}
                 onFavoriteToggle={onToggleFavoriteDoctor}
-                onActionClick={isValidObjectId(doctor.id) ? onScheduleDoctor : undefined}
-                containerClassName="bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative min-h-[355px]"
+                actionLabel={item.type === 'doctor' ? 'Schedule Appointment' : 'Order Medicine'}
+                onActionClick={
+                  item.type === 'doctor'
+                    ? (isValidObjectId(item.id) ? onScheduleDoctor : undefined) 
+                    : (isValidObjectId(item.id) ? () => onOrderFromStore?.(item) : undefined)
+                }
+                containerClassName="bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative"
               />
             ))}
           </div>

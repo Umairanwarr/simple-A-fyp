@@ -28,7 +28,10 @@ const EMPTY_FORM = {
 };
 
 const formatModeLabel = (mode) => {
-  return String(mode || '').toLowerCase() === 'offline' ? 'Offline (Clinic Visit)' : 'Online';
+  const m = String(mode || '').toLowerCase();
+  if (m === 'offline') return 'Offline (Clinic Visit)';
+  if (m === 'video') return 'Online (Video Call)';
+  return 'Online (Text)';
 };
 
 const toMinutes = (timeValue) => {
@@ -68,6 +71,7 @@ export default function AvailabilityPage({ onGoToProfile }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [missingProfileFields, setMissingProfileFields] = useState([]);
+  const [currentPlan, setCurrentPlan] = useState('platinum');
 
   useEffect(() => {
     let isMounted = true;
@@ -82,6 +86,7 @@ export default function AvailabilityPage({ onGoToProfile }) {
 
         if (isMounted) {
           setMissingProfileFields(normalizeMissingFields(profileData?.profile?.missingFields));
+          setCurrentPlan(String(profileData?.doctor?.currentPlan || 'platinum').toLowerCase());
           setSlots(Array.isArray(availabilityData.slots) ? availabilityData.slots : []);
         }
       } catch (error) {
@@ -329,6 +334,7 @@ export default function AvailabilityPage({ onGoToProfile }) {
         isEditing={Boolean(editingSlotId)}
         isSubmitting={isSubmitting}
         isBlocked={!isProfileComplete}
+        currentPlan={currentPlan}
         blockMessage="Complete your profile first before adding availability slots."
         onChange={handleChange}
         onSubmit={handleSubmit}

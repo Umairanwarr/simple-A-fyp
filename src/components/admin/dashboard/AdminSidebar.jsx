@@ -157,6 +157,20 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
               Media Moderation
             </a>
 
+            <a
+              href="/admin/live-streams"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/live-streams') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12A10 10 0 0 1 22 12"></path>
+                <path d="M12 2v20"></path>
+                <path d="M12 2A10 10 0 0 1 22 12"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <circle cx="12" cy="12" r="10"></circle>
+              </svg>
+              Live Streams
+            </a>
+
             <a 
               href="/admin/reviews"
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/reviews') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
@@ -181,6 +195,17 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                 <path d="M12 4v4"></path>
               </svg>
               Bug Reports
+            </a>
+
+            <a
+              href="/admin/withdraw-requests"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/withdraw-requests') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1v22"></path>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              Withdraw Requests
             </a>
 
           </nav>

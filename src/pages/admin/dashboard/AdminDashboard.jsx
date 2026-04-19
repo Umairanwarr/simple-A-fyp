@@ -1,36 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { fetchAdminStats } from '../../../services/authApi';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
+import { 
+  Users, Stethoscope, Building2, Store, Activity, TrendingUp, ShieldCheck, DollarSign, Calendar, Star, Award
+} from 'lucide-react';
 
 const formatCurrency = (amountInRupees) => {
   const parsedAmount = Number(amountInRupees);
-  const safeAmount = Number.isFinite(parsedAmount)
-    ? Math.max(0, parsedAmount)
-    : 0;
-
-  return new Intl.NumberFormat('en-PK', {
-    style: 'currency',
-    currency: 'PKR',
-    maximumFractionDigits: 0
-  }).format(safeAmount);
+  const safeAmount = Number.isFinite(parsedAmount) ? Math.max(0, parsedAmount) : 0;
+  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(safeAmount);
 };
 
 const formatDateLabel = (dateValue) => {
-  if (!dateValue) {
-    return 'N/A';
-  }
-
+  if (!dateValue) return 'N/A';
   const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) return 'N/A';
+  return parsedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'N/A';
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-lg shadow-gray-200/50 text-[13px] font-bold">
+        <p className="text-[#6B7280] uppercase tracking-wider text-[11px] mb-1">{label}</p>
+        <p className="text-[#1F2432] flex items-center gap-1">
+          {payload[0].name.includes('Revenue') || payload[0].name.includes('Commission') ? 'PKR ' : ''}
+          {payload[0].value.toLocaleString()}
+        </p>
+      </div>
+    );
   }
-
-  return parsedDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
+  return null;
 };
 
 export default function AdminDashboard() {
@@ -51,10 +55,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadStats = async () => {
       const token = localStorage.getItem('adminToken');
-
-      if (!token) {
-        return;
-      }
+      if (!token) return;
 
       try {
         const data = await fetchAdminStats(token);
@@ -72,199 +73,226 @@ export default function AdminDashboard() {
         setRecentCommissions(Array.isArray(data.recentCommissions) ? data.recentCommissions : []);
         setPremiumUsers(Array.isArray(data.premiumUsers) ? data.premiumUsers : []);
       } catch (error) {
-        // Keep static fallback values if stats endpoint is unavailable.
+        // Fallbacks
       }
     };
-
     loadStats();
   }, []);
   
   const stats = [
-    { title: 'Total Patients', value: totalPatients, change: '+0%', isPositive: true },
-    { title: 'Total Doctors', value: totalDoctors, change: '+0%', isPositive: true },
-    { title: 'Gold Doctors', value: totalGoldDoctors, change: '+0%', isPositive: true },
-    { title: 'Diamond Doctors', value: totalDiamondDoctors, change: '+0%', isPositive: true },
-    { title: 'Total Clinics', value: totalClinics, change: '+0%', isPositive: true },
-    { title: 'Medical Stores', value: totalMedicalStores, change: '+0%', isPositive: true },
-    { title: 'Confirmed Bookings', value: totalAppointments, change: '+0%', isPositive: true },
-    { title: 'Subscription Revenue', value: formatCurrency(totalSubscriptionRevenue), change: '+0%', isPositive: true },
-    { title: 'Admin Commission', value: formatCurrency(totalAdminCommission), change: '+0%', isPositive: true },
+    { title: 'Total Patients', value: totalPatients, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { title: 'Total Doctors', value: totalDoctors, icon: Stethoscope, color: 'text-teal-500', bg: 'bg-teal-50' },
+    { title: 'Confirmed Bookings', value: totalAppointments, icon: Calendar, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { title: 'Gold Members', value: totalGoldDoctors, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { title: 'Diamond Members', value: totalDiamondDoctors, icon: Award, color: 'text-[#1EBDB8]', bg: 'bg-[#ECFCFB]' },
+    { title: 'Admin Commission', value: formatCurrency(totalAdminCommission), icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
 
-  const chartData = [
-    { label: 'Patients', value: Number(totalPatients) || 0, color: '#0EA5E9' },
-    { label: 'Doctors', value: Number(totalDoctors) || 0, color: '#1EBDB8' },
-    { label: 'Clinics', value: Number(totalClinics) || 0, color: '#6366F1' },
-    { label: 'Stores', value: Number(totalMedicalStores) || 0, color: '#F59E0B' }
+  const userDistributionData = [
+    { name: 'Patients', value: Number(totalPatients) || 0, color: '#3B82F6' },
+    { name: 'Doctors', value: Number(totalDoctors) || 0, color: '#14B8A6' },
+    { name: 'Clinics', value: Number(totalClinics) || 0, color: '#8B5CF6' },
+    { name: 'Stores', value: Number(totalMedicalStores) || 0, color: '#F59E0B' }
   ];
 
-  const maxChartValue = Math.max(...chartData.map((item) => item.value), 1);
-  const totalUsers = chartData.reduce((sum, item) => sum + item.value, 0);
+  const revenueBreakdownData = [
+    { name: 'Consultations', value: totalAppointmentRevenue || 0, color: '#10B981' },
+    { name: 'Subscriptions', value: totalSubscriptionRevenue || 0, color: '#1EBDB8' }
+  ];
+
+  const totalUsers = userDistributionData.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8 pb-12 animate-in fade-in duration-500">
         
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900">Platform Overview</h1>
-            <p className="text-[14px] text-gray-500 font-medium mt-1">Monitor all users and activities across the platform.</p>
+        {/* Dynamic Header */}
+        <div className="relative overflow-hidden rounded-[32px] p-8 sm:p-10 shadow-md border bg-gradient-to-br from-[#0F172A] to-[#1E293B] border-gray-800">
+          <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-[80px] pointer-events-none bg-[#3B82F6]/20"></div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
+            <div className="text-center md:text-left text-white">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border mb-4 font-bold tracking-widest uppercase text-[11px] shadow-sm bg-white/10 border-white/20 text-gray-200">
+                <ShieldCheck className="w-4 h-4" /> Live Overview
+              </div>
+              <h2 className="text-[36px] sm:text-[48px] font-extrabold tracking-tight leading-none mb-6 drop-shadow-sm">
+                System Command
+              </h2>
+
+              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                <div className="rounded-2xl p-4 px-6 border backdrop-blur-md shadow-sm bg-white/5 border-white/10">
+                  <p className="text-[11px] font-bold tracking-wide uppercase flex items-center gap-1.5 mb-1 text-gray-400">
+                    <Activity className="w-3.5 h-3.5" /> Total Users
+                  </p>
+                  <p className="text-[24px] font-bold text-white">{totalUsers.toLocaleString()}</p>
+                </div>
+                <div className="rounded-2xl p-4 px-6 border backdrop-blur-md shadow-sm bg-white/5 border-white/10">
+                  <p className="text-[11px] font-bold tracking-wide uppercase flex items-center gap-1.5 mb-1 text-gray-400">
+                    <TrendingUp className="w-3.5 h-3.5" /> Platform Revenue
+                  </p>
+                  <p className="text-[24px] font-bold text-[#1EBDB8]">{formatCurrency(totalBookingRevenue)}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.map((stat, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col gap-3">
-              <div className="text-[14px] font-bold text-gray-500">{stat.title}</div>
-              <div className="flex items-end justify-between">
-                <span className="text-[24px] font-bold text-gray-900 leading-none">{stat.value}</span>
-                <span className={`text-[13px] font-bold flex items-center gap-1 ${stat.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {stat.isPositive ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
-                  )}
-                  {stat.change}
-                </span>
+            <div key={idx} className="bg-white p-7 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 group flex items-center gap-6">
+              <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.title}</div>
+                <div className="text-[28px] font-extrabold text-gray-900 leading-none">{stat.value}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] min-h-[420px] flex flex-col">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-            <h2 className="text-[18px] font-bold text-gray-900">Users Chart</h2>
-            <p className="text-[13px] font-semibold text-gray-500">
-              Total users: <span className="text-gray-900">{totalUsers}</span>
-            </p>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+            <h2 className="text-[20px] font-bold text-gray-900 flex items-center gap-2 mb-2">
+              <Users className="w-5 h-5 text-gray-400" /> User Distribution
+            </h2>
+            <p className="text-[13px] text-gray-500 mb-8">Ecosystem breakdown by entity type.</p>
+            
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={userDistributionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barSize={40}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12, fontWeight: 700}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12, fontWeight: 700}} />
+                  <RechartsTooltip cursor={{fill: '#F3F4F6'}} content={<CustomTooltip />} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {userDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="flex-1 bg-gray-50 rounded-xl border border-gray-100 p-5">
-            <div className="h-[260px] flex items-end justify-between gap-4 sm:gap-6">
-              {chartData.map((item) => {
-                const barHeight = Math.max((item.value / maxChartValue) * 100, item.value > 0 ? 8 : 0);
-
-                return (
-                  <div key={item.label} className="flex-1 h-full flex flex-col items-center justify-end gap-2">
-                    <span className="text-[12px] font-bold text-gray-700">{item.value}</span>
-                    <div className="w-full max-w-[72px] h-full flex items-end">
-                      <div
-                        className="w-full rounded-t-xl transition-all duration-500"
-                        style={{
-                          height: `${barHeight}%`,
-                          backgroundColor: item.color
-                        }}
-                      ></div>
-                    </div>
-                    <span className="text-[12px] font-bold text-gray-500 text-center">{item.label}</span>
-                  </div>
-                );
-              })}
+          <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative">
+            <h2 className="text-[20px] font-bold text-gray-900 flex items-center gap-2 mb-2">
+              <DollarSign className="w-5 h-5 text-gray-400" /> Revenue Flow
+            </h2>
+            <p className="text-[13px] text-gray-500 mb-4">Total volume: {formatCurrency(totalBookingRevenue)}</p>
+            
+            <div className="h-[250px] w-full flex justify-center mt-6 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={revenueBreakdownData} innerRadius={70} outerRadius={105} paddingAngle={5} dataKey="value" stroke="none">
+                    {revenueBreakdownData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                  </Pie>
+                  <RechartsTooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-4">
+                <p className="text-[24px] font-extrabold text-gray-900">{formatCurrency(totalSubscriptionRevenue + totalAppointmentRevenue)}</p>
+              </div>
+            </div>
+            <div className="flex justify-center gap-6 mt-4">
+               {revenueBreakdownData.map(d => (
+                 <div key={d.name} className="flex items-center gap-2">
+                   <span className="w-3 h-3 rounded-full" style={{backgroundColor: d.color}}></span>
+                   <span className="text-[13px] font-bold text-gray-600">{d.name}</span>
+                 </div>
+               ))}
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
-            <h2 className="text-[18px] font-bold text-gray-900">Recent Commission Entries</h2>
-            <p className="text-[13px] font-semibold text-gray-500">
-              Platform Revenue: <span className="text-gray-900">{formatCurrency(totalBookingRevenue)}</span>
-            </p>
-          </div>
+        {/* Premium Users Table */}
+        <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
+          <h2 className="text-[20px] font-bold text-gray-900 mb-2">Premium Subscribers</h2>
+          <p className="text-[13px] text-gray-500 mb-6">Active Gold and Diamond medical professionals.</p>
 
-          <div className="mb-5 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-            <p className="text-[13px] font-semibold text-gray-600">
-              Appointment Revenue: <span className="text-gray-900">{formatCurrency(totalAppointmentRevenue)}</span>
-            </p>
-            <p className="text-[13px] font-semibold text-gray-600">
-              Subscription Revenue: <span className="text-gray-900">{formatCurrency(totalSubscriptionRevenue)}</span>
-            </p>
-          </div>
-
-          {recentCommissions.length === 0 ? (
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-10 text-center">
-              <p className="text-[14px] font-medium text-gray-500">No paid bookings recorded yet.</p>
+          {premiumUsers.length === 0 ? (
+            <div className="rounded-[24px] border border-gray-100 bg-gray-50 py-16 text-center">
+              <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-[15px] font-semibold text-gray-600">No Premium Doctors Found</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left border-collapse">
+              <table className="w-full min-w-[900px] text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Doctor</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Patient</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Paid Amount</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Admin 10%</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Paid On</th>
+                  <tr className="border-b-2 border-gray-100">
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Professional</th>
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Specialization</th>
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Active Plan</th>
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Subscription Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentCommissions.map((commission) => (
-                    <tr key={commission.id} className="border-b border-gray-100 last:border-b-0">
-                      <td className="py-3.5 pr-4 text-[14px] font-semibold text-gray-900">{commission.doctorName}</td>
-                      <td className="py-3.5 pr-4 text-[14px] font-medium text-gray-700">{commission.patientName}</td>
-                      <td className="py-3.5 pr-4 text-[14px] font-semibold text-gray-900">{formatCurrency(commission.amountInRupees)}</td>
-                      <td className="py-3.5 pr-4 text-[14px] font-semibold text-[#0F766E]">{formatCurrency(commission.adminCommissionInRupees)}</td>
-                      <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-600">{formatDateLabel(commission.paidAt)}</td>
-                    </tr>
-                  ))}
+                  {premiumUsers.map((user) => {
+                    const isDiamond = String(user.currentPlan).toLowerCase() === 'diamond';
+                    return (
+                      <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <td className="py-5 pr-4">
+                          <div className="flex flex-col">
+                            <span className="text-[15px] font-bold text-gray-900">{user.fullName}</span>
+                            <span className="text-[12px] text-gray-500 mt-0.5">{user.email} &bull; {user.phone}</span>
+                          </div>
+                        </td>
+                        <td className="py-5 pr-4 text-[14px] font-medium text-gray-600">{user.specialization}</td>
+                        <td className="py-5 pr-4">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-widest border ${isDiamond ? 'bg-[#ECFCFB] text-[#0F766E] border-[#1EBDB8]/20' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            {isDiamond ? <Award className="w-3.5 h-3.5" /> : <Star className="w-3.5 h-3.5" />}
+                            {user.currentPlan}
+                          </span>
+                        </td>
+                        <td className="py-5 pr-4 text-[13px] font-semibold text-gray-500">
+                          {formatDateLabel(user.purchasedAt)} <span className="mx-1 text-gray-300">|</span> Expires: {formatDateLabel(user.planExpiresAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
-            <h2 className="text-[18px] font-bold text-gray-900">Premium Users</h2>
-            <p className="text-[13px] font-semibold text-gray-500">
-              Active paid users: <span className="text-gray-900">{premiumUsers.length}</span>
-            </p>
-          </div>
+        {/* Commissions Table */}
+        <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
+          <h2 className="text-[20px] font-bold text-gray-900 mb-2">Recent Booking Ledger</h2>
+          <p className="text-[13px] text-gray-500 mb-6">Confirmed patient consultations and platform fees.</p>
 
-          {premiumUsers.length === 0 ? (
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-10 text-center">
-              <p className="text-[14px] font-medium text-gray-500">No active Gold or Diamond users right now.</p>
+          {recentCommissions.length === 0 ? (
+            <div className="rounded-[24px] border border-gray-100 bg-gray-50 py-16 text-center">
+               <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+               <p className="text-[15px] font-semibold text-gray-600">No Booking Records Yet</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-left border-collapse">
+              <table className="w-full min-w-[900px] text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Doctor</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Contact</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Specialization</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Plan</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Purchased</th>
-                    <th className="py-3 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-500">Expires</th>
+                  <tr className="border-b-2 border-gray-100">
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Doctor</th>
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Patient</th>
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-gray-400">Paid Amount</th>
+                    <th className="pb-4 pr-4 text-[12px] font-bold uppercase tracking-wider text-[#1EBDB8] text-right">App Comm (10%)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {premiumUsers.map((premiumUser) => {
-                    const normalizedPlan = String(premiumUser?.currentPlan || '').trim().toLowerCase();
-                    const planLabel = normalizedPlan ? `${normalizedPlan.charAt(0).toUpperCase()}${normalizedPlan.slice(1)}` : 'N/A';
-
-                    return (
-                      <tr key={premiumUser.id} className="border-b border-gray-100 last:border-b-0">
-                        <td className="py-3.5 pr-4 text-[14px] font-semibold text-gray-900">{premiumUser.fullName}</td>
-                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-700">
-                          <div>{premiumUser.email}</div>
-                          <div className="text-[12px] text-gray-500 mt-0.5">{premiumUser.phone}</div>
-                        </td>
-                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-700">{premiumUser.specialization}</td>
-                        <td className="py-3.5 pr-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#1EBDB8]/10 text-[#0F766E] border border-[#1EBDB8]/20">
-                            {planLabel}
-                          </span>
-                        </td>
-                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-600">{formatDateLabel(premiumUser.purchasedAt)}</td>
-                        <td className="py-3.5 pr-4 text-[13px] font-medium text-gray-600">{formatDateLabel(premiumUser.planExpiresAt)}</td>
-                      </tr>
-                    );
-                  })}
+                  {recentCommissions.map((commission) => (
+                    <tr key={commission.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                      <td className="py-5 pr-4 text-[14px] font-bold text-gray-900">{commission.doctorName}</td>
+                      <td className="py-5 pr-4 text-[14px] font-medium text-gray-600">{commission.patientName}</td>
+                      <td className="py-5 pr-4 text-[15px] font-bold text-gray-600">{formatCurrency(commission.amountInRupees)}</td>
+                      <td className="py-5 pr-4">
+                        <div className="flex flex-col items-end">
+                          <span className="text-[16px] font-extrabold text-[#0F766E] block">{formatCurrency(commission.adminCommissionInRupees)}</span>
+                          <span className="text-[11px] font-medium text-gray-400 mt-1">{formatDateLabel(commission.paidAt)}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

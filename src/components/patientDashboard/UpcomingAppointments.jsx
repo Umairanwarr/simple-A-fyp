@@ -137,7 +137,7 @@ export default function UpcomingAppointments() {
   return (
     <div className="flex flex-col mb-12">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[#1EBDB8] font-bold text-[24px]">Upcoming Appointments</h2>
+        <h2 className="text-[#1EBDB8] font-bold text-[24px]">Upcoming & Ongoing Appointments</h2>
         <span className="text-[#1EBDB8] font-bold text-[14px]">{sortedAppointments.length} total</span>
       </div>
 

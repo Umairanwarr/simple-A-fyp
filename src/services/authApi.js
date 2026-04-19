@@ -1,5 +1,109 @@
 import { API_BASE_URL, apiRequest } from './apiClient';
 
+export const fetchDoctorCompletedPatients = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/doctor/prescriptions/patients', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const createDoctorPrescription = async (token, formData) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  
+  const response = await fetch(`${API_BASE_URL}/auth/doctor/prescriptions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || 'Could not create prescription');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  return data;
+};
+
+export const fetchDoctorPrescriptions = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/doctor/prescriptions', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchPatientPrescriptions = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/patient/prescriptions', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const deleteDoctorPrescription = async (token, prescriptionId) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest(`/auth/doctor/prescriptions/${prescriptionId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchDoctorBankAccount = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/doctor/bank-account', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const saveDoctorBankAccount = async (token, payload) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/doctor/bank-account', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchDoctorWithdrawRequests = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/doctor/withdraw-requests', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const createWithdrawRequest = async (token, payload) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/doctor/withdraw-requests', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchAdminWithdrawRequests = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/admin/withdraw-requests', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const reviewAdminWithdrawRequest = async (token, requestId, payload) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest(`/auth/admin/withdraw-requests/${requestId}/review`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+};
+
 export const registerPatient = async (payload) => {
   return apiRequest('/auth/patient/register', {
     method: 'POST',
@@ -171,6 +275,21 @@ export const fetchPatientExploreDoctors = async ({ query = '', specialty = '' } 
   });
 };
 
+export const fetchPatientExploreStores = async ({ query = '' } = {}) => {
+  const searchParams = new URLSearchParams();
+
+  if (String(query || '').trim()) {
+    searchParams.set('q', String(query).trim());
+  }
+
+  const queryString = searchParams.toString();
+  const path = `/auth/patient/stores${queryString ? `?${queryString}` : ''}`;
+
+  return apiRequest(path, {
+    method: 'GET'
+  });
+};
+
 export const fetchPatientDoctorProfile = async (token, doctorId) => {
   if (!token) {
     throw new Error('Unauthorized: Missing token');
@@ -185,6 +304,41 @@ export const fetchPatientDoctorProfile = async (token, doctorId) => {
     headers: {
       Authorization: `Bearer ${token}`
     }
+  });
+};
+
+export const fetchPatientStoreProfile = async (token, storeId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!storeId) {
+    throw new Error('Store id is required');
+  }
+
+  return apiRequest(`/auth/patient/stores/${storeId}/profile`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const createPatientStoreOrder = async (token, storeId, payload) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!storeId) {
+    throw new Error('Store id is required');
+  }
+
+  return apiRequest(`/auth/patient/stores/${storeId}/orders`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
   });
 };
 
@@ -1304,6 +1458,14 @@ export const deleteLiveStream = async (token, streamId) => {
   });
 };
 
+export const adminTerminateLiveStream = async (token, streamId, reason) => {
+  return apiRequest(`/livestream/${streamId}/admin-terminate`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason })
+  });
+};
+
 export const fetchActiveStreams = async (token) => {
   return apiRequest('/livestream/active', {
     method: 'GET',
@@ -1339,3 +1501,151 @@ export const inviteGuestToStream = async (token, streamId, payload) => {
     body: JSON.stringify(payload)
   });
 };
+
+// ─── Store Subscriptions ───
+export const fetchStoreSubscriptionPricing = async () => {
+  return apiRequest('/auth/store/subscription-pricing');
+};
+
+export const fetchStoreSubscriptionStatus = async (token) => {
+  return apiRequest('/auth/store/subscription-status', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const createStoreSubscriptionCheckoutSession = async (token, payload) => {
+  return apiRequest('/auth/store/create-subscription-checkout', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const confirmStoreSubscriptionCheckoutSession = async (token, sessionId) => {
+  return apiRequest('/auth/store/confirm-subscription-checkout', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ sessionId })
+  });
+};
+
+export const cancelStoreSubscription = async (token) => {
+  return apiRequest('/auth/store/cancel-subscription', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+// ─── Admin Subscription Pricing ───
+export const fetchAdminStoreSubscriptionPricing = async (token) => {
+  return apiRequest('/auth/admin/subscription-pricing/medical-store', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const updateAdminStoreSubscriptionPricing = async (token, payload) => {
+  return apiRequest('/auth/admin/subscription-pricing/medical-store', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchStoreMediaLibrary = async (token) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest('/store-media', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const uploadStoreMedia = async (token, file) => {
+  if (!token) throw new Error('Unauthorized');
+  
+  const formData = new FormData();
+  formData.append('media', file);
+
+  const response = await fetch(`${API_BASE_URL}/store-media`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.message || 'Could not upload media');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+};
+
+export const deleteStoreMedia = async (token, mediaId) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest(`/store-media/${mediaId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchStoreNotifications = async (token) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest('/auth/store/notifications', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const markStoreNotificationsRead = async (token) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest('/auth/store/notifications/read', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchStoreProfile = async (token) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest('/auth/store/profile', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const updateStoreProfile = async (token, payload) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest('/auth/store/profile', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const updateStoreAvatar = async (token, file) => {
+  if (!token) throw new Error('Unauthorized');
+  if (!file) throw new Error('Avatar file is required');
+
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const response = await fetch(`${API_BASE_URL}/auth/store/avatar`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || 'Could not update avatar');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  return data;
+};
+

@@ -11,6 +11,7 @@ export default function FavoriteDoctors({
   favoriteActionDoctorIds = [],
   onToggleFavoriteDoctor,
   onScheduleDoctor,
+  onOrderFromStore,
   isLoading = false
 }) {
   const availableDoctors = Array.isArray(doctors) ? doctors : [];
@@ -27,7 +28,7 @@ export default function FavoriteDoctors({
     ? 'grid grid-cols-1 xl:grid-cols-3 gap-6'
     : 'flex gap-4 md:gap-6 overflow-x-auto pb-4 px-2 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]';
   const cardClassName = isGridView
-    ? 'bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative min-h-[355px]'
+    ? 'bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative'
     : 'min-w-[85%] sm:min-w-[360px] max-w-[360px] snap-start bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative';
 
   return (
@@ -58,13 +59,18 @@ export default function FavoriteDoctors({
         <div className={listClassName}>
           {doctorsToDisplay.map((doc) => (
             <DoctorCard
-              key={doc.id}
+              key={`${doc.type}-${doc.id}`}
               doctor={doc}
               showFavorite
               isFavorite={favoriteDoctorIdSet.has(String(doc.id))}
               isFavoritePending={pendingFavoriteDoctorIdSet.has(String(doc.id))}
               onFavoriteToggle={onToggleFavoriteDoctor}
-              onActionClick={onScheduleDoctor}
+              actionLabel={doc.type === 'doctor' ? 'Schedule Appointment' : 'Order Medicine'}
+              onActionClick={
+                doc.type === 'doctor'
+                  ? () => onScheduleDoctor?.(doc)
+                  : () => onOrderFromStore?.(doc)
+              }
               containerClassName={cardClassName}
             />
           ))}

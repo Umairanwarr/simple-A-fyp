@@ -23,6 +23,18 @@ export const fetchMessages = async (token, otherUserId) => {
   });
 };
 
+export const fetchPartnerInfo = async (token, partnerId) => {
+  if (!token) throw new Error('Missing token');
+  if (!partnerId) throw new Error('Missing partnerId');
+
+  return apiRequest(`/chat/partner/${partnerId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
 export const sendMessageRest = async (token, payload) => {
   if (!token) throw new Error('Missing token');
 

@@ -225,6 +225,7 @@ export const getPatientSessionProfile = () => {
   return {
     name,
     email: patient.email || '',
+    phoneNumber: patient.phone || '',
     avatarUrl: buildAvatarUrl(patient, name)
   };
 };
@@ -259,10 +260,15 @@ export const getClinicSessionProfile = () => {
 export const getMedicalStoreSessionProfile = () => {
   const medicalStore = parseStoredObject('medicalStore') || {};
   const name = String(medicalStore.name || '').trim() || 'Medical Store';
+  const normalizedPlan = String(medicalStore.currentPlan || '').trim().toLowerCase();
+  const currentPlan = ['platinum', 'gold', 'diamond'].includes(normalizedPlan)
+    ? normalizedPlan
+    : 'platinum';
 
   return {
     name,
     email: medicalStore.email || '',
-    avatarUrl: buildAvatarUrl(medicalStore, name)
+    avatarUrl: buildAvatarUrl(medicalStore, name),
+    currentPlan
   };
 };

@@ -14,7 +14,9 @@ import PatientFavorites from './pages/patientDashboard/Favorites';
 import PatientHistory from './pages/patientDashboard/History';
 import PatientChats from './pages/patientDashboard/Chats';
 import PatientLiveStreams from './pages/patientDashboard/LiveStreams';
+import PatientPrescriptions from './pages/patientDashboard/Prescriptions';
 import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
+import PatientStoreProfile from './pages/patientDashboard/StoreProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
 import ClinicStaff from './pages/clinicDashboard/Staff';
 import ClinicSubscriptions from './pages/clinicDashboard/Subscriptions';
@@ -36,6 +38,7 @@ import StoreDashboard from './pages/storeDashboard/Dashboard';
 import StoreInventory from './pages/storeDashboard/Inventory';
 import StoreSubscriptions from './pages/storeDashboard/Subscriptions';
 import StoreOrders from './pages/storeDashboard/Orders';
+import StoreProfilePage from './pages/storeDashboard/Profile';
 import StoreMedia from './pages/storeDashboard/Media';
 import StoreDelivery from './pages/storeDashboard/Delivery';
 import AdminLogin from './pages/admin/adminLogin/AdminLogin';
@@ -49,6 +52,8 @@ import PremiumUsers from './pages/admin/dashboard/subscriptions/PremiumUsers';
 import MediaModeration from './pages/admin/dashboard/media/MediaModeration';
 import DoctorReviews from './pages/admin/dashboard/reviews/DoctorReviews';
 import BugReports from './pages/admin/dashboard/bugs/BugReports';
+import AdminLiveStreams from './pages/admin/dashboard/AdminLiveStreams';
+import AdminWithdrawRequests from './pages/admin/dashboard/AdminWithdrawRequests';
 import RequireAdminAuth from './components/admin/auth/RequireAdminAuth';
 import RequireRoleAuth from './components/auth/RequireRoleAuth';
 import RedirectAuthenticatedUser from './components/auth/RedirectAuthenticatedUser';
@@ -141,10 +146,26 @@ function App() {
           )}
         />
         <Route
+          path="/dashboard/prescriptions"
+          element={(
+            <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
+              <PatientPrescriptions />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
           path="/dashboard/doctor/:doctorId"
           element={(
             <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
               <PatientDoctorProfile />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/dashboard/store/:storeId"
+          element={(
+            <RequireRoleAuth tokenKey="patientToken" userKey="patient" expectedRole="patient">
+              <PatientStoreProfile />
             </RequireRoleAuth>
           )}
         />
@@ -301,6 +322,14 @@ function App() {
           )}
         />
         <Route
+          path="/store/dashboard/profile"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreProfilePage />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
           path="/store/dashboard/inventory"
           element={(
             <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
@@ -425,6 +454,22 @@ function App() {
           element={(
             <RequireAdminAuth>
               <BugReports />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/live-streams"
+          element={(
+            <RequireAdminAuth>
+              <AdminLiveStreams />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/withdraw-requests"
+          element={(
+            <RequireAdminAuth>
+              <AdminWithdrawRequests />
             </RequireAdminAuth>
           )}
         />
