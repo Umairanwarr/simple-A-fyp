@@ -21,6 +21,8 @@ const TAB_PATHS = {
   orders: '/store/dashboard/orders',
   media: '/store/dashboard/media',
   delivery: '/store/dashboard/delivery',
+  reviews: '/store/dashboard/reviews',
+  chats: '/store/dashboard/chats',
   profile: '/store/dashboard/profile'
 };
 

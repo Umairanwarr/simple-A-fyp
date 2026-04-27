@@ -87,6 +87,48 @@ export const createWithdrawRequest = async (token, payload) => {
   });
 };
 
+export const fetchStoreBankAccount = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/store/bank-account', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const saveStoreBankAccount = async (token, payload) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/store/bank-account', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchStoreWithdrawRequests = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/store/withdraw-requests', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchStoreReviews = async (token) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/store/reviews', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const createStoreWithdrawRequest = async (token, payload) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  return apiRequest('/auth/store/withdraw-requests', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+};
+
 export const fetchAdminWithdrawRequests = async (token) => {
   if (!token) throw new Error('Unauthorized: Missing token');
   return apiRequest('/auth/admin/withdraw-requests', {
@@ -1277,19 +1319,29 @@ export const fetchAdminDoctorReviews = async (token, doctorName = '') => {
 };
 
 export const deleteAdminDoctorReview = async (token, reviewId) => {
-  if (!token) {
-    throw new Error('Unauthorized: Missing token');
-  }
-
-  if (!reviewId) {
-    throw new Error('Review id is required');
-  }
-
+  if (!token) throw new Error('Unauthorized: Missing token');
+  if (!reviewId) throw new Error('Missing reviewId');
   return apiRequest(`/auth/admin/reviews/${reviewId}`, {
     method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchAdminStoreReviews = async (token, storeNameQuery = '') => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  const endpoint = `/auth/admin/reviews/store?storeName=${encodeURIComponent(storeNameQuery)}`;
+  return apiRequest(endpoint, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const deleteAdminStoreReview = async (token, reviewId) => {
+  if (!token) throw new Error('Unauthorized: Missing token');
+  if (!reviewId) throw new Error('Missing reviewId');
+  return apiRequest(`/auth/admin/reviews/store/${reviewId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
   });
 };
 

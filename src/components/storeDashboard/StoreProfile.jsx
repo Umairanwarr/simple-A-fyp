@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { fetchStoreProfile, updateStoreProfile, updateStoreAvatar } from '../../services/authApi';
+import { fetchStoreProfile, updateStoreProfile, updateStoreAvatar, fetchStoreBankAccount, saveStoreBankAccount } from '../../services/authApi';
 
 // Subcomponent for Profile Field (matching doctor dashboard design)
 function StoreProfileField({ label, value, onChange, placeholder, type = 'text', readOnly = false, error, disabled = false, multiline = false, rows = 4 }) {
@@ -42,6 +42,7 @@ export default function StoreProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [isBankSaving, setIsBankSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,7 +55,13 @@ export default function StoreProfile() {
     bio: '',
     avatarUrl: ''
   });
+  const [bankData, setBankData] = useState({
+    accountTitle: '',
+    accountNumber: '',
+    bankName: ''
+  });
   const [errors, setErrors] = useState({});
+  const [bankErrors, setBankErrors] = useState({});
 
   useEffect(() => {
     loadProfile();
@@ -85,8 +92,18 @@ export default function StoreProfile() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('medicalStoreToken');
-      const data = await fetchStoreProfile(token);
-      const store = data.medicalStore || {};
+      const [profileData, bankRes] = await Promise.all([
+        fetchStoreProfile(token),
+        fetchStoreBankAccount(token).catch(() => ({ bankAccount: {} }))
+      ]);
+      const store = profileData.medicalStore || {};
+      
+      const bank = bankRes.bankAccount || {};
+      setBankData({
+        accountTitle: bank.accountTitle || '',
+        accountNumber: bank.accountNumber || '',
+        bankName: bank.bankName || ''
+      });
       
       let from = '';
       let to = '';
@@ -179,6 +196,35 @@ export default function StoreProfile() {
     }
   };
 
+  const handleBankChange = (e, field) => {
+    setBankData(prev => ({ ...prev, [field]: e.target.value }));
+    if (bankErrors[field]) setBankErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
+  const handleBankSave = async (e) => {
+    e.preventDefault();
+    const newErrors = {};
+    if (!bankData.accountTitle.trim()) newErrors.accountTitle = 'Account Title is required';
+    if (!bankData.accountNumber.trim()) newErrors.accountNumber = 'Account Number is required';
+    if (!bankData.bankName.trim()) newErrors.bankName = 'Bank Name is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setBankErrors(newErrors);
+      return;
+    }
+
+    try {
+      setIsBankSaving(true);
+      const token = localStorage.getItem('medicalStoreToken');
+      await saveStoreBankAccount(token, bankData);
+      toast.success('Bank account details saved successfully');
+    } catch (err) {
+      toast.error(err.message || 'Could not save bank details');
+    } finally {
+      setIsBankSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white p-10 rounded-[30px] border border-gray-100 shadow-sm flex flex-col items-center justify-center space-y-4">
@@ -189,7 +235,7 @@ export default function StoreProfile() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-4xl mx-auto pb-10">
       {/* Overview Card */}
       <div className="bg-white p-7 rounded-[30px] border border-gray-100 shadow-sm flex flex-col md:flex-row items-center gap-7">
         <div className="relative group">
@@ -318,6 +364,52 @@ export default function StoreProfile() {
             placeholder="Tell customers about your store, specialties, or delivery areas..."
             disabled={isSaving}
           />
+        </div>
+      </form>
+
+      {/* Bank Account Details */}
+      <form onSubmit={handleBankSave} className="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm space-y-8 mt-6">
+        <div className="flex items-center justify-between border-b border-gray-50 pb-5">
+          <div>
+            <h3 className="text-[18px] font-bold text-[#1F2432]">Bank Account Details</h3>
+            <p className="text-[13px] text-gray-400 font-medium mt-0.5">Where your store earnings will be withdrawn</p>
+          </div>
+          <button
+            type="submit"
+            disabled={isBankSaving}
+            className="px-6 py-2.5 bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white text-[13px] font-bold rounded-xl shadow-lg shadow-[#1EBDB8]/20 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {isBankSaving ? 'Saving...' : 'Save Details'}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
+          <StoreProfileField
+            label="Account Title"
+            value={bankData.accountTitle}
+            onChange={(e) => handleBankChange(e, 'accountTitle')}
+            error={bankErrors.accountTitle}
+            placeholder="E.g., Medical Store Name"
+            disabled={isBankSaving}
+          />
+          <StoreProfileField
+            label="Account / IBAN Number"
+            value={bankData.accountNumber}
+            onChange={(e) => handleBankChange(e, 'accountNumber')}
+            error={bankErrors.accountNumber}
+            placeholder="PK00 BANK 0000 0000"
+            disabled={isBankSaving}
+          />
+          <div className="md:col-span-2">
+            <StoreProfileField
+              label="Bank Name"
+              value={bankData.bankName}
+              onChange={(e) => handleBankChange(e, 'bankName')}
+              error={bankErrors.bankName}
+              placeholder="E.g., HBL, Meezan Bank"
+              disabled={isBankSaving}
+            />
+          </div>
         </div>
       </form>
     </div>

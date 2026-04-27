@@ -137,7 +137,7 @@ export default function AdminWithdrawRequests() {
               <table className="w-full min-w-[900px] text-left border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="py-3.5 px-5 text-[12px] font-bold uppercase tracking-wider text-gray-500">Doctor</th>
+                    <th className="py-3.5 px-5 text-[12px] font-bold uppercase tracking-wider text-gray-500">Requester</th>
                     <th className="py-3.5 px-5 text-[12px] font-bold uppercase tracking-wider text-gray-500">Amount</th>
                     <th className="py-3.5 px-5 text-[12px] font-bold uppercase tracking-wider text-gray-500">Bank Details</th>
                     <th className="py-3.5 px-5 text-[12px] font-bold uppercase tracking-wider text-gray-500">Requested</th>
@@ -147,25 +147,35 @@ export default function AdminWithdrawRequests() {
                 </thead>
                 <tbody>
                   {filtered.map(req => {
-                    const doctor = req.doctorId || {};
-                    const available = Math.max(0, (doctor.totalEarningsInRupees || 0) - (doctor.withdrawnAmountInRupees || 0));
+                    const user = req.doctorId || req.storeId || {};
+                    const isStore = !!req.storeId;
+                    const userName = isStore ? user.name : user.fullName;
+                    const userRoleLabel = isStore ? 'Medical Store' : 'Doctor';
+                    const avatarUrl = isStore ? (user.avatarUrl || user.avatarDocument?.url) : user.avatarDocument?.url;
+                    const available = Math.max(0, (user.totalEarningsInRupees || 0) - (user.withdrawnAmountInRupees || 0));
+
                     return (
                       <tr key={req._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition-colors">
                         <td className="py-4 px-5">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-[#1EBDB8]">
-                              {doctor.avatarDocument?.url ? (
-                                <img src={doctor.avatarDocument.url} alt={doctor.fullName} className="w-full h-full object-cover" />
+                              {avatarUrl ? (
+                                <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
-                                  {String(doctor.fullName || 'D').charAt(0)}
+                                  {String(userName || 'U').charAt(0)}
                                 </div>
                               )}
                             </div>
                             <div>
-                              <p className="text-[14px] font-bold text-gray-900">{doctor.fullName || 'Unknown'}</p>
-                              <p className="text-[12px] text-gray-500">{doctor.email}</p>
-                              <p className="text-[11px] text-[#1EBDB8] font-semibold">Available: {formatCurrency(available)}</p>
+                              <p className="text-[14px] font-bold text-gray-900">{userName || 'Unknown'}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${isStore ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                                  {userRoleLabel}
+                                </span>
+                                <p className="text-[12px] text-gray-500">{user.email}</p>
+                              </div>
+                              <p className="text-[11px] text-[#1EBDB8] font-semibold mt-0.5">Available: {formatCurrency(available)}</p>
                             </div>
                           </div>
                         </td>
@@ -173,9 +183,22 @@ export default function AdminWithdrawRequests() {
                           <p className="text-[16px] font-bold text-gray-900">{formatCurrency(req.amountInRupees)}</p>
                         </td>
                         <td className="py-4 px-5">
-                          <p className="text-[13px] font-semibold text-gray-800">{req.bankAccountTitle || '—'}</p>
-                          <p className="text-[12px] text-gray-500">{req.bankName || '—'}</p>
-                          <p className="text-[11px] text-gray-400 font-mono">{req.bankAccountNumber || '—'}</p>
+                          <div className="bg-[#F8FAFC] border border-gray-100 rounded-xl p-3.5 min-w-[200px] flex flex-col gap-2.5">
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Account Title</p>
+                              <p className="text-[14px] font-bold text-[#1F2432]">{req.bankAccountTitle || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Bank Name</p>
+                              <p className="text-[12px] font-bold text-[#1EBDB8] uppercase tracking-wide">{req.bankName || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Account Number</p>
+                              <div className="bg-white border border-gray-200 shadow-sm rounded-lg text-[13px] font-mono font-bold text-gray-800 px-3 py-1.5 tracking-wider break-all inline-block">
+                                {req.bankAccountNumber || '—'}
+                              </div>
+                            </div>
+                          </div>
                         </td>
                         <td className="py-4 px-5 text-[13px] text-gray-600">
                           {new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

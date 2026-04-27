@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchConversations, fetchMessages, fetchPartnerInfo, sendMessageRest } from '../../services/chatApi';
+import { fetchConversations, fetchMessages, fetchPartnerInfo, sendMessageRest, uploadChatMedia } from '../../services/chatApi';
 import { connectSocket, getSocket } from '../../services/socket';
 import { getPatientSessionProfile, getDoctorSessionProfile } from '../../utils/authSession';
 import { apiRequest } from '../../services/apiClient';
@@ -138,6 +138,9 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
   const activeCallRef = useRef(activeCall);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem(tokenKey) : null;
   const storedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(userKey) || 'null') : null;
@@ -343,14 +346,34 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
     setShowMobileChat(true);
   };
 
+  /* ─── Media helpers ─── */
+  const handleFilePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localUrl = URL.createObjectURL(file);
+    setMediaPreview({ file, localUrl, type: file.type.startsWith('video/') ? 'video' : 'image' });
+    e.target.value = '';
+  };
+  const clearMedia = () => {
+    if (mediaPreview?.localUrl) URL.revokeObjectURL(mediaPreview.localUrl);
+    setMediaPreview(null);
+  };
+
   /* ─── Send message ─── */
   const sendMessage = async () => {
-    if (!text.trim() || !token || !activePartner) return;
+    if (!text.trim() && !mediaPreview) return;
+    if (!token || !activePartner) return;
     setIsSending(true);
-
-    const payload = { to: activePartner.partnerId, content: String(text || '').trim() };
-
     try {
+      let attachment = null;
+      if (mediaPreview) {
+        setIsUploading(true);
+        const uploaded = await uploadChatMedia(token, mediaPreview.file);
+        attachment = { url: uploaded.url, type: uploaded.type };
+        setIsUploading(false);
+        clearMedia();
+      }
+      const payload = { to: activePartner.partnerId, content: String(text || '').trim(), attachment };
       const socket = getSocket();
       if (socket && socket.connected) {
         socket.emit('chat:send', payload, (ack) => {
@@ -364,15 +387,13 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
         });
       } else {
         const res = await sendMessageRest(token, payload);
-        if (res?.message) {
-          setMessages((prev) => [...prev, res.message]);
-        }
+        if (res?.message) setMessages((prev) => [...prev, res.message]);
       }
       setText('');
       loadConversations();
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
     } catch {
-      // ignore
+      setIsUploading(false);
     } finally {
       setIsSending(false);
     }
@@ -1219,12 +1240,21 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
 
                     const m = item.data;
                     const fromMe = String(m.from || '') === myId;
+                    const att = m.attachment;
 
                     return (
                       <div key={item.key} className={`chat-message-row ${fromMe ? 'sent' : 'received'}`}>
-                        <div className={`chat-msg-bubble ${fromMe ? 'sent' : 'received'}`}>
-                          <div className="chat-msg-text">{m.content}</div>
-                          <div className="chat-msg-time">{formatMessageTime(m.createdAt)}</div>
+                        <div className={`chat-msg-bubble ${fromMe ? 'sent' : 'received'}`} style={{ padding: att?.url ? '6px' : undefined, overflow: 'hidden' }}>
+                          {att?.url && att.type === 'image' && (
+                            <a href={att.url} target="_blank" rel="noreferrer">
+                              <img src={att.url} alt="media" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block', objectFit: 'cover' }} />
+                            </a>
+                          )}
+                          {att?.url && att.type === 'video' && (
+                            <video src={att.url} controls style={{ maxWidth: 240, borderRadius: 10, display: 'block' }} />
+                          )}
+                          {m.content ? <div className="chat-msg-text" style={{ margin: att?.url ? '6px 4px 2px' : undefined }}>{m.content}</div> : null}
+                          <div className="chat-msg-time" style={{ margin: att?.url ? '0 4px 4px' : undefined }}>{formatMessageTime(m.createdAt)}</div>
                         </div>
                       </div>
                     );
@@ -1235,7 +1265,20 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
 
               {/* Composer */}
               <div className="chat-composer">
+                {mediaPreview && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    {mediaPreview.type === 'image'
+                      ? <img src={mediaPreview.localUrl} alt="preview" style={{ height: 60, borderRadius: 8, objectFit: 'cover' }} />
+                      : <video src={mediaPreview.localUrl} style={{ height: 60, borderRadius: 8 }} />}
+                    <button onClick={clearMedia} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>Remove</button>
+                    {isUploading && <span style={{ fontSize: 12, color: '#1EBDB8' }}>Uploading...</span>}
+                  </div>
+                )}
                 <div className="chat-composer-inner">
+                  <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFilePick} />
+                  <button type="button" className="chat-composer-icon-btn" title="Attach media" onClick={() => fileInputRef.current?.click()}>
+                    <AttachIcon />
+                  </button>
                   <input
                     ref={inputRef}
                     id="chat-message-input"
@@ -1251,7 +1294,7 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
                     id="chat-send-btn"
                     className="chat-composer-send-btn"
                     onClick={sendMessage}
-                    disabled={isSending || !text.trim()}
+                    disabled={isSending || (!text.trim() && !mediaPreview)}
                     title="Send"
                   >
                     <SendIcon />

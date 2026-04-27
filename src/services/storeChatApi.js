@@ -1,48 +1,44 @@
 import { API_BASE_URL, apiRequest } from './apiClient';
 
-export const fetchConversations = async (token) => {
+export const fetchStoreConversations = async (token) => {
   if (!token) throw new Error('Missing token');
-
-  return apiRequest('/chat/conversations', {
+  return apiRequest('/store-chat/conversations', {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` }
   });
 };
 
-export const fetchMessages = async (token, otherUserId) => {
+export const fetchStoreMessages = async (token, otherUserId) => {
   if (!token) throw new Error('Missing token');
   if (!otherUserId) throw new Error('Missing other user id');
-
-  return apiRequest(`/chat/messages/${otherUserId}`, {
+  return apiRequest(`/store-chat/messages/${otherUserId}`, {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` }
   });
 };
 
-export const fetchPartnerInfo = async (token, partnerId) => {
+export const fetchStorePartnerInfo = async (token, partnerId) => {
   if (!token) throw new Error('Missing token');
   if (!partnerId) throw new Error('Missing partnerId');
-
-  return apiRequest(`/chat/partner/${partnerId}`, {
+  return apiRequest(`/store-chat/partner/${partnerId}`, {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` }
   });
 };
 
-export const sendMessageRest = async (token, payload) => {
+export const searchStoresForChat = async (token, query) => {
   if (!token) throw new Error('Missing token');
+  return apiRequest(`/store-chat/search-stores?q=${encodeURIComponent(query || '')}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
 
-  return apiRequest('/chat/messages', {
+export const sendStoreChatMessageRest = async (token, payload) => {
+  if (!token) throw new Error('Missing token');
+  return apiRequest('/store-chat/messages', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`
-    },
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload || {})
   });
 };

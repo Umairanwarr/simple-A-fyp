@@ -3,7 +3,9 @@ import { toast } from 'react-toastify';
 import AdminLayout from '../AdminLayout';
 import {
   deleteAdminDoctorReview,
-  fetchAdminDoctorReviews
+  fetchAdminDoctorReviews,
+  fetchAdminStoreReviews,
+  deleteAdminStoreReview
 } from '../../../../services/authApi';
 
 const formatReviewDate = (dateValue) => {
@@ -76,24 +78,44 @@ export default function DoctorReviews() {
           setIsLoading(true);
         }
 
-        const response = await fetchAdminDoctorReviews(adminToken, searchQuery);
+        const [doctorResponse, storeResponse] = await Promise.all([
+          fetchAdminDoctorReviews(adminToken, searchQuery).catch(() => ({ reviews: [] })),
+          fetchAdminStoreReviews(adminToken, searchQuery).catch(() => ({ reviews: [] }))
+        ]);
 
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
-        const nextReviews = Array.isArray(response?.reviews)
-          ? response.reviews.map((review) => ({
+        const doctorReviews = Array.isArray(doctorResponse?.reviews)
+          ? doctorResponse.reviews.map((review) => ({
             id: review?.id || review?._id,
-            doctorId: review?.doctorId || '',
-            doctorName: review?.doctorName || 'Unknown doctor',
-            doctorSpecialization: review?.doctorSpecialization || 'General',
+            type: 'doctor',
+            targetName: review?.doctorName || 'Unknown doctor',
+            targetDetails: review?.doctorSpecialization || 'General',
             patientName: review?.patientName || 'Anonymous',
             rating: Number(review?.rating) || 0,
             comment: review?.comment || '',
             createdAt: review?.createdAt || null
           }))
           : [];
+
+        const storeReviews = Array.isArray(storeResponse?.reviews)
+          ? storeResponse.reviews.map((review) => ({
+            id: review?.id || review?._id,
+            type: 'store',
+            targetName: review?.storeName || 'Unknown Store',
+            targetDetails: 'Medical Store',
+            patientName: review?.patientName || 'Anonymous',
+            rating: Number(review?.rating) || 0,
+            comment: review?.comment || '',
+            createdAt: review?.createdAt || null
+          }))
+          : [];
+
+        const nextReviews = [...doctorReviews, ...storeReviews].sort((a, b) => {
+          const firstTimestamp = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const secondTimestamp = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return secondTimestamp - firstTimestamp;
+        });
 
         setReviews(nextReviews);
       } catch (error) {
@@ -123,7 +145,7 @@ export default function DoctorReviews() {
       return;
     }
 
-    const shouldDelete = window.confirm(`Delete this review for Dr. ${review.doctorName}?`);
+    const shouldDelete = window.confirm(`Delete this review for ${review.targetName}?`);
 
     if (!shouldDelete) {
       return;
@@ -131,7 +153,11 @@ export default function DoctorReviews() {
 
     try {
       setDeletingReviewId(String(review.id));
-      await deleteAdminDoctorReview(adminToken, review.id);
+      if (review.type === 'doctor') {
+        await deleteAdminDoctorReview(adminToken, review.id);
+      } else {
+        await deleteAdminStoreReview(adminToken, review.id);
+      }
       setReviews((previousReviews) => previousReviews.filter((item) => String(item.id) !== String(review.id)));
       toast.success('Review deleted successfully');
     } catch (error) {
@@ -146,9 +172,9 @@ export default function DoctorReviews() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-[24px] font-bold text-gray-900">Doctor Reviews Management</h1>
+            <h1 className="text-[24px] font-bold text-gray-900">Reviews Management</h1>
             <p className="text-[14px] text-gray-500 font-medium mt-1">
-              Search doctor reviews and remove inappropriate feedback.
+              Search doctor & store reviews and remove inappropriate feedback.
             </p>
           </div>
         </div>
@@ -163,7 +189,7 @@ export default function DoctorReviews() {
               type="text"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by doctor name..."
+              placeholder="Search by doctor or store name..."
               className="w-full bg-[#FAFAFA] text-[#4B5563] text-[14px] font-medium py-2.5 pl-10 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 border border-gray-200 focus:border-[#1EBDB8] transition-all"
             />
           </div>
@@ -176,7 +202,8 @@ export default function DoctorReviews() {
             <table className="w-full min-w-[980px] text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 border-b border-gray-100">
-                  <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Doctor</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Target</th>
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Patient</th>
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Rating</th>
                   <th className="px-6 py-4 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Comment</th>
@@ -204,8 +231,15 @@ export default function DoctorReviews() {
                 {!isLoading && reviews.map((review) => (
                   <tr key={review.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="font-bold text-[14px] text-gray-900">{review.doctorName}</p>
-                      <p className="text-[12px] text-gray-500 mt-0.5">{review.doctorSpecialization}</p>
+                      <span className={`inline-flex px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide ${
+                        review.type === 'doctor' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        {review.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-[14px] text-gray-900">{review.targetName}</p>
+                      <p className="text-[12px] text-gray-500 mt-0.5">{review.targetDetails}</p>
                     </td>
                     <td className="px-6 py-4 font-medium text-[14px] text-gray-700">{review.patientName}</td>
                     <td className="px-6 py-4">
