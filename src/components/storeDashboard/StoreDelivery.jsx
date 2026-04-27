@@ -56,8 +56,6 @@ export default function StoreDelivery() {
   const [filterStatus, setFilterStatus] = useState('All');
   const [searchTerm, setSearchTerm]     = useState('');
   const [updatingId, setUpdatingId]     = useState(null);
-  const [openMenuId, setOpenMenuId]     = useState(null);
-  const [menuPos, setMenuPos]           = useState({ top: 0, left: 0 });
 
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
@@ -76,30 +74,10 @@ export default function StoreDelivery() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  // Close on outside click or scroll
-  useEffect(() => {
-    if (!openMenuId) return;
-    const close = () => setOpenMenuId(null);
-    document.addEventListener('click', close);
-    document.addEventListener('scroll', close, true);
-    return () => {
-      document.removeEventListener('click', close);
-      document.removeEventListener('scroll', close, true);
-    };
-  }, [openMenuId]);
 
-  const openMenu = (e, orderId) => {
-    e.stopPropagation();
-    if (openMenuId === orderId) { setOpenMenuId(null); return; }
-    const rect = e.currentTarget.getBoundingClientRect();
-    // Position below the button, anchored to its right edge
-    setMenuPos({ top: rect.bottom + 6, left: rect.right - 160 });
-    setOpenMenuId(orderId);
-  };
 
   const updateStatus = async (orderId, newStatus) => {
     setUpdatingId(orderId);
-    setOpenMenuId(null);
     try {
       const token = localStorage.getItem('medicalStoreToken');
       const res = await fetch(`${API}/${orderId}/status`, {
@@ -135,8 +113,7 @@ export default function StoreDelivery() {
     delivered:  orders.filter(o => o.status === 'Delivered' || o.status === 'completed').length,
   };
 
-  // The currently open order (for the portaled dropdown)
-  const openOrder = openMenuId ? orders.find(o => o._id === openMenuId) : null;
+
 
   return (
     <div className="space-y-8 text-slate-600">
@@ -298,23 +275,39 @@ export default function StoreDelivery() {
                         </span>
                       </td>
 
-                      {/* Actions — click-based portaled dropdown */}
+                      {/* Actions — inline buttons */}
                       <td className="py-4 px-5 pr-8 text-right">
-                        <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={e => openMenu(e, order._id)}
-                            disabled={updatingId === order._id}
-                            className="p-2.5 text-[#9CA3AF] hover:text-[#1EBDB8] hover:bg-[#ECFCFB] rounded-xl transition-all disabled:opacity-40"
-                            title="Update Delivery Status"
-                          >
-                            {updatingId === order._id ? (
-                              <div className="w-[18px] h-[18px] border-2 border-[#1EBDB8]/30 border-t-[#1EBDB8] rounded-full animate-spin" />
-                            ) : (
-                              <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                              </svg>
-                            )}
-                          </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {updatingId === order._id ? (
+                            <div className="w-[18px] h-[18px] border-2 border-[#1EBDB8]/30 border-t-[#1EBDB8] rounded-full animate-spin mr-2" />
+                          ) : (order.status === 'Delivered' || order.status === 'completed') ? (
+                            <span className="text-[11px] font-bold text-[#1EBDB8] bg-[#ECFCFB] px-3 py-1.5 rounded-lg border border-[#1EBDB8]/20">Delivery Complete</span>
+                          ) : (
+                            DELIVERY_STAGES.map(s => {
+                              const currentStatusStr = statusLabel(order.status);
+                              const currentIdx = DELIVERY_STAGES.indexOf(currentStatusStr);
+                              const targetIdx = DELIVERY_STAGES.indexOf(s);
+                              const isPast = targetIdx < currentIdx && currentIdx !== -1;
+                              const isCurrent = targetIdx === currentIdx;
+
+                              return (
+                                <button
+                                  key={s}
+                                  onClick={() => updateStatus(order._id, s)}
+                                  disabled={isPast || isCurrent}
+                                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                                    isCurrent
+                                      ? 'bg-[#1F2432] text-white shadow-sm'
+                                      : isPast
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-100'
+                                        : 'bg-white border border-gray-200 text-[#6B7280] hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {s}
+                                </button>
+                              );
+                            })
+                          )}
                         </div>
                       </td>
 
@@ -353,22 +346,38 @@ export default function StoreDelivery() {
                   <p className="text-[14px] font-bold text-[#1F2432] mb-3">
                     Rs {Number(order.totalAmount || 0).toLocaleString('en-PK')}
                   </p>
-                  <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100">
-                    {DELIVERY_STAGES.map(s => (
-                      <button
-                        key={s}
-                        onClick={() => updateStatus(order._id, s)}
-                        disabled={updatingId === order._id}
-                        className={`py-2 rounded-xl text-[12px] font-bold transition-colors ${
-                          statusLabel(order.status) === s
-                            ? 'bg-[#1F2432] text-white'
-                            : 'bg-white border border-gray-200 text-[#6B7280] hover:bg-gray-50'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
+                  {(order.status === 'Delivered' || order.status === 'completed') ? (
+                    <div className="pt-3 border-t border-gray-100 text-center">
+                      <span className="text-[12px] font-bold text-[#1EBDB8] bg-[#ECFCFB] px-4 py-2 rounded-xl border border-[#1EBDB8]/20 block w-full">Delivery Complete</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100">
+                      {DELIVERY_STAGES.map(s => {
+                        const currentStatusStr = statusLabel(order.status);
+                        const currentIdx = DELIVERY_STAGES.indexOf(currentStatusStr);
+                        const targetIdx = DELIVERY_STAGES.indexOf(s);
+                        const isPast = targetIdx < currentIdx && currentIdx !== -1;
+                        const isCurrent = targetIdx === currentIdx;
+
+                        return (
+                          <button
+                            key={s}
+                            onClick={() => updateStatus(order._id, s)}
+                            disabled={updatingId === order._id || isPast || isCurrent}
+                            className={`py-2 rounded-xl text-[12px] font-bold transition-colors ${
+                              isCurrent
+                                ? 'bg-[#1F2432] text-white shadow-sm'
+                                : isPast
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-100'
+                                  : 'bg-white border border-gray-200 text-[#6B7280] hover:bg-gray-50'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -376,34 +385,7 @@ export default function StoreDelivery() {
         )}
       </div>
 
-      {/* ── Portaled dropdown – renders at fixed position, never clipped ── */}
-      {openMenuId && openOrder && ReactDOM.createPortal(
-        <div
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
-          className="w-40 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden text-left"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="p-1">
-            {DELIVERY_STAGES.map(s => {
-              const isCurrent = statusLabel(openOrder.status) === s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => updateStatus(openMenuId, s)}
-                  disabled={updatingId === openMenuId}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] font-bold rounded-lg transition-colors flex items-center justify-between ${
-                    isCurrent ? 'bg-[#1F2432] text-white' : 'text-[#6B7280] hover:bg-[#F3F4F6]'
-                  }`}
-                >
-                  {s}
-                  {isCurrent && <CheckCircle2 size={14} className="text-[#1EBDB8]" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>,
-        document.body
-      )}
+
     </div>
   );
 }

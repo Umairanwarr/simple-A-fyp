@@ -4,8 +4,10 @@ import {
 } from 'recharts';
 import {
   PackageCheck, TrendingUp, TrendingDown, Calendar, Pill,
-  ShoppingBag, Loader2, AlertCircle, RefreshCw
+  ShoppingBag, Loader2, AlertCircle, RefreshCw, Wallet, CheckCircle2, ArrowUpRight
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { fetchStoreBankAccount, createStoreWithdrawRequest } from '../../services/authApi';
 
 const API_BASE = 'http://localhost:3002';
 
@@ -34,18 +36,29 @@ export default function StoreAnalytics() {
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('7');   // '7' | '30' | '365'
 
+  const [bankInfo, setBankInfo] = useState({ availableBalanceInRupees: 0, bankAccount: null, withdrawnAmountInRupees: 0 });
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [ordersRes, medsRes] = await Promise.all([
+      const [ordersRes, medsRes, bankRes] = await Promise.all([
         fetch(`${API_BASE}/api/store-orders`, { headers: getAuthHeaders() }),
         fetch(`${API_BASE}/api/medicines`,    { headers: getAuthHeaders() }),
+        fetchStoreBankAccount(localStorage.getItem('medicalStoreToken')).catch(() => ({ availableBalanceInRupees: 0, bankAccount: null, withdrawnAmountInRupees: 0 }))
       ]);
       if (!ordersRes.ok || !medsRes.ok) throw new Error('Failed to fetch analytics data');
       const [ordersData, medsData] = await Promise.all([ordersRes.json(), medsRes.json()]);
       setOrders(ordersData);
       setMedicines(medsData);
+      setBankInfo({
+        availableBalanceInRupees: bankRes.availableBalanceInRupees || 0,
+        bankAccount: bankRes.bankAccount || null,
+        withdrawnAmountInRupees: bankRes.withdrawnAmountInRupees || 0
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -132,6 +145,32 @@ export default function StoreAnalytics() {
 
   const timeRangeLabel = { '7': 'Last 7 Days', '30': 'Last 30 Days', '365': 'This Year' }[timeRange];
 
+  const handleWithdraw = async (e) => {
+    e.preventDefault();
+    if (!withdrawAmount || Number(withdrawAmount) < 5000) {
+      toast.error('Minimum withdrawal amount is PKR 5,000');
+      return;
+    }
+    if (Number(withdrawAmount) > bankInfo.availableBalanceInRupees) {
+      toast.error('Insufficient available balance');
+      return;
+    }
+
+    try {
+      setIsWithdrawing(true);
+      const token = localStorage.getItem('medicalStoreToken');
+      await createStoreWithdrawRequest(token, { amountInRupees: Number(withdrawAmount) });
+      toast.success('Withdrawal request submitted successfully');
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      fetchData(); // Refresh balance
+    } catch (err) {
+      toast.error(err.message || 'Could not submit withdrawal request');
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   // ── Error state ──
   if (error) {
     return (
@@ -175,11 +214,36 @@ export default function StoreAnalytics() {
 
       {/* ── Summary Cards ── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <SkeletonCard /><SkeletonCard /><SkeletonCard />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          
+          {/* Available Balance / Withdraw */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl shadow-lg flex flex-col justify-between text-white relative overflow-hidden group hover:shadow-xl transition-all">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors"></div>
+            <div>
+              <p className="text-slate-300 font-medium text-sm mb-2 flex items-center gap-2">
+                <Wallet size={16} /> Available Balance
+              </p>
+              <h3 className="text-3xl font-bold tracking-tight mb-1">
+                <span className="text-xl font-medium text-slate-400 mr-1">Rs</span>
+                {bankInfo.availableBalanceInRupees.toLocaleString()}
+              </h3>
+              <p className="text-slate-400 text-xs">
+                Total withdrawn: Rs {bankInfo.withdrawnAmountInRupees.toLocaleString()}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowWithdrawModal(true);
+              }}
+              className="mt-5 w-full bg-white/10 hover:bg-white/20 text-white font-medium text-sm py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 border border-white/10"
+            >
+              Withdraw Funds <ArrowUpRight size={16} />
+            </button>
+          </div>
 
           {/* Completion Rate */}
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow">
@@ -376,6 +440,102 @@ export default function StoreAnalytics() {
         </div>
 
       </div>
+
+      {/* ── Withdraw Modal ── */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-[24px] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-[#1EBDB8]" />
+                Withdraw Funds
+              </h3>
+              <button 
+                onClick={() => setShowWithdrawModal(false)}
+                className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm border border-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="bg-gradient-to-br from-[#1EBDB8]/10 to-[#1CAAAE]/5 rounded-2xl p-5 mb-6 border border-[#1EBDB8]/20 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-[#1CAAAE] mb-1">Available to Withdraw</p>
+                  <p className="text-2xl font-bold text-slate-800">
+                    Rs {bankInfo.availableBalanceInRupees.toLocaleString()}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-[#1EBDB8]">
+                  <Wallet size={24} />
+                </div>
+              </div>
+
+              <form onSubmit={handleWithdraw} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Amount (PKR)</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">Rs</div>
+                    <input
+                      type="number"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      placeholder="5000"
+                      min="5000"
+                      max={bankInfo.availableBalanceInRupees}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-slate-800 font-medium focus:ring-2 focus:ring-[#1EBDB8]/20 focus:border-[#1EBDB8] outline-none transition-all"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+                    <CheckCircle2 size={12} className="text-emerald-500" /> Minimum withdrawal amount is PKR 5,000
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Transfer to Bank Account</p>
+                  
+                  {!bankInfo.bankAccount?.accountNumber ? (
+                    <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg text-sm text-rose-600 font-medium flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      <p>You haven't added a bank account yet. Please go to your Profile and save your bank account details before withdrawing.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Bank</span>
+                        <span className="font-medium text-slate-800">{bankInfo.bankAccount.bankName}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Title</span>
+                        <span className="font-medium text-slate-800">{bankInfo.bankAccount.accountTitle}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Account #</span>
+                        <span className="font-medium text-slate-800">{bankInfo.bankAccount.accountNumber}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isWithdrawing || !withdrawAmount || Number(withdrawAmount) > bankInfo.availableBalanceInRupees || !bankInfo.bankAccount?.accountNumber}
+                  className="w-full bg-[#1EBDB8] hover:bg-[#1CAAAE] disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-[#1EBDB8]/20 transition-all flex items-center justify-center gap-2"
+                >
+                  {isWithdrawing ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" /> Processing...
+                    </>
+                  ) : (
+                    'Submit Withdrawal Request'
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

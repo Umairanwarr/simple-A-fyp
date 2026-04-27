@@ -42,6 +42,8 @@ import StoreOrders from './pages/storeDashboard/Orders';
 import StoreProfilePage from './pages/storeDashboard/Profile';
 import StoreMedia from './pages/storeDashboard/Media';
 import StoreDelivery from './pages/storeDashboard/Delivery';
+import StoreReviewsPage from './pages/storeDashboard/Reviews';
+import StoreChats from './pages/storeDashboard/Chats';
 import AdminLogin from './pages/admin/adminLogin/AdminLogin';
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard';
 import Patients from './pages/admin/dashboard/users/Patients';
@@ -375,6 +377,22 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
               <StoreDelivery />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/reviews"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreReviewsPage />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/store/dashboard/chats"
+          element={(
+            <RequireRoleAuth tokenKey="medicalStoreToken" userKey="medicalStore" expectedRole="medical-store">
+              <StoreChats />
             </RequireRoleAuth>
           )}
         />
