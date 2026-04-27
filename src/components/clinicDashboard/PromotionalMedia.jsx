@@ -1,96 +1,323 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { toast } from 'react-toastify';
+import {
+  fetchClinicMediaLibrary,
+  uploadClinicMedia,
+  deleteClinicMedia
+} from '../../services/authApi';
 
-const mediaAssets = [
-  { id: 1, type: 'image', url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800', title: 'Reception Area', status: 'Approved', date: 'Oct 12, 2023' },
-  { id: 2, type: 'image', url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=800', title: 'Surgical Suite 1', status: 'Approved', date: 'Oct 14, 2023' },
-  { id: 3, type: 'video', url: 'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=800', title: 'Facility Walkthrough', status: 'Pending', date: 'Oct 20, 2023' },
-  { id: 4, type: 'image', url: 'https://images.unsplash.com/photo-1504813184591-01592fd039e5?w=800', title: 'Diagnostic Lab', status: 'Approved', date: 'Oct 22, 2023' },
-  { id: 5, type: 'image', url: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800', title: 'Patient Lounge', status: 'Rejected', date: 'Oct 25, 2023' },
-];
+const STATUS_CFG = {
+  pending:  { label: 'Pending',  bg: 'bg-amber-500',   text: 'text-white' },
+  approved: { label: 'Approved', bg: 'bg-emerald-500', text: 'text-white' },
+  rejected: { label: 'Rejected', bg: 'bg-rose-500',    text: 'text-white' }
+};
+
+const fmtDate = (d) => {
+  if (!d) return 'N/A';
+  const p = new Date(d);
+  if (isNaN(p)) return 'N/A';
+  return p.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const fmtBytes = (b) => {
+  if (!b) return '';
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 export default function PromotionalMedia() {
+  const fileInputRef = useRef(null);
+  const [mediaItems, setMediaItems] = useState([]);
+  const [usage, setUsage] = useState({ imageCount: 0, videoCount: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  // Lightbox
+  const [lightbox, setLightbox] = useState(null); // { url, type }
+
+  // Delete confirm
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  useEffect(() => { loadLibrary(); }, []);
+
+  const loadLibrary = async (silent = false) => {
+    try {
+      if (!silent) setIsLoading(true);
+      const token = localStorage.getItem('clinicToken');
+      const data = await fetchClinicMediaLibrary(token);
+      setMediaItems(Array.isArray(data.media) ? data.media : []);
+      setUsage(data.usage || { imageCount: 0, videoCount: 0 });
+    } catch (err) {
+      toast.error(err.message || 'Could not load media library');
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    if (isUploading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      const token = localStorage.getItem('clinicToken');
+      const data = await uploadClinicMedia(token, file);
+      toast.success(data.message || 'Media uploaded successfully');
+      await loadLibrary(true);
+    } catch (err) {
+      toast.error(String(err.message || '') || 'Could not upload media');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      setDeletingId(String(itemToDelete.id));
+      const token = localStorage.getItem('clinicToken');
+      await deleteClinicMedia(token, itemToDelete.id);
+      toast.success('Media removed successfully');
+      setMediaItems(prev => prev.filter(m => m.id !== itemToDelete.id));
+      setItemToDelete(null);
+    } catch (err) {
+      toast.error(err.message || 'Could not delete media');
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  const filtered = useMemo(() =>
+    activeFilter === 'all' ? mediaItems : mediaItems.filter(m => String(m.moderationStatus || '').toLowerCase() === activeFilter),
+    [mediaItems, activeFilter]
+  );
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Asset Management Header */}
-      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900">Facility Media Assets</h3>
-          <p className="text-sm text-gray-500">Manage promotional images and videos for your clinic profile.</p>
-        </div>
-        <div className="flex gap-3 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[#1F2432] text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95 whitespace-nowrap">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            Upload Asset
+    <div className="space-y-6">
+      <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+          <div>
+            <h3 className="text-[28px] font-extrabold text-[#1F2432] tracking-tight">Facility Media Manager</h3>
+            <p className="text-[13px] text-[#9CA3AF] mt-1.5 flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
+                Images: <span className="font-bold text-[#4B5563]">{usage.imageCount}</span>
+              </span>
+              <span className="w-1 h-1 bg-gray-300 rounded-full" />
+              <span className="flex items-center gap-1.5">
+                Videos: <span className="font-bold text-[#4B5563]">{usage.videoCount}</span>
+              </span>
+            </p>
+          </div>
+
+          <button
+            onClick={handleUploadClick}
+            disabled={isUploading}
+            className="flex items-center gap-2.5 bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white px-6 py-3 rounded-2xl text-[15px] font-bold transition-all shadow-xl shadow-[#1EBDB8]/20 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap active:scale-[0.98] self-start lg:self-center"
+          >
+            {isUploading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            )}
+            {isUploading ? 'Uploading...' : 'Upload Media'}
           </button>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+          onChange={handleFileSelected}
+          className="hidden"
+        />
+
+        {/* Info banner */}
+        <div className="mb-8 rounded-3xl border border-[#1EBDB8]/10 bg-[#F0FDFA] p-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-[#1EBDB8]/10 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <p className="text-[14px] font-bold text-[#0F766E] leading-relaxed">
+              Upload facility images and videos to showcase your clinic to patients.
+            </p>
+            <p className="text-[13px] font-medium text-[#14B8A6] mt-1 opacity-80">
+              Every upload goes to admin moderation. You will be notified when it is approved or rejected.
+            </p>
+          </div>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {['all', 'pending', 'approved', 'rejected'].map(f => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`px-4 py-1.5 rounded-full text-[12px] font-bold capitalize transition-all ${
+                activeFilter === f
+                  ? 'bg-[#1EBDB8] text-white'
+                  : 'bg-gray-100 text-[#4B5563] hover:bg-gray-200'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-12 text-center">
+            <div className="w-8 h-8 border-[3px] border-[#1EBDB8]/20 border-t-[#1EBDB8] rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[14px] font-medium text-[#6B7280]">Loading media library...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-[#FAFAFA] px-4 py-16 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <p className="text-[14px] font-medium text-[#6B7280]">No media found. Upload facility images or videos to get started.</p>
+            <button
+              onClick={handleUploadClick}
+              className="mt-4 px-5 py-2 rounded-xl bg-[#1EBDB8] text-white text-[13px] font-bold hover:bg-[#1CAAAE] transition-colors"
+            >
+              Upload First Media
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filtered.map(item => {
+              const statusCfg = STATUS_CFG[item.moderationStatus] || STATUS_CFG.pending;
+              return (
+                <div key={item.id} className="bg-[#FAFAFA] rounded-2xl overflow-hidden border border-gray-100 group transition-all hover:shadow-md">
+                  {/* Preview */}
+                  <div
+                    className="relative h-52 bg-[#1F2432]/5 cursor-pointer overflow-hidden"
+                    onClick={() => setLightbox({ url: item.url, type: item.mediaType })}
+                  >
+                    {item.mediaType === 'video' ? (
+                      <video src={item.url} className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={item.url} alt={item.originalName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    )}
+
+                    {item.mediaType === 'video' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center">
+                          <svg className="w-5 h-5 text-[#1F2432] ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                      </div>
+                    )}
+
+                    <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold ${statusCfg.bg} ${statusCfg.text}`}>
+                      {statusCfg.label}
+                    </span>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <p className="text-[14px] font-bold text-[#1F2432] truncate">{item.originalName}</p>
+                      <p className="text-[12px] text-[#6B7280] font-medium mt-0.5">
+                        {fmtBytes(item.bytes)} • {fmtDate(item.uploadedAt)}
+                      </p>
+                    </div>
+
+                    {item.moderationNote && (
+                      <p className="text-[11px] text-[#6B7280] bg-white rounded-lg border border-gray-100 px-2.5 py-2">
+                        Note: {item.moderationNote}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={() => setItemToDelete(item)}
+                      disabled={deletingId === item.id}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[12px] font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-100 transition-colors disabled:opacity-50"
+                    >
+                      {deletingId === item.id ? (
+                        <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-500 rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      )}
+                      Delete Media
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Asset Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mediaAssets.map((asset) => (
-          <div key={asset.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-            <div className="aspect-video relative group overflow-hidden bg-slate-100">
-               <img 
-                 src={asset.url} 
-                 alt={asset.title} 
-                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-               />
-               
-               {/* Status Badge */}
-               <div className="absolute top-3 left-3">
-                 <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${
-                   asset.status === 'Approved' ? 'bg-emerald-50/90 text-emerald-600 border-emerald-100' :
-                   asset.status === 'Pending' ? 'bg-amber-50/90 text-amber-600 border-amber-100' :
-                   'bg-red-50/90 text-red-600 border-red-100'
-                 }`}>
-                   {asset.status}
-                 </span>
-               </div>
+      {/* ─── Lightbox ─── */}
+      {lightbox && ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4 cursor-zoom-out"
+          onClick={() => setLightbox(null)}
+        >
+          <button onClick={() => setLightbox(null)} className="absolute top-5 right-5 p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+          {lightbox.type === 'video' ? (
+            <video
+              src={lightbox.url}
+              controls
+              autoPlay
+              className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={lightbox.url}
+              alt="Media preview"
+              className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            />
+          )}
+        </div>,
+        document.body
+      )}
 
-               {/* Video Indicator Overlay */}
-               {asset.type === 'video' && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/5">
-                   <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white shadow-xl">
-                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="m7 4 12 8-12 8V4z"/></svg>
-                   </div>
-                 </div>
-               )}
+      {/* ─── Delete Confirm Modal ─── */}
+      {itemToDelete && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#1F2432]/50 backdrop-blur-sm">
+          <div className="bg-white rounded-[28px] w-full max-w-sm shadow-2xl p-7 text-center">
+            <div className="w-16 h-16 bg-rose-50 rounded-[22px] flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </div>
-
-            <div className="p-5">
-              <div className="flex items-start justify-between mb-4">
-                 <div>
-                   <h4 className="text-[15px] font-semibold text-slate-800 leading-snug">{asset.title}</h4>
-                   <p className="text-[11px] text-gray-400 font-medium mt-1">{asset.date}</p>
-                 </div>
-                 <div className="flex gap-1">
-                    <button className="p-2 text-gray-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-                    </button>
-                 </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <button className="flex-1 py-2.5 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-lg transition-colors">
-                  View Detail
-                </button>
-                <button className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-              </div>
+            <h3 className="text-[20px] font-bold text-[#1F2432] mb-2">Remove Media?</h3>
+            <p className="text-[14px] text-[#6B7280] mb-7 px-2">
+              <span className="font-semibold text-[#1F2432]">{itemToDelete.originalName}</span> will be permanently removed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setItemToDelete(null)}
+                disabled={!!deletingId}
+                className="flex-1 py-2.5 text-[13px] font-bold text-[#6B7280] bg-[#F3F4F6] rounded-xl hover:bg-[#E5E7EB] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={!!deletingId}
+                className="flex-1 flex justify-center items-center py-2.5 text-[13px] font-bold text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors shadow-lg shadow-rose-600/20 active:scale-[0.97]"
+              >
+                {deletingId ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Remove'}
+              </button>
             </div>
           </div>
-        ))}
-        
-        {/* Upload Placeholder */}
-        <div className="aspect-square sm:aspect-auto border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-[#1EBDB8] hover:text-[#1EBDB8] hover:bg-slate-50/50 transition-all cursor-pointer group p-8 text-center">
-           <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform group-hover:bg-[#1EBDB8]/5 group-hover:border-[#1EBDB8]/20">
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-           </div>
-           <p className="font-semibold text-[15px] text-slate-700">Add new media</p>
-           <p className="text-[12px] mt-1 font-medium text-slate-400">JPG, PNG or MP4 (Max 50MB)</p>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

@@ -270,6 +270,14 @@ export default function MediaModeration() {
                             <p className="text-[14px] font-bold text-gray-900">{mediaItem.storeName || 'Store'}</p>
                             <p className="text-[12px] font-medium text-gray-600 mt-0.5">{mediaItem.storeEmail || 'N/A'}</p>
                           </>
+                        ) : mediaItem.uploaderRole === 'clinic' ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-100">Clinic</span>
+                            </div>
+                            <p className="text-[14px] font-bold text-gray-900">{mediaItem.clinicName || 'Clinic'}</p>
+                            <p className="text-[12px] font-medium text-gray-600 mt-0.5">{mediaItem.clinicEmail || 'N/A'}</p>
+                          </>
                         ) : (
                           <>
                             <div className="flex items-center gap-2 mb-0.5">

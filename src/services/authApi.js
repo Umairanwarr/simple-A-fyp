@@ -1735,3 +1735,44 @@ export const updateStoreAvatar = async (token, file) => {
   return data;
 };
 
+// ─── Clinic Media ───
+
+export const fetchClinicMediaLibrary = async (token) => {
+  if (!token) throw new Error('Unauthorized');
+  return apiRequest('/clinic-media', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const uploadClinicMedia = async (token, file) => {
+  if (!token) throw new Error('Unauthorized');
+  if (!file) throw new Error('Media file is required');
+
+  const formData = new FormData();
+  formData.append('media', file);
+
+  const response = await fetch(`${API_BASE_URL}/clinic-media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || 'Could not upload media');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  return data;
+};
+
+export const deleteClinicMedia = async (token, mediaId) => {
+  if (!token) throw new Error('Unauthorized');
+  if (!mediaId) throw new Error('Media id is required');
+  return apiRequest(`/clinic-media/${mediaId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
