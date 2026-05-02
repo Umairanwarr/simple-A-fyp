@@ -20,9 +20,10 @@ import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
 import PatientStoreProfile from './pages/patientDashboard/StoreProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
 import ClinicStaff from './pages/clinicDashboard/Staff';
+import ClinicAppointments from './pages/clinicDashboard/Appointments';
 import ClinicSubscriptions from './pages/clinicDashboard/Subscriptions';
 import ClinicMedia from './pages/clinicDashboard/Media';
-import ClinicStreaming from './pages/clinicDashboard/Streaming';
+import ClinicProfilePage from './pages/clinicDashboard/Profile';
 import DoctorDashboard from './pages/doctorDashboard/Dashboard';
 import DoctorProfile from './pages/doctorDashboard/Profile';
 import DoctorReviewsPage from './pages/doctorDashboard/Reviews';
@@ -205,6 +206,14 @@ function App() {
           )}
         />
         <Route
+          path="/clinic/dashboard/availability"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicAppointments />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
           path="/clinic/dashboard/subscriptions"
           element={(
             <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
@@ -221,10 +230,10 @@ function App() {
           )}
         />
         <Route
-          path="/clinic/dashboard/streaming"
+          path="/clinic/dashboard/profile"
           element={(
             <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
-              <ClinicStreaming />
+              <ClinicProfilePage />
             </RequireRoleAuth>
           )}
         />

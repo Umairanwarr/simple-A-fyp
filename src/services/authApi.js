@@ -1119,6 +1119,206 @@ export const updateClinicAvatar = async (token, file) => {
   return uploadAvatarForRole('/auth/clinic/avatar', token, file);
 };
 
+export const fetchClinicProfile = async (token) => {
+  return apiRequest('/auth/clinic/profile', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const updateClinicProfile = async (token, payload) => {
+  return apiRequest('/auth/clinic/profile', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchClinicBankAccount = async (token) => {
+  return apiRequest('/auth/clinic/bank-account', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const saveClinicBankAccount = async (token, payload) => {
+  return apiRequest('/auth/clinic/bank-account', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const fetchClinicNotifications = async (token) => {
+  return apiRequest('/auth/clinic/notifications', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchClinicDoctors = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/clinic/doctors', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const registerClinicDoctor = async (token, formData) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!formData) {
+    throw new Error('Doctor form data is required');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/clinic/doctors`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.error || data.message || 'Could not register clinic doctor');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+};
+
+export const fetchClinicAppointments = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/clinic/appointments', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const createClinicAppointment = async (token, payload = {}) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/clinic/appointments', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
+  });
+};
+
+export const cancelClinicAppointment = async (token, appointmentId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!appointmentId) {
+    throw new Error('Appointment id is required');
+  }
+
+  return apiRequest(`/auth/clinic/appointments/${appointmentId}/cancel`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+export const fetchClinicAvailability = async (token) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+  return apiRequest('/auth/clinic/availability', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const fetchClinicDoctorAvailability = async (token, doctorId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+  if (!doctorId) {
+    throw new Error('Doctor id is required');
+  }
+  return apiRequest(`/auth/clinic/availability/${doctorId}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const createClinicDoctorAvailability = async (token, doctorId, payload) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+  if (!doctorId) {
+    throw new Error('Doctor id is required');
+  }
+  return apiRequest(`/auth/clinic/availability/${doctorId}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const updateClinicDoctorAvailabilitySlot = async (token, doctorId, slotId, payload) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+  if (!doctorId || !slotId) {
+    throw new Error('Doctor id and slot id are required');
+  }
+  return apiRequest(`/auth/clinic/availability/${doctorId}/${slotId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+};
+
+export const deleteClinicDoctorAvailabilitySlot = async (token, doctorId, slotId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+  if (!doctorId || !slotId) {
+    throw new Error('Doctor id and slot id are required');
+  }
+  return apiRequest(`/auth/clinic/availability/${doctorId}/${slotId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const markClinicNotificationsRead = async (token) => {
+  return apiRequest('/auth/clinic/notifications/mark-read', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
 export const updateMedicalStoreAvatar = async (token, file) => {
   return uploadAvatarForRole('/auth/store/avatar', token, file);
 };
