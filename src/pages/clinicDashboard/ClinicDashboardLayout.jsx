@@ -7,11 +7,15 @@ import ClinicAnalytics from '../../components/clinicDashboard/ClinicAnalytics';
 import StaffManagement from '../../components/clinicDashboard/StaffManagement';
 import ClinicSubscription from '../../components/clinicDashboard/ClinicSubscription';
 import PromotionalMedia from '../../components/clinicDashboard/PromotionalMedia';
-import ClinicLiveStream from '../../components/clinicDashboard/ClinicLiveStream';
 import AvatarUploadModal from '../../components/shared/AvatarUploadModal';
 import ReportBugButton from '../../components/shared/ReportBugButton';
 import ReportBugModal from '../../components/shared/ReportBugModal';
-import { submitBugReport, updateClinicAvatar } from '../../services/authApi';
+import { 
+  submitBugReport, 
+  updateClinicAvatar, 
+  fetchClinicNotifications, 
+  markClinicNotificationsRead 
+} from '../../services/authApi';
 import {
   clearRoleSession,
   getClinicSessionProfile,
@@ -22,9 +26,10 @@ import {
 const TAB_PATHS = {
   analytics: '/clinic/dashboard',
   staff: '/clinic/dashboard/staff',
+  availability: '/clinic/dashboard/availability',
   subscriptions: '/clinic/dashboard/subscriptions',
   media: '/clinic/dashboard/media',
-  streaming: '/clinic/dashboard/streaming'
+  profile: '/clinic/dashboard/profile'
 };
 
 export default function ClinicDashboardLayout({ activeTab = 'analytics', children }) {
@@ -34,6 +39,48 @@ export default function ClinicDashboardLayout({ activeTab = 'analytics', childre
   const [isAvatarMandatory, setIsAvatarMandatory] = useState(false);
   const [isBugReportModalOpen, setIsBugReportModalOpen] = useState(false);
   const [isSubmittingBugReport, setIsSubmittingBugReport] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [isMarkingNotificationsRead, setIsMarkingNotificationsRead] = useState(false);
+
+  const loadNotifications = async () => {
+    const clinicToken = localStorage.getItem('clinicToken');
+    if (!clinicToken) return;
+
+    try {
+      const data = await fetchClinicNotifications(clinicToken);
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch (error) {
+      // Fail silently
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  const handleMarkNotificationsAsRead = async () => {
+    if (unreadCount <= 0 || isMarkingNotificationsRead) return;
+
+    const clinicToken = localStorage.getItem('clinicToken');
+    if (!clinicToken) return;
+
+    try {
+      setIsMarkingNotificationsRead(true);
+      await markClinicNotificationsRead(clinicToken);
+      setUnreadCount(0);
+    } catch (error) {
+      // Fail silently
+    } finally {
+      setIsMarkingNotificationsRead(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 45000); // 45 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!hasSessionAvatar('clinic')) {
@@ -116,6 +163,10 @@ export default function ClinicDashboardLayout({ activeTab = 'analytics', childre
             onMenuClick={() => setIsSidebarOpen(true)} 
             activeTab={activeTab}
             onAvatarClick={handleOpenAvatarModal}
+            notifications={notifications}
+            unreadCount={unreadCount}
+            isLoadingNotifications={isLoadingNotifications}
+            onNotificationsOpen={handleMarkNotificationsAsRead}
           />
           
           <main className="mt-2 md:mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
