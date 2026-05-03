@@ -332,6 +332,45 @@ export const fetchPatientExploreStores = async ({ query = '' } = {}) => {
   });
 };
 
+export const fetchPatientExploreClinics = async ({ query = '' } = {}) => {
+  const searchParams = new URLSearchParams();
+
+  if (String(query || '').trim()) {
+    searchParams.set('q', String(query).trim());
+  }
+
+  const queryString = searchParams.toString();
+  const path = `/auth/patient/clinics${queryString ? `?${queryString}` : ''}`;
+
+  return apiRequest(path, {
+    method: 'GET'
+  });
+};
+
+export const fetchPatientClinicDoctors = async (clinicId) => {
+  if (!clinicId) {
+    throw new Error('Clinic id is required');
+  }
+
+  return apiRequest(`/auth/patient/clinics/${clinicId}/doctors`, {
+    method: 'GET'
+  });
+};
+
+export const bookPatientClinicDoctorAppointment = async (token, payload) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  return apiRequest('/auth/patient/clinics/book', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
+  });
+};
+
 export const fetchPatientDoctorProfile = async (token, doctorId) => {
   if (!token) {
     throw new Error('Unauthorized: Missing token');

@@ -14,6 +14,7 @@ export default function DoctorCard({
     || 'bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative';
 
   const isStore = doctor.type === 'store';
+  const isClinic = doctor.type === 'clinic';
   
   // Logic to check if store is open
   const isStoreOpen = React.useMemo(() => {
@@ -50,12 +51,12 @@ export default function DoctorCard({
     }
   }, [isStore, doctor.availability]);
 
-  const effectiveActionLabel = isStore && !isStoreOpen ? 'Store Closed' : actionLabel;
+  const effectiveActionLabel = isClinic ? 'View Clinic' : (isStore && !isStoreOpen ? 'Store Closed' : actionLabel);
   const isActionDisabled = typeof onActionClick !== 'function' || (isStore && !isStoreOpen);
 
   return (
     <div className={cardClassName}>
-      {showFavorite && (
+      {showFavorite && !isClinic && (
         <button
           type="button"
           onClick={() => onFavoriteToggle?.(doctor)}
@@ -102,9 +103,9 @@ export default function DoctorCard({
         </div>
         <div className="flex gap-2 text-[11px]">
           <span className="font-bold text-[#1F2937]">
-            {doctor.type === 'store' ? 'Operating Hours' : 'Next Available'}
+            {doctor.type === 'clinic' ? 'Clinic Facility' : (doctor.type === 'store' ? 'Operating Hours' : 'Next Available')}
           </span>
-          <span className="font-bold text-[#1F2937]">{doctor.availability}</span>
+          <span className="font-bold text-[#1F2937]">{doctor.type === 'clinic' ? 'Full Staff Available' : (doctor.availability || 'Regular')}</span>
         </div>
       </div>
 
