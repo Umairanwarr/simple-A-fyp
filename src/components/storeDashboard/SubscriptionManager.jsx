@@ -1,9 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import CampaignManager from '../shared/CampaignManager';
 import {
   cancelStoreSubscription,
+  confirmStoreCampaignCheckoutSession,
   confirmStoreSubscriptionCheckoutSession,
+  createStoreCampaignCheckoutSession,
   createStoreSubscriptionCheckoutSession,
+  fetchStoreCampaignPricing,
+  fetchStoreCampaignStatus,
   fetchStoreSubscriptionPricing,
   fetchStoreSubscriptionStatus
 } from '../../services/authApi';
@@ -11,8 +16,8 @@ import { saveSessionUser } from '../../utils/authSession';
 
 const DEFAULT_PRICING = {
   platinumPriceInRupees: 0,
-  goldPriceInRupees: 1499,
-  diamondPriceInRupees: 3999
+  goldPriceInRupees: 1999,
+  diamondPriceInRupees: 4999
 };
 
 const DEFAULT_SUBSCRIPTION = {
@@ -30,44 +35,33 @@ const PLAN_BLUEPRINTS = [
   {
     id: 'platinum',
     name: 'Platinum',
-    label: '(Basic)',
+    label: '(Small Pharmacy)',
     priceKey: 'platinumPriceInRupees',
     features: [
-      { label: 'Ranking Boost', value: 'Low' },
-      { label: 'Inventory Display', value: 'Up to 50 Products' },
       { label: 'Media Uploads', value: '2 Images' },
-      { label: 'Promotion Ads', value: 'No' },
-      { label: 'Delivery Tracking', value: 'Manual' },
-      { label: 'Analytics', value: 'Basic' },
+      { label: 'Analytics', value: 'Basic Orders Overview' }
     ],
   },
   {
     id: 'gold',
     name: 'Gold',
-    label: '(Pro)',
+    label: '(Growth)',
     priceKey: 'goldPriceInRupees',
     features: [
-      { label: 'Ranking Boost', value: 'Medium' },
-      { label: 'Inventory Display', value: 'Up to 500 Products' },
       { label: 'Media Uploads', value: '5 Images + 1 Video' },
-      { label: 'Promotion Ads', value: 'Limited' },
-      { label: 'Delivery Tracking', value: 'Standard' },
-      { label: 'Analytics', value: 'Standard' },
+      { label: 'Analytics', value: 'Orders, Popular Medicines' }
     ],
     isPopular: true
   },
   {
     id: 'diamond',
     name: 'Diamond',
-    label: '(Premium)',
+    label: '(Advanced)',
     priceKey: 'diamondPriceInRupees',
     features: [
-      { label: 'Ranking Boost', value: 'Extra High' },
-      { label: 'Inventory Display', value: 'Unlimited Products' },
       { label: 'Media Uploads', value: 'Unlimited Media' },
-      { label: 'Promotion Ads', value: 'Full Control' },
-      { label: 'Delivery Tracking', value: 'Priority' },
-      { label: 'Analytics', value: 'Advanced' },
+      { label: 'Advanced Analytics', value: 'Sales Trends, Customer Demand, Performance Insights' },
+      { label: 'Top Store Tag', value: 'Shown on Store Profile and Listing Cards' }
     ],
   },
 ];
@@ -139,8 +133,8 @@ export default function SubscriptionManager() {
 
       setPricing({
         platinumPriceInRupees: Number(incomingPricing.platinumPriceInRupees) || 0,
-        goldPriceInRupees: Number(incomingPricing.goldPriceInRupees) || 1499,
-        diamondPriceInRupees: Number(incomingPricing.diamondPriceInRupees) || 3999
+        goldPriceInRupees: Number(incomingPricing.goldPriceInRupees) || 1999,
+        diamondPriceInRupees: Number(incomingPricing.diamondPriceInRupees) || 4999
       });
 
       setSubscription({
@@ -294,12 +288,12 @@ export default function SubscriptionManager() {
     <div className="py-4 sm:py-6 lg:py-8 px-0 sm:px-2 space-y-6">
       <div className="max-w-[1340px] mx-auto bg-white border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-2xl px-5 py-4 sm:px-6 sm:py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <p className="text-[13px] font-semibold text-gray-500">Current Store Subscription</p>
+          <p className="text-[13px] font-semibold text-gray-500">Current Store Plan</p>
           <h3 className="text-[24px] font-bold text-[#1F2432] mt-0.5">{currentPlanLabel} Plan</h3>
           <p className="text-[13px] text-gray-500 mt-1">
             {subscription.isPaidPlanActive
               ? `Expires on ${formatDateLabel(subscription.planExpiresAt)} (${subscription.daysRemaining} days left).`
-              : 'You are on the free Platinum plan.'}
+              : 'You are currently on the free Platinum plan.'}
           </p>
         </div>
       </div>
@@ -380,11 +374,17 @@ export default function SubscriptionManager() {
       
       <div className="mt-10 bg-[#1F2432] p-10 rounded-[32px] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 max-w-[1340px] mx-auto relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#1EBDB8]/5 blur-[80px] rounded-full -mr-32 -mt-32" />
-        <div className="relative z-10 text-center md:text-left">
-          <h3 className="text-[26px] font-bold text-white mb-2">Store Ads & Promotions</h3>
-          <p className="text-white/50 text-[16px] max-w-xl">Boost your pharmacy's visibility with featured listings and targeted campaigns to reach more customers.</p>
-        </div>
-        <button className="relative z-10 px-8 py-4 bg-[#1EBDB8] text-white font-bold rounded-2xl hover:bg-[#1CAAAE] transition-all shadow-xl shadow-[#1EBDB8]/20">Create Campaign</button>
+        <CampaignManager
+          tokenKey="medicalStoreToken"
+          title="Campaign Access"
+          description="Promote your store with sponsored placement and appear higher in patient discovery results."
+          buttonLabel="Launch Campaign"
+          fetchPricing={fetchStoreCampaignPricing}
+          fetchStatus={fetchStoreCampaignStatus}
+          createCheckoutSession={createStoreCampaignCheckoutSession}
+          confirmCheckoutSession={confirmStoreCampaignCheckoutSession}
+          buttonClassName="relative z-10 px-8 py-4 bg-[#1EBDB8] text-white font-bold rounded-2xl hover:bg-[#1CAAAE] transition-all shadow-xl shadow-[#1EBDB8]/20"
+        />
       </div>
     </div>
   );

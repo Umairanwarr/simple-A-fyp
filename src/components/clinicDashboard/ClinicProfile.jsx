@@ -71,9 +71,13 @@ export default function ClinicProfile() {
     phone: '',
     facilityType: '',
     address: '',
+    about: '',
     avatarUrl: '',
     applicationStatus: '',
-    createdAt: ''
+    createdAt: '',
+    currentPlan: 'platinum',
+    isVerifiedBadge: false,
+    hasPrioritySupport: false
   });
 
   const [bankData, setBankData] = useState({
@@ -107,9 +111,13 @@ export default function ClinicProfile() {
         phone: clinic.phone || '',
         facilityType: clinic.facilityType || '',
         address: clinic.address || '',
+        about: clinic.about || '',
         avatarUrl: clinic.avatarUrl || '',
         applicationStatus: clinic.applicationStatus || '',
-        createdAt: clinic.createdAt || ''
+        createdAt: clinic.createdAt || '',
+        currentPlan: clinic.currentPlan || 'platinum',
+        isVerifiedBadge: Boolean(clinic.isVerifiedBadge),
+        hasPrioritySupport: Boolean(clinic.hasPrioritySupport)
       });
 
       setBankData({
@@ -147,7 +155,8 @@ export default function ClinicProfile() {
         name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        facilityType: formData.facilityType
+        facilityType: formData.facilityType,
+        about: formData.about
       });
       toast.success(data.message || 'Profile updated successfully');
 
@@ -260,7 +269,19 @@ export default function ClinicProfile() {
 
         {/* Info */}
         <div className="flex-1 text-center md:text-left space-y-1">
-          <h2 className="text-[26px] font-bold text-[#1F2432] tracking-tight">{formData.name}</h2>
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+            <h2 className="text-[26px] font-bold text-[#1F2432] tracking-tight">{formData.name}</h2>
+            {formData.isVerifiedBadge ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#ECFEFF] border border-[#A5F3FC] text-[#0F766E] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                Verified
+              </span>
+            ) : null}
+            {formData.hasPrioritySupport ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                Priority Support
+              </span>
+            ) : null}
+          </div>
           <p className="text-[14px] font-medium text-[#6B7280] flex items-center justify-center md:justify-start gap-2">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -271,6 +292,9 @@ export default function ClinicProfile() {
           <div className="pt-2 flex flex-wrap justify-center md:justify-start gap-2">
             <span className="px-3 py-1 bg-[#1EBDB8]/10 text-[#0F766E] text-[11px] font-bold rounded-full uppercase tracking-wider border border-[#1EBDB8]/20">
               {formData.facilityType || 'Medical Facility'}
+            </span>
+            <span className="px-3 py-1 bg-[#EEF2FF] text-[#4338CA] text-[11px] font-bold rounded-full uppercase tracking-wider border border-[#C7D2FE]">
+              {String(formData.currentPlan || 'platinum').toUpperCase()}
             </span>
             <span className={`px-3 py-1 text-[11px] font-bold rounded-full uppercase tracking-wider ${
               formData.applicationStatus === 'approved'
@@ -351,6 +375,17 @@ export default function ClinicProfile() {
               error={errors.address}
               placeholder="Street address, City, Country"
               disabled={isSaving}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <ClinicProfileField
+              label="About Clinic"
+              value={formData.about}
+              onChange={(e) => handleChange(e, 'about')}
+              placeholder="Describe your clinic services, facilities, and care approach"
+              disabled={isSaving}
+              multiline
+              rows={5}
             />
           </div>
         </div>

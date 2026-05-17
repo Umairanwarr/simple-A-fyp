@@ -32,7 +32,9 @@ export default function PremiumUsers() {
     totalGoldDoctors: 0,
     totalDiamondDoctors: 0,
     totalGoldStores: 0,
-    totalDiamondStores: 0
+    totalDiamondStores: 0,
+    totalGoldClinics: 0,
+    totalDiamondClinics: 0
   });
 
   useEffect(() => {
@@ -48,7 +50,9 @@ export default function PremiumUsers() {
           totalGoldDoctors: data?.totalGoldDoctors ?? 0,
           totalDiamondDoctors: data?.totalDiamondDoctors ?? 0,
           totalGoldStores: data?.totalGoldStores ?? 0,
-          totalDiamondStores: data?.totalDiamondStores ?? 0
+          totalDiamondStores: data?.totalDiamondStores ?? 0,
+          totalGoldClinics: data?.totalGoldClinics ?? 0,
+          totalDiamondClinics: data?.totalDiamondClinics ?? 0
         });
       } catch (error) {
         toast.error(error?.message || 'Could not load premium users');
@@ -66,7 +70,7 @@ export default function PremiumUsers() {
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="text-[24px] font-bold text-gray-900">Premium Users</h1>
-          <p className="text-[14px] text-gray-500 font-medium mt-1">Live list of Doctors and Medical Stores on Gold and Diamond plans.</p>
+          <p className="text-[14px] text-gray-500 font-medium mt-1">Live list of Doctors, Medical Stores, and Clinics on Gold and Diamond plans.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -85,6 +89,14 @@ export default function PremiumUsers() {
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
             <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Diamond Stores</p>
             <p className="mt-2 text-[32px] font-black text-[#1EBDB8]">{stats.totalDiamondStores}</p>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
+            <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Gold Clinics</p>
+            <p className="mt-2 text-[32px] font-black text-[#1EBDB8]">{stats.totalGoldClinics}</p>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
+            <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Diamond Clinics</p>
+            <p className="mt-2 text-[32px] font-black text-[#1EBDB8]">{stats.totalDiamondClinics}</p>
           </div>
         </div>
 
@@ -119,7 +131,11 @@ export default function PremiumUsers() {
                         <p className="text-[14px] font-bold text-gray-900">{u.fullName}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${u.role === 'Doctor' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                          u.role === 'Doctor' ? 'bg-blue-50 text-blue-600' : 
+                          u.role === 'Store' ? 'bg-purple-50 text-purple-600' : 
+                          'bg-emerald-50 text-emerald-600'
+                        }`}>
                           {u.role}
                         </span>
                       </td>

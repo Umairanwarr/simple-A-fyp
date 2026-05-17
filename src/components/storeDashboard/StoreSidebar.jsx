@@ -12,7 +12,7 @@ export default function StoreSidebar({ isOpen, onClose, activeTab, onTabChange, 
         <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
       </svg>
     )},
-    { id: 'subscriptions', label: 'Subscriptions', icon: (
+    { id: 'subscriptions', label: 'Subscription & Ads', icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
       </svg>
@@ -120,4 +120,3 @@ export default function StoreSidebar({ isOpen, onClose, activeTab, onTabChange, 
     </>
   );
 }
-

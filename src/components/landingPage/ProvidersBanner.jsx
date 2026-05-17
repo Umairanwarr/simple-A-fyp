@@ -1,6 +1,9 @@
 import React from 'react';
 
 export default function ProvidersBanner() {
+  const goToSignIn = () => {
+    window.location.href = '/signin';
+  };
   return (
     <div className="w-full bg-[#1E232F] relative pb-24 pt-16 px-6 lg:px-10">
       <div className="max-w-[1400px] mx-auto bg-gradient-to-br from-[#232734] to-[#1E232F] rounded-[40px] relative mt-8 md:mt-16 mb-10 flex flex-col md:flex-row min-h-[350px] md:min-h-[420px] overflow-hidden border border-white/5 shadow-2xl shadow-black/30">
@@ -15,7 +18,7 @@ export default function ProvidersBanner() {
             Consult Our<br/>
             <span className="bg-gradient-to-r from-[#1EBDB8] to-[#4FDBD8] bg-clip-text text-transparent">Doctors</span>
           </h2>
-          <button className="bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] text-white hover:shadow-lg hover:shadow-[#1EBDB8]/25 transition-all duration-300 px-10 py-3.5 rounded-full font-semibold text-[15px] tracking-wide hover:scale-[1.02] active:scale-[0.98]">
+          <button onClick={goToSignIn} className="bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] text-white hover:shadow-lg hover:shadow-[#1EBDB8]/25 transition-all duration-300 px-10 py-3.5 rounded-full font-semibold text-[15px] tracking-wide hover:scale-[1.02] active:scale-[0.98]">
             Book Now
           </button>
         </div>

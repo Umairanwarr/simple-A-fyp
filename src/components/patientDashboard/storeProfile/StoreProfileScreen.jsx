@@ -683,6 +683,20 @@ export default function StoreProfileScreen({ storeId, onBack }) {
           <div className="space-y-1.5 text-center sm:text-left mt-2">
             <h1 className="text-[32px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{store.name}</h1>
             <p className="text-[18px] font-semibold text-[#1EBDB8]">Medical Store</p>
+            {(store?.isTopStore || store?.hasPrioritySupport) ? (
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                {store?.isTopStore ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FFF7ED] border border-[#FCD9BD] text-[#9A3412] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                    Top Store
+                  </span>
+                ) : null}
+                {store?.hasPrioritySupport ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFEFF] border border-[#A5F3FC] text-[#0F766E] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                    Priority Support
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             <p className="text-[16px] font-medium text-[#6B7280]">{store.location || 'Location not provided'}</p>
             
             {/* Business Info - Left Side */}

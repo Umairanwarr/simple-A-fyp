@@ -84,7 +84,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       const data = await fetchPatientNotifications(patientToken);
       setNotifications(Array.isArray(data?.notifications) ? data.notifications : []);
       setUnreadNotificationCount(Math.max(0, Math.trunc(Number(data?.unreadCount || 0))));
-    } catch (error) {
+    } catch {
       setNotifications([]);
       setUnreadNotificationCount(0);
     } finally {
@@ -381,7 +381,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       setIsMarkingNotificationsRead(true);
       await markPatientNotificationsRead(patientToken);
       setUnreadNotificationCount(0);
-    } catch (error) {
+    } catch {
       // Keep unread badge if mark-read API fails.
     } finally {
       setIsMarkingNotificationsRead(false);
@@ -407,6 +407,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       setPendingReviewAppointment(null);
       window.dispatchEvent(new Event('patient-appointment-updated'));
       window.dispatchEvent(new Event('doctor-appointment-updated'));
+      window.dispatchEvent(new Event('clinic-reviews-updated'));
       await loadPendingReviewAppointment();
     } catch (error) {
       toast.error(error?.message || 'Could not submit review right now');
@@ -507,6 +508,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       </div>
 
       <AppointmentReviewPromptModal
+        key={pendingReviewAppointment?.id || 'appointment-review'}
         isOpen={Boolean(pendingReviewAppointment)}
         appointment={pendingReviewAppointment}
         isSubmitting={isReviewActionProcessing}

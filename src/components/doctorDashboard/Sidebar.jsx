@@ -56,11 +56,6 @@ export default function Sidebar({ isOpen, onClose, activeTab, onTabChange, onLog
         <path d="M15.6 11.6L22 7v10l-6.4-4.6z"/><rect x="2" y="5" width="14" height="14" rx="2"/>
       </svg>
     )},
-    { id: 'subscriptions', label: 'Subscription', icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-      </svg>
-    )},
     { id: 'media', label: 'Media Manager', icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>

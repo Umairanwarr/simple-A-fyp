@@ -31,6 +31,7 @@ export default function PromotionalMedia() {
   const fileInputRef = useRef(null);
   const [mediaItems, setMediaItems] = useState([]);
   const [usage, setUsage] = useState({ imageCount: 0, videoCount: 0 });
+  const [policy, setPolicy] = useState({ currentPlan: 'platinum', limits: { maxImages: 2, maxVideos: 0 } });
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState('');
@@ -51,6 +52,7 @@ export default function PromotionalMedia() {
       const data = await fetchClinicMediaLibrary(token);
       setMediaItems(Array.isArray(data.media) ? data.media : []);
       setUsage(data.usage || { imageCount: 0, videoCount: 0 });
+      setPolicy(data.policy || { currentPlan: 'platinum', limits: { maxImages: 2, maxVideos: 0 } });
     } catch (err) {
       toast.error(err.message || 'Could not load media library');
     } finally {
@@ -74,6 +76,12 @@ export default function PromotionalMedia() {
       await loadLibrary(true);
     } catch (err) {
       toast.error(String(err.message || '') || 'Could not upload media');
+      if (err?.data?.policy) {
+        setPolicy(err.data.policy);
+      }
+      if (err?.data?.usage) {
+        setUsage(err.data.usage);
+      }
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -100,14 +108,24 @@ export default function PromotionalMedia() {
     activeFilter === 'all' ? mediaItems : mediaItems.filter(m => String(m.moderationStatus || '').toLowerCase() === activeFilter),
     [mediaItems, activeFilter]
   );
+  const currentPlan = String(policy?.currentPlan || 'platinum').toLowerCase();
+  const isPlatinum = currentPlan === 'platinum';
+  const isGold = currentPlan === 'gold';
+  const containerClass = isPlatinum
+    ? 'bg-white p-6 rounded-xl border border-gray-200'
+    : isGold
+      ? 'bg-white p-8 rounded-[24px] shadow-sm border border-gray-100'
+      : 'bg-white p-8 rounded-[32px] shadow-sm border border-gray-100';
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+      <div className={containerClass}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
-            <h3 className="text-[28px] font-extrabold text-[#1F2432] tracking-tight">Facility Media Manager</h3>
+            <h3 className={`${isPlatinum ? 'text-[22px]' : 'text-[28px]'} font-extrabold text-[#1F2432] tracking-tight`}>Facility Media Manager</h3>
             <p className="text-[13px] text-[#9CA3AF] mt-1.5 flex items-center gap-2">
+              <span className="font-semibold capitalize text-[#4B5563]">{currentPlan} plan</span>
+              <span className="w-1 h-1 bg-gray-300 rounded-full" />
               <span className="flex items-center gap-1.5">
                 Images: <span className="font-bold text-[#4B5563]">{usage.imageCount}</span>
               </span>
@@ -150,7 +168,7 @@ export default function PromotionalMedia() {
               Upload facility images and videos to showcase your clinic to patients.
             </p>
             <p className="text-[13px] font-medium text-[#14B8A6] mt-1 opacity-80">
-              Every upload goes to admin moderation. You will be notified when it is approved or rejected.
+              Limits: {policy?.limits?.maxImages === null ? 'Unlimited images' : `${policy?.limits?.maxImages} images`} • {policy?.limits?.maxVideos === null ? 'Unlimited videos' : `${policy?.limits?.maxVideos} videos`}. Every upload goes to admin moderation.
             </p>
           </div>
         </div>

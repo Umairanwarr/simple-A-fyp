@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getDoctorSessionProfile } from '../../utils/authSession';
 import {
@@ -12,16 +11,6 @@ import {
 } from '../../services/authApi';
 import LiveStreamRoom from '../shared/LiveStreamRoom';
 
-const normalizePlan = (v) => {
-  const p = String(v || '').trim().toLowerCase();
-  return ['platinum', 'gold', 'diamond'].includes(p) ? p : 'platinum';
-};
-
-const formatPlanLabel = (v) => {
-  const p = normalizePlan(v);
-  return p.charAt(0).toUpperCase() + p.slice(1);
-};
-
 const formatDate = (d) => {
   if (!d) return '';
   return new Date(d).toLocaleString('en-US', {
@@ -31,11 +20,7 @@ const formatDate = (d) => {
 };
 
 export default function LiveStreaming() {
-  const navigate = useNavigate();
   const profile = getDoctorSessionProfile();
-  const { currentPlan } = profile;
-  const normalizedPlan = normalizePlan(currentPlan);
-  const isDiamondPlan = normalizedPlan === 'diamond';
   const token = localStorage.getItem('doctorToken');
 
   const [streams, setStreams] = useState([]);
@@ -190,31 +175,6 @@ export default function LiveStreaming() {
     );
   }
 
-  // ─── Upgrade Gate ───
-  if (!isDiamondPlan) {
-    return (
-      <div className="space-y-6">
-        <div style={S.heroCard}>
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: '640px' }}>
-            <span style={S.upgradeBadge}>Upgrade Required</span>
-            <h2 style={S.heroTitle}>Live Streaming Is Locked</h2>
-            <p style={S.heroDesc}>
-              You are currently on the {formatPlanLabel(normalizedPlan)} plan. Upgrade to Diamond to enable advanced live streaming,
-              multi-guest sessions, and full broadcast controls.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-              <button onClick={() => navigate('/doctor/dashboard/subscriptions')} style={S.primaryBtn}>
-                Upgrade To Diamond
-              </button>
-              <button disabled style={S.disabledBtn}>Streaming Disabled</button>
-            </div>
-          </div>
-          <div style={S.heroGradient} />
-        </div>
-      </div>
-    );
-  }
-
   // ─── Main Dashboard ───
   const liveStreams = streams.filter(s => s.status === 'live');
   const scheduledStreams = streams.filter(s => s.status === 'scheduled');
@@ -225,7 +185,6 @@ export default function LiveStreaming() {
       {/* ─── Hero ─── */}
       <div style={S.heroCard}>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px' }}>
-          <span style={S.diamondBadge}>Diamond Plan Feature</span>
           <h2 style={S.heroTitle}>Live Streaming Studio</h2>
           <p style={S.heroDesc}>
             Broadcast your medical insights live. Invite guests to co-host and engage with viewers in real-time.

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 const getSafeRating = (rating) => {
   const normalizedRating = Math.trunc(Number(rating));
@@ -21,19 +21,13 @@ export default function AppointmentReviewPromptModal({
   const [comment, setComment] = useState('');
   const [isSkipWarningVisible, setIsSkipWarningVisible] = useState(false);
 
-  useEffect(() => {
-    if (!appointment?.id) {
-      return;
-    }
-
-    setRating(5);
-    setComment('');
-    setIsSkipWarningVisible(false);
-  }, [appointment?.id]);
-
   if (!isOpen || !appointment) {
     return null;
   }
+  const isClinicAppointment = String(appointment?.type || '').toLowerCase() === 'clinic';
+  const providerName = isClinicAppointment
+    ? (appointment?.clinic?.name || 'Clinic')
+    : (appointment.doctor?.name || 'Doctor');
 
   const handleSubmit = () => {
     if (isSubmitting) {
@@ -61,7 +55,7 @@ export default function AppointmentReviewPromptModal({
       <div className="relative w-full max-w-[520px] rounded-[28px] bg-white border border-gray-100 shadow-[0px_24px_60px_rgba(0,0,0,0.18)] p-6 sm:p-7">
         <h3 className="text-[24px] font-extrabold text-[#111827] tracking-tight">Rate Your Appointment</h3>
         <p className="mt-2 text-[14px] text-[#4B5563] leading-relaxed">
-          Your appointment with <span className="font-semibold text-[#1F2937]">{appointment.doctor?.name || 'Doctor'}</span> has ended.
+          Your appointment with <span className="font-semibold text-[#1F2937]">{providerName}</span> has ended.
           Please rate and review your experience.
         </p>
 
@@ -109,7 +103,7 @@ export default function AppointmentReviewPromptModal({
             rows={4}
             maxLength={1000}
             disabled={isSubmitting}
-            placeholder="Share your experience with this doctor"
+            placeholder={isClinicAppointment ? 'Share your experience with this clinic' : 'Share your experience with this doctor'}
             className="w-full rounded-[16px] border border-gray-200 bg-[#FCFCFD] px-4 py-3 text-[14px] text-[#1F2937] font-medium placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/25 focus:border-[#1EBDB8] disabled:opacity-60 disabled:cursor-not-allowed"
           />
         </div>

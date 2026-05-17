@@ -32,13 +32,8 @@ export default function Header({
   const {
     name: doctorName,
     email: doctorEmail,
-    avatarUrl: doctorAvatarUrl,
-    currentPlan: doctorCurrentPlan
+    avatarUrl: doctorAvatarUrl
   } = getDoctorSessionProfile();
-  const doctorPlanLabel = String(doctorCurrentPlan || 'platinum')
-    .trim()
-    .toLowerCase()
-    .replace(/^./, (firstLetter) => firstLetter.toUpperCase());
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const normalizedUnreadCount = Math.max(0, Math.trunc(Number(unreadNotificationCount || 0)));
   const hasUnreadNotifications = normalizedUnreadCount > 0;
@@ -53,7 +48,6 @@ export default function Header({
       case 'clinic': return 'Virtual Clinic';
       case 'availability': return 'Set Availability';
       case 'streaming': return 'Advanced Live Streaming';
-      case 'subscriptions': return 'Subscription & Ads Manager';
       case 'prescriptions': return 'Digital Prescriptions';
       case 'media': return 'Media Management';
       default: return 'Doctor Dashboard';
@@ -125,9 +119,6 @@ export default function Header({
           <div className="hidden sm:block text-right">
             <p className="text-[14px] font-bold text-[#1F2432]">{doctorName}</p>
             <p className="text-[12px] text-[#9ca3af] font-medium">{doctorEmail || 'Doctor Account'}</p>
-            <p className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#1EBDB8]/12 text-[#0F766E] border border-[#1EBDB8]/25">
-              {doctorPlanLabel} Plan
-            </p>
           </div>
           <button
             type="button"

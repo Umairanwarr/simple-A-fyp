@@ -24,7 +24,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
         />
       )}
 
-      <div className={`w-[260px] h-screen bg-[#1F2432] rounded-tr-[40px] rounded-br-[40px] flex flex-col fixed left-0 top-0 z-[70] transition-transform duration-300 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:shadow-none'}`}>
+      <div className={`w-[260px] h-screen bg-[#1F2432] rounded-tr-[40px] rounded-br-[40px] flex flex-col fixed left-0 top-0 z-[70] transition-transform duration-300 overflow-hidden ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:shadow-none'}`}>
         <div className="flex items-center justify-between pt-12 pb-10 pl-8 pr-6">
           <div className="flex items-center gap-3">
             <img 
@@ -42,7 +42,8 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
           </button>
         </div>
       
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="flex-1 mt-4 overflow-y-auto overflow-x-hidden pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-col gap-3 pb-4">
           {menuItems.map((item) => {
             const isActive = activeTab === item.id;
 
@@ -83,9 +84,10 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
               </button>
             );
           })}
+          </div>
         </div>
 
-        <div className="mt-auto mb-10 px-6">
+        <div className="shrink-0 mt-auto mb-10 px-6">
           <button
             type="button"
             onClick={onLogout}

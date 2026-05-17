@@ -3,10 +3,14 @@ import { getClinicSessionProfile } from '../../utils/authSession';
 
 const tabTitles = {
   analytics: 'Clinic Performance Analytics',
-  staff: 'Medical Staff Management',
+  staff: 'Service Management',
+  schedule: 'Clinic Doctor Schedule',
   availability: 'Doctor Availability',
+  appointments: 'Clinic Appointments',
+  chats: 'Clinic Chats',
   subscriptions: 'Facility Plans & Advertising',
   media: 'Promotional Assets & Media',
+  reviews: 'Clinic Reviews',
   profile: 'Clinic Profile'
 };
 

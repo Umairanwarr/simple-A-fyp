@@ -14,16 +14,6 @@ export default function Services() {
       image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=600',
     },
     {
-      title: 'Laboratory Tests',
-      description: 'Avail Exclusive discounts on lab tests.',
-      image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600',
-    },
-    {
-      title: 'Procedures & Surgeries',
-      description: 'Plan your surgeries at discounted rates.',
-      image: 'https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&q=80&w=600',
-    },
-    {
       title: 'Medicines',
       description: 'Know your medicines better',
       image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=600',

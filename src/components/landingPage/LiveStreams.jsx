@@ -1,6 +1,9 @@
 import React from 'react';
 
 export default function LiveStreams() {
+  const goToSignIn = () => {
+    window.location.href = '/signin';
+  };
   const streams = [
     {
       id: 1,
@@ -57,7 +60,7 @@ export default function LiveStreams() {
                  Access exclusive live sessions from top-tier Pakistani doctors. Join verified experts 
                  discussing real-time breakthroughs in healthcare.
               </p>
-              <button className="flex items-center gap-4 text-[#1EBDB8] group">
+              <button onClick={goToSignIn} className="flex items-center gap-4 text-[#1EBDB8] group">
                  <span className="text-[14px] font-black uppercase tracking-[2px] border-b-2 border-[#1EBDB8]/20 group-hover:border-[#1EBDB8] transition-all pb-1">
                     Explore Streams
                  </span>

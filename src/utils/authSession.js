@@ -249,11 +249,16 @@ export const getDoctorSessionProfile = () => {
 export const getClinicSessionProfile = () => {
   const clinic = parseStoredObject('clinic') || {};
   const name = String(clinic.name || '').trim() || 'Clinic';
+  const normalizedPlan = String(clinic.currentPlan || '').trim().toLowerCase();
+  const currentPlan = ['platinum', 'gold', 'diamond'].includes(normalizedPlan)
+    ? normalizedPlan
+    : 'platinum';
 
   return {
     name,
     email: clinic.email || '',
-    avatarUrl: buildAvatarUrl(clinic, name)
+    avatarUrl: buildAvatarUrl(clinic, name),
+    currentPlan
   };
 };
 

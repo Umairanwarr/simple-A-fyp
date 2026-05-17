@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { signInWithPopup } from 'firebase/auth';
@@ -7,14 +7,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { auth, googleProvider } from '../../services/firebase';
 import {
-  loginClinic,
-  loginDoctor,
-  loginMedicalStore,
   loginPatient,
-  loginPatientWithGoogle,
-  sendClinicLoginOtp,
-  sendMedicalStoreLoginOtp,
-  sendDoctorLoginOtp
+  loginPatientWithGoogle
 } from '../../services/authApi';
 import { saveSessionUser } from '../../utils/authSession';
 
@@ -23,58 +17,15 @@ export default function SignInForm() {
   const [activeTab, setActiveTab] = useState('patient');
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [showPassword, setShowPassword] = useState({});
-  const [countdown, setCountdown] = useState(0);
-  const [isFirstOTP, setIsFirstOTP] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
 
   const togglePasswordVisibility = (field) => {
     setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const handleResendOTP = () => {
-    if (activeTab === 'doctor' || activeTab === 'clinic' || activeTab === 'medical-store') {
-      if (!validateEmail(email)) {
-        toast.error(`Enter a valid ${activeTab} email before requesting OTP`);
-        return;
-      }
-
-      setCountdown(60);
-      setIsFirstOTP(false);
-
-      const sendOtpPromise = activeTab === 'doctor'
-        ? sendDoctorLoginOtp(email)
-        : activeTab === 'clinic'
-          ? sendClinicLoginOtp(email)
-          : sendMedicalStoreLoginOtp(email);
-
-      sendOtpPromise
-        .then((data) => {
-          toast.success(data.message || 'OTP sent successfully');
-        })
-        .catch((error) => {
-          toast.error(error.message || 'Could not send OTP');
-          setCountdown(0);
-        });
-
-      return;
-    }
-
-    setCountdown(60);
-    if(isFirstOTP) setIsFirstOTP(false);
-    toast.info(isFirstOTP ? 'OTP Sent!' : 'OTP Resent!');
   };
 
   const handleCaptchaChange = (value) => {
@@ -98,8 +49,8 @@ export default function SignInForm() {
       return isEmailValid && isPasswordValid;
     }
 
-    // For doctor, clinic and medical-store require 2FA + captcha.
-    return isEmailValid && isPasswordValid && otp.length === 6 && captchaVerified;
+    // For doctor, clinic and medical-store require captcha before moving to OTP page.
+    return isEmailValid && isPasswordValid && captchaVerified;
   };
 
   const handleSubmit = async (e) => {
@@ -113,8 +64,8 @@ export default function SignInForm() {
       toast.error('Please enter your password');
       return;
     }
-    if (activeTab !== 'patient' && (!captchaVerified || otp.length !== 6)) {
-      toast.error('Please complete all security verification steps');
+    if (activeTab !== 'patient' && !captchaVerified) {
+      toast.error('Please complete security verification');
       return;
     }
 
@@ -126,14 +77,18 @@ export default function SignInForm() {
     if (activeTab === 'doctor') {
       try {
         setIsSubmitting(true);
-        const data = await loginDoctor({ email, password, otp });
-
-        localStorage.setItem('doctorToken', data.token);
-        saveSessionUser('doctor', data.doctor);
-        toast.success('Login successful!');
-        navigate('/doctor/dashboard');
+        const normalizedEmail = email.trim().toLowerCase();
+        sessionStorage.setItem(
+          'pendingLogin2fa',
+          JSON.stringify({
+            role: 'doctor',
+            email: normalizedEmail,
+            password
+          })
+        );
+        navigate(`/verification-code?flow=doctor-login&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
       } catch (error) {
-        toast.error(error.message || 'Could not sign in');
+        toast.error(error.message || 'Could not continue to verification');
       } finally {
         setIsSubmitting(false);
       }
@@ -144,14 +99,18 @@ export default function SignInForm() {
     if (activeTab === 'clinic') {
       try {
         setIsSubmitting(true);
-        const data = await loginClinic({ email, password, otp });
-
-        localStorage.setItem('clinicToken', data.token);
-        saveSessionUser('clinic', data.clinic);
-        toast.success('Login successful!');
-        navigate('/clinic/dashboard');
+        const normalizedEmail = email.trim().toLowerCase();
+        sessionStorage.setItem(
+          'pendingLogin2fa',
+          JSON.stringify({
+            role: 'clinic',
+            email: normalizedEmail,
+            password
+          })
+        );
+        navigate(`/verification-code?flow=clinic-login&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
       } catch (error) {
-        toast.error(error.message || 'Could not sign in');
+        toast.error(error.message || 'Could not continue to verification');
       } finally {
         setIsSubmitting(false);
       }
@@ -162,14 +121,18 @@ export default function SignInForm() {
     if (activeTab === 'medical-store') {
       try {
         setIsSubmitting(true);
-        const data = await loginMedicalStore({ email, password, otp });
-
-        localStorage.setItem('medicalStoreToken', data.token);
-        saveSessionUser('medicalStore', data.medicalStore);
-        toast.success('Login successful!');
-        navigate('/store/dashboard');
+        const normalizedEmail = email.trim().toLowerCase();
+        sessionStorage.setItem(
+          'pendingLogin2fa',
+          JSON.stringify({
+            role: 'medical-store',
+            email: normalizedEmail,
+            password
+          })
+        );
+        navigate(`/verification-code?flow=medical-store-login&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
       } catch (error) {
-        toast.error(error.message || 'Could not sign in');
+        toast.error(error.message || 'Could not continue to verification');
       } finally {
         setIsSubmitting(false);
       }
@@ -237,28 +200,6 @@ export default function SignInForm() {
 
     return (
       <>
-        <div className="flex flex-col gap-2">
-          <label className="text-[14px] font-bold text-[#6B7280]">Two-Factor Code (2FA)</label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Enter 6-digit 2FA code"
-              maxLength="6"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-              className="bg-[#F5F5F5E5] rounded-[10px] px-5 py-4 text-[#4B5563] text-[16px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] w-full tracking-widest pr-28"
-            />
-            <button
-              type="button"
-              onClick={handleResendOTP}
-              disabled={countdown > 0}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 text-[13px] font-bold ${countdown > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-[#1EBDB8] hover:underline'}`}
-            >
-              {countdown > 0 ? `${countdown}s` : (isFirstOTP ? 'Send OTP' : 'Resend')}
-            </button>
-          </div>
-        </div>
-
         <div className="flex flex-col gap-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
           <label className="text-[13.5px] font-bold text-[#6B7280] mb-2">Security Verification</label>
           <ReCAPTCHA
@@ -288,9 +229,6 @@ export default function SignInForm() {
               onClick={() => {
                 setActiveTab(tab.id);
                 setCaptchaVerified(false);
-                setOtp('');
-                setCountdown(0);
-                setIsFirstOTP(true);
               }}
               className={`flex-1 min-w-[70px] sm:min-w-[80px] py-2.5 px-2 sm:px-3 flex items-center justify-center rounded-lg text-[13px] sm:text-[14px] font-bold transition-all text-center leading-tight whitespace-normal sm:whitespace-nowrap ${
                 activeTab === tab.id
@@ -352,7 +290,7 @@ export default function SignInForm() {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {isSubmitting ? 'Signing In...' : 'Sign In'}
+            {isSubmitting ? 'Please wait...' : activeTab === 'patient' ? 'Sign In' : 'Continue'}
           </button>
 
           {activeTab === 'patient' && (

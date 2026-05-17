@@ -150,10 +150,6 @@ export default function MediaManagement() {
       await loadMediaLibrary({ silent: true });
     } catch (error) {
       toast.error(error?.message || 'Could not upload media');
-
-      if (error?.status === 403) {
-        navigate('/doctor/dashboard/subscriptions');
-      }
     } finally {
       setIsUploading(false);
 
@@ -213,15 +209,6 @@ export default function MediaManagement() {
               {isUploading ? 'Uploading...' : '+ Upload New'}
             </button>
 
-            {String(policy?.currentPlan || '').trim().toLowerCase() !== 'diamond' ? (
-              <button
-                type="button"
-                onClick={() => navigate('/doctor/dashboard/subscriptions')}
-                className="px-5 py-2.5 bg-[#1EBDB8]/10 text-[#1EBDB8] font-bold rounded-xl hover:bg-[#1EBDB8]/20"
-              >
-                Upgrade Plan
-              </button>
-            ) : null}
           </div>
         </div>
 
@@ -235,10 +222,7 @@ export default function MediaManagement() {
 
         <div className="mb-6 rounded-2xl border border-[#1EBDB8]/20 bg-[#1EBDB8]/5 px-4 py-3">
           <p className="text-[13px] font-semibold text-[#0F766E]">
-            Platinum: 2 images. Gold: 5 images + 1 video. Diamond: unlimited media.
-          </p>
-          <p className="text-[12px] text-[#0F766E] mt-1">
-            Every upload goes to admin moderation. You will get a notification when it is approved or rejected.
+            Upload unlimited images and videos. Every upload goes to admin moderation.
           </p>
         </div>
 

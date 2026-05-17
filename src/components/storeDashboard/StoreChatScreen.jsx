@@ -5,10 +5,9 @@ import {
   fetchStorePartnerInfo,
   sendStoreChatMessageRest,
   searchStoresForChat,
-  uploadChatMedia
+  uploadChatMedia as defaultUploadChatMedia
 } from '../../services/storeChatApi';
 import { connectSocket, getSocket } from '../../services/socket';
-import { getMedicalStoreSessionProfile, getPatientSessionProfile } from '../../utils/authSession';
 
 function buildAvatar(name, avatarUrl = '') {
   if (avatarUrl && String(avatarUrl).trim()) return String(avatarUrl).trim();
@@ -47,7 +46,20 @@ function groupMessages(msgs) {
 export default function StoreChatScreen({
   role = 'medical-store',
   tokenKey = 'medicalStoreToken',
-  userKey = 'medicalStore'
+  userKey = 'medicalStore',
+  fetchConversations = fetchStoreConversations,
+  fetchMessages = fetchStoreMessages,
+  fetchPartnerInfo = fetchStorePartnerInfo,
+  sendMessageRest = sendStoreChatMessageRest,
+  searchPartners = searchStoresForChat,
+  uploadMedia = defaultUploadChatMedia,
+  searchResultsResponseKey = 'stores',
+  socketEventPrefix = 'store-chat',
+  patientSearchLabel = 'Search a medical store to start chatting',
+  patientSearchPlaceholder = 'Search medical stores...',
+  patientNoResultsLabel = 'No stores found',
+  patientEmptyConversationsLabel = 'Search a store above to start chatting',
+  patientWelcomeLabel = 'Search a medical store in the left panel to start chatting'
 }) {
   const [conversations, setConversations] = useState([]);
   const [activePartner, setActivePartner] = useState(null);
@@ -62,8 +74,8 @@ export default function StoreChatScreen({
 
   // Single search field
   const [searchQuery, setSearchQuery] = useState('');
-  const [storeResults, setStoreResults] = useState([]);
-  const [isSearchingStores, setIsSearchingStores] = useState(false);
+  const [partnerResults, setPartnerResults] = useState([]);
+  const [isSearchingPartners, setIsSearchingPartners] = useState(false);
 
   const messagesEndRef = useRef(null);
   const searchTimerRef = useRef(null);
@@ -77,12 +89,12 @@ export default function StoreChatScreen({
   const loadConvs = useCallback(async () => {
     if (!token) return [];
     try {
-      const data = await fetchStoreConversations(token);
+      const data = await fetchConversations(token);
       const convs = Array.isArray(data?.conversations) ? data.conversations : [];
       setConversations(convs);
       return convs;
     } catch { setConversations([]); return []; }
-  }, [token]);
+  }, [fetchConversations, token]);
 
   // Initial load + handle ?partnerId deep-link
   useEffect(() => {
@@ -99,7 +111,7 @@ export default function StoreChatScreen({
           setActivePartner(existing);
         } else {
           setActivePartner({ partnerId: initId, partnerName: '', partnerAvatar: '' });
-          fetchStorePartnerInfo(token, initId).then(info => {
+          fetchPartnerInfo(token, initId).then(info => {
             if (!mounted) return;
             setActivePartner({ partnerId: initId, partnerName: info.partnerName || '', partnerAvatar: info.partnerAvatar || '' });
           }).catch(() => {});
@@ -109,9 +121,9 @@ export default function StoreChatScreen({
     };
     init();
     return () => { mounted = false; };
-  }, [loadConvs]);
+  }, [loadConvs, fetchPartnerInfo, token]);
 
-  // Socket: listen for incoming store-chat messages
+  // Socket: listen for incoming chat messages
   useEffect(() => {
     if (!token) return;
     const socket = connectSocket(token);
@@ -124,20 +136,20 @@ export default function StoreChatScreen({
           const exists = prev.some(m => (m._id || m.id) === (msg._id || msg.id));
           return exists ? prev : [...prev, msg];
         });
-        fetchStoreMessages(token, partnerId).catch(() => {});
+        fetchMessages(token, partnerId).catch(() => {});
       }
       loadConvs();
     };
-    socket.on('store-chat:message', handleMsg);
-    return () => { try { getSocket()?.off('store-chat:message', handleMsg); } catch {} };
-  }, [token, activePartner, myId, loadConvs]);
+    socket.on(`${socketEventPrefix}:message`, handleMsg);
+    return () => { try { getSocket()?.off(`${socketEventPrefix}:message`, handleMsg); } catch {} };
+  }, [token, activePartner, myId, loadConvs, fetchMessages, socketEventPrefix]);
 
   // Load messages when active partner changes
   useEffect(() => {
     if (!activePartner || !token) return;
     let mounted = true;
     setIsLoadingMsgs(true);
-    fetchStoreMessages(token, activePartner.partnerId)
+    fetchMessages(token, activePartner.partnerId)
       .then(data => {
         if (!mounted) return;
         setMessages(Array.isArray(data?.messages) ? data.messages : []);
@@ -146,7 +158,7 @@ export default function StoreChatScreen({
       .catch(() => setMessages([]))
       .finally(() => { if (mounted) setIsLoadingMsgs(false); });
     return () => { mounted = false; };
-  }, [activePartner, token]);
+  }, [activePartner, token, fetchMessages]);
 
   // Auto scroll
   useEffect(() => {
@@ -159,22 +171,22 @@ export default function StoreChatScreen({
     setSearchQuery(q);
     if (!isPatient) return; // stores just filter locally
     clearTimeout(searchTimerRef.current);
-    if (!q.trim()) { setStoreResults([]); return; }
+    if (!q.trim()) { setPartnerResults([]); return; }
     searchTimerRef.current = setTimeout(async () => {
-      setIsSearchingStores(true);
+      setIsSearchingPartners(true);
       try {
-        const data = await searchStoresForChat(token, q);
-        setStoreResults(Array.isArray(data?.stores) ? data.stores : []);
-      } catch { setStoreResults([]); }
-      finally { setIsSearchingStores(false); }
+        const data = await searchPartners(token, q);
+        setPartnerResults(Array.isArray(data?.[searchResultsResponseKey]) ? data[searchResultsResponseKey] : []);
+      } catch { setPartnerResults([]); }
+      finally { setIsSearchingPartners(false); }
     }, 350);
   };
 
-  const selectStore = (store) => {
-    setActivePartner({ partnerId: store.id, partnerName: store.name, partnerAvatar: store.avatarUrl });
+  const selectPartner = (partner) => {
+    setActivePartner({ partnerId: partner.id, partnerName: partner.name, partnerAvatar: partner.avatarUrl });
     setMessages([]);
     setSearchQuery('');
-    setStoreResults([]);
+    setPartnerResults([]);
     setShowMobileChat(true);
   };
 
@@ -183,7 +195,7 @@ export default function StoreChatScreen({
     setConversations(prev => prev.map(c => c.partnerId === conv.partnerId ? { ...c, unreadCount: 0 } : c));
     setMessages([]);
     setSearchQuery('');
-    setStoreResults([]);
+    setPartnerResults([]);
     setShowMobileChat(true);
   };
 
@@ -211,7 +223,7 @@ export default function StoreChatScreen({
       let attachment = null;
       if (mediaPreview) {
         setIsUploading(true);
-        const uploaded = await uploadChatMedia(token, mediaPreview.file);
+        const uploaded = await uploadMedia(token, mediaPreview.file);
         attachment = { url: uploaded.url, type: uploaded.type };
         setIsUploading(false);
         clearMedia();
@@ -219,7 +231,7 @@ export default function StoreChatScreen({
       const payload = { to: activePartner.partnerId, content: text.trim(), attachment };
       const socket = getSocket();
       if (socket?.connected) {
-        socket.emit('store-chat:send', payload, (ack) => {
+        socket.emit(`${socketEventPrefix}:send`, payload, (ack) => {
           if (ack?.ok && ack.message) {
             setMessages(prev => {
               const exists = prev.some(m => (m._id || m.id) === (ack.message._id || ack.message.id));
@@ -228,7 +240,7 @@ export default function StoreChatScreen({
           }
         });
       } else {
-        const res = await sendStoreChatMessageRest(token, payload);
+        const res = await sendMessageRest(token, payload);
         if (res?.message) setMessages(prev => [...prev, res.message]);
       }
       setText('');
@@ -249,7 +261,7 @@ export default function StoreChatScreen({
   // What to show in the sidebar list:
   // - If patient is searching → show store results
   // - Otherwise → show existing conversations
-  const showingStoreSearch = isPatient && searchQuery.trim().length > 0;
+  const showingSearchResults = isPatient && searchQuery.trim().length > 0;
 
   const groups = useMemo(() => groupMessages(messages), [messages]);
 
@@ -277,7 +289,7 @@ export default function StoreChatScreen({
         <div style={{ padding: '24px 20px 12px' }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Messages</p>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 14px' }}>
-            {isPatient ? 'Search a medical store to start chatting' : 'Your conversations with patients'}
+            {isPatient ? patientSearchLabel : 'Your conversations with patients'}
           </p>
 
           {/* Single search field */}
@@ -289,7 +301,7 @@ export default function StoreChatScreen({
             <input
               value={searchQuery}
               onChange={e => handleSearch(e.target.value)}
-              placeholder={isPatient ? 'Search medical stores...' : 'Search conversations...'}
+              placeholder={isPatient ? patientSearchPlaceholder : 'Search conversations...'}
               style={{
                 width: '100%',
                 padding: '11px 14px 11px 38px',
@@ -305,15 +317,15 @@ export default function StoreChatScreen({
               onFocus={e => { e.target.style.borderColor = '#1EBDB8'; e.target.style.boxShadow = '0 0 0 3px rgba(30,189,184,0.08)'; }}
               onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
             />
-            {isSearchingStores && (
+            {isSearchingPartners && (
               <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
                 <div style={{ width: 14, height: 14, border: '2px solid #1EBDB8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
               </div>
             )}
           </div>
 
-          {/* Store search results dropdown */}
-          {isPatient && storeResults.length > 0 && (
+          {/* Search results dropdown */}
+          {isPatient && partnerResults.length > 0 && (
             <div style={{
               background: '#fff',
               border: '1px solid #e2e8f0',
@@ -323,16 +335,16 @@ export default function StoreChatScreen({
               maxHeight: 220,
               overflowY: 'auto'
             }}>
-              {storeResults.map(store => (
-                <button key={store.id} onClick={() => selectStore(store)}
+              {partnerResults.map((partner) => (
+                <button key={partner.id} onClick={() => selectPartner(partner)}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                   onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
                   onMouseOut={e => e.currentTarget.style.background = 'none'}>
-                  <img src={buildAvatar(store.name, store.avatarUrl)} alt={store.name}
+                  <img src={buildAvatar(partner.name, partner.avatarUrl)} alt={partner.name}
                     style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
                   <div>
-                    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>{store.name}</p>
-                    {store.address && <p style={{ margin: 0, fontSize: 11, color: '#94a3b8' }}>{store.address}</p>}
+                    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>{partner.name}</p>
+                    {partner.address && <p style={{ margin: 0, fontSize: 11, color: '#94a3b8' }}>{partner.address}</p>}
                   </div>
                 </button>
               ))}
@@ -340,8 +352,8 @@ export default function StoreChatScreen({
           )}
 
           {/* No results hint */}
-          {isPatient && searchQuery.trim() && !isSearchingStores && storeResults.length === 0 && (
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: '8px 0 0', textAlign: 'center' }}>No stores found for "{searchQuery}"</p>
+          {isPatient && searchQuery.trim() && !isSearchingPartners && partnerResults.length === 0 && (
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: '8px 0 0', textAlign: 'center' }}>{patientNoResultsLabel} for "{searchQuery}"</p>
           )}
         </div>
 
@@ -349,14 +361,14 @@ export default function StoreChatScreen({
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 10px' }}>
           {isLoadingConvs ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 13 }}>Loading...</div>
-          ) : filteredConvs.length === 0 && !showingStoreSearch ? (
+          ) : filteredConvs.length === 0 && !showingSearchResults ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.2" style={{ margin: '0 auto 10px', display: 'block' }}>
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#64748b', margin: '0 0 4px' }}>No conversations yet</p>
               <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
-                {isPatient ? 'Search a store above to start chatting' : 'Wait for patients to message you'}
+                {isPatient ? patientEmptyConversationsLabel : 'Wait for patients to message you'}
               </p>
             </div>
           ) : filteredConvs.map(conv => {
@@ -399,7 +411,7 @@ export default function StoreChatScreen({
             </div>
             <p style={{ fontSize: 18, fontWeight: 700, color: '#334155', margin: 0 }}>Welcome to Messages</p>
             <p style={{ fontSize: 14, color: '#94a3b8', margin: 0, textAlign: 'center', maxWidth: 260, lineHeight: 1.5 }}>
-              {isPatient ? 'Search a medical store in the left panel to start chatting' : 'Select a conversation from the left to start chatting, or wait for a new message to arrive.'}
+              {isPatient ? patientWelcomeLabel : 'Select a conversation from the left to start chatting, or wait for a new message to arrive.'}
             </p>
           </div>
         ) : (

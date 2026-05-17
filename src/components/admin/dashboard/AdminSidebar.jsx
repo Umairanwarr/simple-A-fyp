@@ -144,6 +144,19 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
             </a>
 
             <a
+              href="/admin/promoted-accounts"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/promoted-accounts') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v20"></path>
+                <path d="m17 5-5-3-5 3"></path>
+                <path d="m17 19-5 3-5-3"></path>
+                <path d="M4 12h16"></path>
+              </svg>
+              Promoted Accounts
+            </a>
+
+            <a
               href="/admin/media-moderation"
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-[14.5px] ${isActive('/admin/media-moderation') ? 'bg-[#1EBDB8]/10 text-[#1EBDB8]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
             >

@@ -26,9 +26,13 @@ import {
 const TAB_PATHS = {
   analytics: '/clinic/dashboard',
   staff: '/clinic/dashboard/staff',
+  schedule: '/clinic/dashboard/schedule',
   availability: '/clinic/dashboard/availability',
+  appointments: '/clinic/dashboard/appointments',
+  chats: '/clinic/dashboard/chats',
   subscriptions: '/clinic/dashboard/subscriptions',
   media: '/clinic/dashboard/media',
+  reviews: '/clinic/dashboard/reviews',
   profile: '/clinic/dashboard/profile'
 };
 
