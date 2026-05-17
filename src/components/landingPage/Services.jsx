@@ -46,7 +46,7 @@ export default function Services() {
         </div>
 
         {/* Services Grid */}
-        <div className="flex md:grid md:grid-cols-5 gap-6 overflow-x-auto md:overflow-visible pb-10 md:pb-0 snap-x snap-mandatory md:snap-none px-4 md:px-0 -mx-4 md:mx-0 hide-scrollbar">
+        <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible pb-10 md:pb-0 snap-x snap-mandatory md:snap-none px-4 md:px-0 -mx-4 md:mx-auto hide-scrollbar md:max-w-[980px]">
           {services.map((service, index) => (
             <div 
               key={index} 
