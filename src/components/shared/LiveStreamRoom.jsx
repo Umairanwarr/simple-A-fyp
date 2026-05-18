@@ -13,6 +13,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
   const [adminTerminatedReason, setAdminTerminatedReason] = useState(null);
   const [showAdminEndModal, setShowAdminEndModal] = useState(false);
   const [adminEndReason, setAdminEndReason] = useState('');
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 900 : false));
 
   // Co-Host Management
   const [streamRole, setStreamRole] = useState(isHost ? 'host' : 'viewer');
@@ -234,6 +235,12 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages.length]);
 
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const toggleAudio = useCallback(async () => {
     const t = audioTrackRef.current;
     if (!t) return;
@@ -419,10 +426,10 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
 
   return (
     <div style={S.overlay}>
-      <div style={S.container}>
+      <div style={{ ...S.container, ...(isMobile ? S.containerMobile : null) }}>
         {/* Host Notifications */}
         {isHost && coHostRequests.length > 0 && (
-          <div style={{ position: 'absolute', top: '80px', right: '350px', background: '#1f2937', padding: '16px', borderRadius: '12px', zIndex: 100, border: '1px solid #374151' }}>
+          <div style={{ position: 'absolute', top: isMobile ? '72px' : '80px', right: isMobile ? '12px' : '350px', background: '#1f2937', padding: '16px', borderRadius: '12px', zIndex: 100, border: '1px solid #374151', maxWidth: isMobile ? 'calc(100% - 24px)' : '360px' }}>
             <h4 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px' }}>Co-Host Requests</h4>
             {coHostRequests.map(req => (
               <div key={req.viewerId} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -449,7 +456,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
         {/* ─── Video Area ─── */}
         <div style={S.videoArea}>
           {/* Live badge + viewer count */}
-          <div style={S.topBar}>
+          <div style={{ ...S.topBar, ...(isMobile ? S.topBarMobile : null) }}>
             <div style={S.liveBadge}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }} />
               <span>LIVE</span>
@@ -459,13 +466,13 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
               {Math.max(0, viewerCount - 1)}
             </div>
             <div style={{ flex: 1 }} />
-            <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{streamTitle}</div>
+            {!isMobile && <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{streamTitle}</div>}
           </div>
 
           {/* Remote streams (host stream for viewers, or co-hosts for host) */}
-          <div style={S.remoteArea}>
+          <div style={{ ...S.remoteArea, ...(isMobile ? S.remoteAreaMobile : null) }}>
             {/* Publisher (Host or Co-Host) - persistently rendered to prevent video initialization bug */}
-            <div style={{ flex: isPublishing ? 1 : 0, minWidth: isPublishing ? '300px' : '0px', height: '100%', position: 'relative', borderRight: (isPublishing && hasRemotes) ? '1px solid #333' : 'none', display: isPublishing ? 'block' : 'none', overflow: 'hidden' }}>
+            <div style={{ flex: isPublishing ? 1 : 0, minWidth: isPublishing ? (isMobile ? '100%' : '300px') : '0px', height: '100%', position: 'relative', borderRight: (isPublishing && hasRemotes && !isMobile) ? '1px solid #333' : 'none', borderBottom: (isPublishing && hasRemotes && isMobile) ? '1px solid #333' : 'none', display: isPublishing ? 'block' : 'none', overflow: 'hidden' }}>
               <div ref={localPlayerRef} style={{ width: '100%', height: '100%', display: isVideoOff ? 'none' : 'block', background: '#222' }} />
               {isVideoOff && <div style={S.camOffBig}>📷 Camera Off</div>}
               <div style={S.localLabel}>
@@ -477,7 +484,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
             {/* Remote Streams */}
             {hasRemotes ? (
               remoteUserList.map(user => (
-                <div key={user.uid} style={{ flex: 1, minWidth: '300px', height: '100%', position: 'relative', borderRight: '1px solid #333' }}>
+                <div key={user.uid} style={{ flex: 1, minWidth: isMobile ? '100%' : '300px', height: isMobile ? '50%' : '100%', position: 'relative', borderRight: isMobile ? 'none' : '1px solid #333', borderBottom: isMobile ? '1px solid #333' : 'none' }}>
                   <RemoteVideoPlayer user={user} />
                 </div>
               ))
@@ -490,7 +497,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
           </div>
 
           {/* Controls bar */}
-          <div style={S.controlsBar}>
+          <div style={{ ...S.controlsBar, ...(isMobile ? S.controlsBarMobile : null) }}>
             {isPublishing && (
               <>
                 <button onClick={toggleAudio} style={{ ...S.ctrlBtn, background: isAudioMuted ? '#ef4444' : '#374151' }}>
@@ -531,7 +538,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
             )}
 
             {isAdmin && (
-              <button onClick={() => setShowAdminEndModal(true)} style={{ ...S.endBtn, background: '#ef4444', marginLeft: '12px', border: '2px solid #b91c1c' }}>
+              <button onClick={() => setShowAdminEndModal(true)} style={{ ...S.endBtn, background: '#ef4444', marginLeft: isMobile ? '0' : '12px', border: '2px solid #b91c1c' }}>
                 End as Admin
               </button>
             )}
@@ -539,7 +546,7 @@ export default function LiveStreamRoom({ streamId, channelName, token, appId, is
         </div>
 
         {/* ─── Chat Sidebar ─── */}
-        <div style={S.chatSidebar}>
+        <div style={{ ...S.chatSidebar, ...(isMobile ? S.chatSidebarMobile : null) }}>
           <div style={S.chatHeader}>
             <span style={{ fontWeight: 700, fontSize: '14px' }}>Live Chat</span>
             <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{chatMessages.length} messages</span>
@@ -639,6 +646,9 @@ const S = {
     width: '100%', height: '100%', display: 'flex',
     background: '#0f1219',
   },
+  containerMobile: {
+    flexDirection: 'column',
+  },
   videoArea: {
     flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0,
   },
@@ -646,6 +656,10 @@ const S = {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
     padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px',
     background: 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%)',
+  },
+  topBarMobile: {
+    padding: '12px 12px',
+    gap: '8px',
   },
   liveBadge: {
     display: 'flex', alignItems: 'center', gap: '6px',
@@ -661,6 +675,12 @@ const S = {
   remoteArea: {
     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: '#000', overflow: 'hidden',
+  },
+  remoteAreaMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    minHeight: 0,
   },
   waitingMsg: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
@@ -696,6 +716,11 @@ const S = {
     display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px',
     padding: '16px', background: '#1a1f2c', borderTop: '1px solid rgba(255,255,255,0.08)',
   },
+  controlsBarMobile: {
+    flexWrap: 'wrap',
+    gap: '10px',
+    padding: '12px',
+  },
   ctrlBtn: {
     width: '48px', height: '48px', borderRadius: '50%', border: 'none',
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -715,6 +740,13 @@ const S = {
   chatSidebar: {
     width: '320px', display: 'flex', flexDirection: 'column',
     background: '#1a1f2c', borderLeft: '1px solid rgba(255,255,255,0.08)',
+  },
+  chatSidebarMobile: {
+    width: '100%',
+    height: '42vh',
+    minHeight: '250px',
+    borderLeft: 'none',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
   },
   chatHeader: {
     padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)',
