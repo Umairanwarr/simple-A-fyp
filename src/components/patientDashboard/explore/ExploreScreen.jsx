@@ -10,12 +10,10 @@ import {
 import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'react-toastify';
 import DoctorCard from '../shared/DoctorCard';
-import { exploreSpecialties } from '../data/doctorDirectory';
 import {
   fetchPatientExploreDoctors,
   fetchPatientExploreStores,
   fetchPatientExploreClinics,
-  fetchPatientSponsoredAccounts,
   fetchPatientClinicDoctors,
   createPatientClinicAppointmentPaymentIntent,
   confirmPatientClinicAppointmentPayment
@@ -148,6 +146,7 @@ const createDefaultBookingForm = (profile = null) => ({
   city: '',
   state: '',
   zip: '',
+  bookingReason: '',
   termsAccepted: false
 });
 
@@ -177,6 +176,30 @@ const getClinicRankingTier = (item) => {
   if (isDiamondPriority) return 0;
   if (Boolean(item?.isSponsored)) return 1;
   return 2;
+};
+
+const parseReviewCount = (item) => {
+  const totalReviewsValue = Number(item?.totalReviews);
+  if (Number.isFinite(totalReviewsValue)) return totalReviewsValue;
+
+  const reviewsValue = item?.reviews;
+  if (typeof reviewsValue === 'number' && Number.isFinite(reviewsValue)) return reviewsValue;
+  if (typeof reviewsValue === 'string') {
+    const matched = reviewsValue.match(/\d+/);
+    return matched ? Number(matched[0]) : 0;
+  }
+
+  return 0;
+};
+
+const sortByRatingAndReviews = (items = []) => {
+  return [...(Array.isArray(items) ? items : [])].sort((firstItem, secondItem) => {
+    const firstRating = Number(firstItem?.rating || 0);
+    const secondRating = Number(secondItem?.rating || 0);
+    if (secondRating !== firstRating) return secondRating - firstRating;
+
+    return parseReviewCount(secondItem) - parseReviewCount(firstItem);
+  });
 };
 
 const sortExploreResults = (items = []) => {
@@ -215,7 +238,7 @@ export default function ExploreScreen({
   onOrderFromStore
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('');
+  const [activeResultType, setActiveResultType] = useState('doctor');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -252,6 +275,7 @@ export default function ExploreScreen({
       && String(clinicBookingForm.city || '').trim()
       && String(clinicBookingForm.state || '').trim()
       && String(clinicBookingForm.zip || '').trim()
+      && String(clinicBookingForm.bookingReason || '').trim().length >= 3
     );
   }, [clinicBookingForm]);
 
@@ -264,7 +288,6 @@ export default function ExploreScreen({
   }, [favoriteActionDoctorIds]);
 
   const hasQuery = normalize(searchQuery).length > 0;
-  const hasSpecialtyFilter = Boolean(selectedSpecialty);
 
   useEffect(() => {
     let isMounted = true;
@@ -273,47 +296,15 @@ export default function ExploreScreen({
         setIsLoading(true);
         setLoadError('');
 
-        if (!hasQuery && !hasSpecialtyFilter) {
-          const sponsoredData = await fetchPatientSponsoredAccounts();
-          if (isMounted) {
-            setResults(sortExploreResults(Array.isArray(sponsoredData?.sponsored) ? sponsoredData.sponsored : []));
-          }
-          return;
-        }
-
-        if (hasSpecialtyFilter && !hasQuery) {
-          const [doctorData, clinicData] = await Promise.all([
-            fetchPatientExploreDoctors({
-              query: '',
-              specialty: selectedSpecialty
-            }),
-            fetchPatientExploreClinics({
-              query: '',
-              specialty: selectedSpecialty
-            }).catch(() => ({ clinics: [] }))
-          ]);
-
-          if (isMounted) {
-            const combined = [
-              ...(Array.isArray(clinicData?.clinics) ? clinicData.clinics : []),
-              ...(Array.isArray(doctorData?.doctors) ? doctorData.doctors : [])
-            ];
-            setResults(sortExploreResults(combined));
-          }
-          return;
-        }
-
         const [doctorData, storeData, clinicData] = await Promise.all([
           fetchPatientExploreDoctors({
-            query: searchQuery,
-            specialty: selectedSpecialty
+            query: searchQuery
           }),
           fetchPatientExploreStores({
             query: searchQuery
           }),
           fetchPatientExploreClinics({
-            query: searchQuery,
-            specialty: selectedSpecialty
+            query: searchQuery
           }).catch(() => ({ clinics: [] }))
         ]);
 
@@ -340,7 +331,7 @@ export default function ExploreScreen({
       isMounted = false;
       clearTimeout(delayTimer);
     };
-  }, [searchQuery, selectedSpecialty, hasQuery]);
+  }, [searchQuery, hasQuery]);
 
   const handleOpenClinic = async (clinic) => {
     if (!clinic?.id) return;
@@ -469,7 +460,8 @@ export default function ExploreScreen({
         aptSuite: clinicBookingForm.aptSuite,
         city: clinicBookingForm.city,
         state: clinicBookingForm.state,
-        zip: clinicBookingForm.zip
+        zip: clinicBookingForm.zip,
+        bookingReason: clinicBookingForm.bookingReason
       });
 
       const paymentResult = await stripe.confirmCardPayment(paymentSession.clientSecret, {
@@ -606,6 +598,15 @@ export default function ExploreScreen({
                   <input type="text" value={clinicBookingForm.state} onChange={handleClinicBookingFieldChange('state')} placeholder="State" className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15" />
                   <input type="text" value={clinicBookingForm.zip} onChange={handleClinicBookingFieldChange('zip')} placeholder="Zip" className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15" />
                 </div>
+                <textarea
+                  value={clinicBookingForm.bookingReason}
+                  onChange={handleClinicBookingFieldChange('bookingReason')}
+                  placeholder="Reason for appointment"
+                  rows={4}
+                  maxLength={500}
+                  className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15"
+                />
+                <p className="text-[12px] text-[#6B7280]">Minimum 3 characters. This will be shared with the clinic provider.</p>
               </div>
 
               <div className="space-y-3">
@@ -906,15 +907,74 @@ export default function ExploreScreen({
     );
   }
 
-  const shouldShowSearchResults = hasQuery || hasSpecialtyFilter;
-  const effectiveResults = results;
+  const shouldShowSearchResults = hasQuery;
+  const filteredResults = useMemo(() => {
+    if (activeResultType === 'clinic') {
+      return results.filter((item) => item?.type === 'clinic');
+    }
 
-  const resultsToDisplay = shouldShowSearchResults
-    ? effectiveResults
-    : effectiveResults.slice(0, 3);
-  const emptyStateText = (!hasQuery && hasSpecialtyFilter)
-    ? 'No doctors here'
-    : 'No results found';
+    if (activeResultType === 'store') {
+      return results.filter((item) => item?.type === 'store');
+    }
+
+    return results.filter((item) => item?.type === 'doctor');
+  }, [results, activeResultType]);
+
+  const resultTypeCounts = useMemo(() => {
+    return {
+      doctor: results.filter((item) => item?.type === 'doctor').length,
+      clinic: results.filter((item) => item?.type === 'clinic').length,
+      store: results.filter((item) => item?.type === 'store').length
+    };
+  }, [results]);
+
+  const sponsoredResults = useMemo(() => {
+    return sortByRatingAndReviews(filteredResults.filter((item) => Boolean(item?.isSponsored)));
+  }, [filteredResults]);
+
+  const remainingResults = useMemo(() => {
+    return sortByRatingAndReviews(filteredResults.filter((item) => !Boolean(item?.isSponsored)));
+  }, [filteredResults]);
+
+  const sponsoredResultsToDisplay = shouldShowSearchResults
+    ? sponsoredResults
+    : sponsoredResults.slice(0, 3);
+
+  const remainingResultsToDisplay = shouldShowSearchResults
+    ? remainingResults
+    : remainingResults.slice(0, 3);
+
+  const hasDisplayResults = sponsoredResultsToDisplay.length > 0 || remainingResultsToDisplay.length > 0;
+  const activeResultTypeLabel = activeResultType === 'clinic'
+    ? 'Clinics'
+    : activeResultType === 'store'
+    ? 'Medical Stores'
+    : 'Doctors';
+  const emptyStateText = hasQuery
+    ? `No ${activeResultTypeLabel.toLowerCase()} found for your search`
+    : `No ${activeResultTypeLabel.toLowerCase()} available right now`;
+
+  const renderExploreCard = (item, isSponsoredSection = false) => (
+    <DoctorCard
+      key={`${item.type}-${item.id}`}
+      doctor={item}
+      showFavorite={shouldShowSearchResults && Boolean(onToggleFavoriteDoctor) && isValidObjectId(item.id)}
+      isFavorite={favoriteDoctorIdSet.has(String(item.id))}
+      isFavoritePending={favoriteActionDoctorIdSet.has(String(item.id))}
+      onFavoriteToggle={onToggleFavoriteDoctor}
+      actionLabel={item.type === 'clinic' ? 'View Clinic' : item.type === 'doctor' ? 'Schedule Appointment' : 'Order Medicine'}
+      onActionClick={
+        item.type === 'clinic'
+          ? () => handleOpenClinic(item)
+          : item.type === 'doctor'
+          ? (isValidObjectId(item.id) ? onScheduleDoctor : undefined)
+          : (isValidObjectId(item.id) ? () => onOrderFromStore?.(item) : undefined)
+      }
+      containerClassName={`bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border flex flex-col relative ${
+        isSponsoredSection ? 'border-[#1EBDB8]/40 shadow-[0px_8px_24px_rgba(30,189,184,0.12)]' : 'border-gray-100'
+      }`}
+    />
+  );
 
   return (
     <div className="space-y-8 pb-24">
@@ -948,42 +1008,40 @@ export default function ExploreScreen({
         </div>
       </div>
 
-      {!hasQuery && (
-        <section className="space-y-5">
-          <h2 className="text-[#1EBDB8] font-bold text-[24px]">Explore Treatments across specialties</h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {exploreSpecialties.map((specialty) => {
-              const isSelected = selectedSpecialty === specialty.id;
-
-              return (
-                <button
-                  key={specialty.id}
-                  type="button"
-                  onClick={() => setSelectedSpecialty((prev) => (prev === specialty.id ? '' : specialty.id))}
-                  className={`bg-white rounded-[24px] border p-4 h-[132px] shadow-[0px_4px_12px_rgba(0,0,0,0.06)] flex flex-col items-center justify-center gap-3 transition-all ${
-                    isSelected
-                      ? 'border-[#1EBDB8] ring-2 ring-[#1EBDB8]/25 text-[#1EBDB8]'
-                      : 'border-gray-100 text-[#1EBDB8] hover:border-[#1EBDB8]/40'
-                  }`}
-                >
-                  <div className="w-11 h-11 flex items-center justify-center">
-                    <img src={specialty.icon} alt={specialty.label} className="w-10 h-10 object-contain" />
-                  </div>
-                  <span className="text-[13px] font-bold text-center leading-tight text-[#1EBDB8]">
-                    {specialty.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       <section className="space-y-5">
-        <h2 className="text-[#1EBDB8] font-bold text-[24px]">
-          {shouldShowSearchResults ? 'Search Results' : 'Sponsored'}
-        </h2>
+        <div className="rounded-[22px] border border-[#CFEFF0] bg-gradient-to-r from-[#ECFAFA] via-[#F8FEFE] to-[#EEF8FF] p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-[#1F2432] font-extrabold text-[22px] sm:text-[24px]">
+                {shouldShowSearchResults ? `${activeResultTypeLabel} Results` : `Explore ${activeResultTypeLabel}`}
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {[
+                { id: 'doctor', label: 'Doctors', count: resultTypeCounts.doctor },
+                { id: 'clinic', label: 'Clinics', count: resultTypeCounts.clinic },
+                { id: 'store', label: 'Medical Stores', count: resultTypeCounts.store }
+              ].map((tab) => {
+                const isActive = activeResultType === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveResultType(tab.id)}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
+                      isActive
+                        ? 'bg-[#1EBDB8] border-[#1EBDB8] text-white shadow-[0px_10px_18px_rgba(30,189,184,0.25)]'
+                        : 'bg-white border-[#D8E6E8] text-[#1F2432] hover:border-[#1EBDB8]/40'
+                    }`}
+                  >
+                    <p className="text-[13px] font-extrabold">{tab.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
         {loadError && (
           <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
@@ -995,32 +1053,35 @@ export default function ExploreScreen({
           <div className="bg-white border border-gray-100 rounded-[20px] p-8 text-center">
             <p className="text-[16px] font-bold text-[#4B5563]">Searching...</p>
           </div>
-        ) : resultsToDisplay.length === 0 ? (
-          <div className="bg-white border border-gray-100 rounded-[20px] p-8 text-center">
-            <p className="text-[16px] font-bold text-[#4B5563]">{emptyStateText}</p>
-            <p className="text-[13px] text-[#9CA3AF] mt-1">Try another search term or filter.</p>
+        ) : !hasDisplayResults ? (
+          <div className="bg-white border border-gray-100 rounded-[20px] p-8 text-center space-y-1.5">
+            <p className="text-[17px] font-extrabold text-[#1F2432]">{emptyStateText}</p>
+            <p className="text-[13px] text-[#6B7280]">Try a different search term.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {resultsToDisplay.map((item) => (
-              <DoctorCard
-                key={`${item.type}-${item.id}`}
-                doctor={item}
-                showFavorite={shouldShowSearchResults && Boolean(onToggleFavoriteDoctor) && isValidObjectId(item.id)}
-                isFavorite={favoriteDoctorIdSet.has(String(item.id))}
-                isFavoritePending={favoriteActionDoctorIdSet.has(String(item.id))}
-                onFavoriteToggle={onToggleFavoriteDoctor}
-                actionLabel={item.type === 'clinic' ? 'View Clinic' : item.type === 'doctor' ? 'Schedule Appointment' : 'Order Medicine'}
-                onActionClick={
-                  item.type === 'clinic'
-                    ? () => handleOpenClinic(item)
-                    : item.type === 'doctor'
-                    ? (isValidObjectId(item.id) ? onScheduleDoctor : undefined) 
-                    : (isValidObjectId(item.id) ? () => onOrderFromStore?.(item) : undefined)
-                }
-                containerClassName="bg-white rounded-[24px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col relative"
-              />
-            ))}
+          <div className="space-y-8">
+            {sponsoredResultsToDisplay.length > 0 ? (
+              <div className="space-y-4 rounded-[24px] border border-[#D5F3F2] bg-[#F3FCFC] p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-[18px] font-extrabold text-[#1F2432]">Sponsored Results</h3>
+                  <span className="inline-flex items-center rounded-full bg-white border border-[#D8EEEE] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#1EBDB8]">
+                    Top Placement
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                  {sponsoredResultsToDisplay.map((item) => renderExploreCard(item, true))}
+                </div>
+              </div>
+            ) : null}
+
+            {remainingResultsToDisplay.length > 0 ? (
+              <div className="space-y-4">
+                <h3 className="text-[18px] font-extrabold text-[#1F2432]">Other Profiles</h3>
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                  {remainingResultsToDisplay.map((item) => renderExploreCard(item, false))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>

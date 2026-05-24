@@ -121,7 +121,9 @@ export default function StoreDashboardLayout({ activeTab = 'analytics', children
           </main>
         </div>
 
-        <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        {activeTab !== 'chats' && (
+          <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        )}
       </div>
 
       <style jsx="true">{`

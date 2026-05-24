@@ -17,10 +17,11 @@ export default function Chats() {
     <PatientDashboardLayout activeTab="chats">
       <div className="space-y-4">
         {/* Tab Switcher */}
-        <div className="flex gap-2 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit">
+        <div className="overflow-x-auto pb-1">
+          <div className="inline-flex min-w-max gap-2 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100">
           <button
             onClick={() => setActiveChat('doctors')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
+            className={`shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
               activeChat === 'doctors'
                 ? 'bg-[#1F2432] text-white shadow-sm'
                 : 'text-[#9CA3AF] hover:text-[#1F2432]'
@@ -33,7 +34,7 @@ export default function Chats() {
           </button>
           <button
             onClick={() => setActiveChat('stores')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
+            className={`shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
               activeChat === 'stores'
                 ? 'bg-[#1EBDB8] text-white shadow-sm'
                 : 'text-[#9CA3AF] hover:text-[#1F2432]'
@@ -46,7 +47,7 @@ export default function Chats() {
           </button>
           <button
             onClick={() => setActiveChat('clinics')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
+            className={`shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
               activeChat === 'clinics'
                 ? 'bg-[#1EBDB8] text-white shadow-sm'
                 : 'text-[#9CA3AF] hover:text-[#1F2432]'
@@ -57,6 +58,7 @@ export default function Chats() {
             </svg>
             Clinics
           </button>
+          </div>
         </div>
 
         {/* Chat Screens */}

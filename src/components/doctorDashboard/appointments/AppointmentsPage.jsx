@@ -294,6 +294,9 @@ export default function AppointmentsPage() {
                     <p className="text-[16px] font-bold text-[#111827]">{appointment.patient?.name || 'Patient'}</p>
                     <p className="text-[13px] text-[#4B5563]">{appointment.patient?.email || 'N/A'}</p>
                     <p className="text-[13px] text-[#4B5563]">{appointment.patient?.phoneNumber || 'N/A'}</p>
+                    <p className="text-[13px] text-[#4B5563]">
+                      Reason: <span className="font-semibold text-[#1F2432]">{appointment.bookingReason || 'Not provided'}</span>
+                    </p>
                     <p className="text-[13px] font-semibold text-[#0F766E]">
                       {appointment.consultationMode === 'offline' ? 'Clinic Visit' : 'Online Consultation'}
                     </p>

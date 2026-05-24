@@ -187,13 +187,30 @@ const formatSlotDate = (dateValue) => {
   });
 };
 
+const formatTimeToAMPM = (timeValue) => {
+  if (!timeValue) {
+    return '';
+  }
+
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return timeValue;
+  }
+
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = minutes.toString().padStart(2, '0');
+  
+  return `${displayHours}:${displayMinutes} ${period}`;
+};
+
 const formatAppointmentDateTime = (slot) => {
   if (!slot) {
     return '';
   }
 
   const slotDateLabel = formatSlotDate(slot.date);
-  return `${slotDateLabel} . ${slot.fromTime} - ${slot.toTime}`;
+  return `${slotDateLabel} . ${formatTimeToAMPM(slot.fromTime)} - ${formatTimeToAMPM(slot.toTime)}`;
 };
 
 const formatCurrency = (amountValue) => {
@@ -217,6 +234,7 @@ const createDefaultBookingForm = (profile = null) => {
     city: '',
     state: '',
     zip: '',
+    bookingReason: '',
     termsAccepted: false
   };
 };
@@ -368,6 +386,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       && bookingForm.city.trim()
       && bookingForm.state.trim()
       && bookingForm.zip.trim()
+      && bookingForm.bookingReason.trim().length >= 3
     );
   }, [bookingForm]);
 
@@ -453,7 +472,8 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         aptSuite: bookingForm.aptSuite,
         city: bookingForm.city,
         state: bookingForm.state,
-        zip: bookingForm.zip
+        zip: bookingForm.zip,
+        bookingReason: bookingForm.bookingReason
       });
 
       const paymentResult = await stripe.confirmCardPayment(paymentSession.clientSecret, {
@@ -660,6 +680,20 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                     className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="bookingReason" className="text-[14px] font-semibold text-[#1F2432]">Reason for Appointment</label>
+                <textarea
+                  id="bookingReason"
+                  value={bookingForm.bookingReason}
+                  onChange={handleBookingFieldChange('bookingReason')}
+                  placeholder="Briefly describe your concern"
+                  rows={4}
+                  maxLength={500}
+                  className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15"
+                />
+                <p className="text-[12px] text-[#6B7280]">Minimum 3 characters. This will be shared with your doctor.</p>
               </div>
             </div>
 
@@ -890,14 +924,6 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         </div>
 
         <div className="space-y-4 mt-10">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[20px] font-medium text-[#1F2432]">Today, Dec 13 - Thu, Dec 26</h3>
-            <button type="button" className="p-1">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1F2432]">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
           {selectedModeSlots.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-[#F8FAFC] px-4 py-6 text-center">
               <p className="text-[13px] font-medium text-[#6B7280]">No slots available for this appointment type.</p>
@@ -921,7 +947,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                     <div className="bg-[#f0f0f0] text-[12px] font-medium text-[#6B7280] w-full py-2 h-[58%] flex flex-col items-center justify-center">
                       <span>{formatSlotDate(slot.date)}</span>
                       <span className="mt-1 text-[12px] font-semibold text-[#374151]">
-                        {slot.fromTime} - {slot.toTime}
+                        {formatTimeToAMPM(slot.fromTime)} - {formatTimeToAMPM(slot.toTime)}
                       </span>
                     </div>
                     <div className="bg-[#1EBDB8] text-white text-[13px] font-semibold w-full py-3 h-[42%] flex items-center justify-center">
@@ -937,7 +963,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
             <div className="mt-5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-4 py-3">
               <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#047857]">Selected Slot</p>
               <p className="text-[14px] font-semibold text-[#1F2432] mt-1">
-                {formatSlotDate(selectedSlot.date)} • {selectedSlot.fromTime} - {selectedSlot.toTime}
+                {formatSlotDate(selectedSlot.date)} • {formatTimeToAMPM(selectedSlot.fromTime)} - {formatTimeToAMPM(selectedSlot.toTime)}
               </p>
               <p className="text-[13px] font-bold text-[#0F766E] mt-1">
                 {selectedAppointmentTypeLabel} • {selectedSlotFeeLabel}

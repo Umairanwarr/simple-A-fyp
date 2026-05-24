@@ -112,6 +112,7 @@ export default function ClinicAppointmentsView() {
                       <p className="text-[14px] text-[#4B5563]">Provider: <span className="font-bold text-[#1F2432]">{isServiceAppointment ? providerName : `Dr. ${providerName}`}</span></p>
                       <p className="text-[14px] text-[#4B5563]">Type: <span className="font-bold text-[#1F2432]">{appointmentTypeLabel}</span></p>
                       <p className="text-[14px] text-[#4B5563]">Mode: <span className="font-bold text-[#1F2432]">Clinic Visit</span></p>
+                      <p className="text-[14px] text-[#4B5563]">Reason: <span className="font-bold text-[#1F2432]">{appointment.bookingReason || 'Not provided'}</span></p>
                     </>
                   );
                 })()}

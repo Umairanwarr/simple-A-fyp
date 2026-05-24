@@ -69,6 +69,13 @@ export default function StoreChatScreen({
   const [isLoadingConvs, setIsLoadingConvs] = useState(true);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.matchMedia('(max-width: 768px)').matches;
+  });
   const [mediaPreview, setMediaPreview] = useState(null); // { file, localUrl, type }
   const [isUploading, setIsUploading] = useState(false);
 
@@ -141,7 +148,9 @@ export default function StoreChatScreen({
       loadConvs();
     };
     socket.on(`${socketEventPrefix}:message`, handleMsg);
-    return () => { try { getSocket()?.off(`${socketEventPrefix}:message`, handleMsg); } catch {} };
+    return () => {
+      getSocket()?.off(`${socketEventPrefix}:message`, handleMsg);
+    };
   }, [token, activePartner, myId, loadConvs, fetchMessages, socketEventPrefix]);
 
   // Load messages when active partner changes
@@ -165,6 +174,28 @@ export default function StoreChatScreen({
     if (messages.length > 0)
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
   }, [messages.length]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    const handleViewportChange = (event) => {
+      setIsMobileView(Boolean(event?.matches));
+    };
+
+    setIsMobileView(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
 
   // Search: for patients → search stores; for stores → filter convs
   const handleSearch = (q) => {
@@ -246,7 +277,7 @@ export default function StoreChatScreen({
       setText('');
       loadConvs();
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
-    } catch (err) {
+    } catch {
       setIsUploading(false);
     } finally { setIsSending(false); }
   };
@@ -269,24 +300,25 @@ export default function StoreChatScreen({
     <div style={{
       fontFamily: "'Inter', sans-serif",
       display: 'flex',
-      height: '78vh',
+      height: isMobileView ? 'calc(100dvh - 140px)' : '78vh',
       background: '#fff',
-      borderRadius: 24,
+      borderRadius: isMobileView ? 16 : 24,
       overflow: 'hidden',
       boxShadow: '0 4px 40px rgba(0,0,0,0.06)',
-      border: '1px solid #f0f0f2'
+      border: '1px solid #f0f0f2',
+      width: '100%'
     }}>
       {/* ── Sidebar ── */}
       <div style={{
-        width: 340,
-        minWidth: 340,
-        borderRight: '1px solid #f0f0f2',
-        display: 'flex',
+        width: isMobileView ? '100%' : 340,
+        minWidth: isMobileView ? '100%' : 340,
+        borderRight: isMobileView ? 'none' : '1px solid #f0f0f2',
+        display: isMobileView && showMobileChat ? 'none' : 'flex',
         flexDirection: 'column',
         flexShrink: 0,
         background: '#fff'
       }}>
-        <div style={{ padding: '24px 20px 12px' }}>
+        <div style={{ padding: isMobileView ? '16px 14px 10px' : '24px 20px 12px' }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Messages</p>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 14px' }}>
             {isPatient ? patientSearchLabel : 'Your conversations with patients'}
@@ -358,7 +390,7 @@ export default function StoreChatScreen({
         </div>
 
         {/* Conversation list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 10px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobileView ? '4px 8px 8px' : '4px 10px 10px' }}>
           {isLoadingConvs ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 13 }}>Loading...</div>
           ) : filteredConvs.length === 0 && !showingSearchResults ? (
@@ -401,7 +433,14 @@ export default function StoreChatScreen({
       </div>
 
       {/* ── Chat Panel ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fafbfc', minWidth: 0 }}>
+      <div style={{
+        flex: 1,
+        display: isMobileView && !showMobileChat ? 'none' : 'flex',
+        flexDirection: 'column',
+        background: '#fafbfc',
+        minWidth: 0,
+        width: isMobileView ? '100%' : 'auto'
+      }}>
         {!activePartner ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
             <div style={{ width: 80, height: 80, borderRadius: 24, background: '#f0fdfc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -417,9 +456,9 @@ export default function StoreChatScreen({
         ) : (
           <>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 24px', background: '#fff', borderBottom: '1px solid #f0f0f2', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: isMobileView ? '12px 14px' : '16px 24px', background: '#fff', borderBottom: '1px solid #f0f0f2', flexShrink: 0 }}>
               <button onClick={() => { setShowMobileChat(false); setActivePartner(null); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#64748b', display: 'none' }} className="chat-back-btn">
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#64748b', display: isMobileView ? 'flex' : 'none' }} className="chat-back-btn">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
               <img src={buildAvatar(activePartner.partnerName, activePartner.partnerAvatar)} alt={activePartner.partnerName}
@@ -431,7 +470,7 @@ export default function StoreChatScreen({
             </div>
 
             {/* Messages area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: isMobileView ? '12px 12px' : '20px 24px', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {isLoadingMsgs ? (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>Loading messages...</div>
               ) : groups.length === 0 ? (
@@ -460,18 +499,18 @@ export default function StoreChatScreen({
                         style={{ width: 28, height: 28, borderRadius: 9, objectFit: 'cover', marginRight: 8, alignSelf: 'flex-end', flexShrink: 0 }} />
                     )}
                     <div style={{
-                      maxWidth: '65%', padding: att?.url ? '6px' : '11px 15px', borderRadius: 18, overflow: 'hidden',
+                      maxWidth: isMobileView ? '82%' : '65%', padding: att?.url ? '6px' : '11px 15px', borderRadius: 18, overflow: 'hidden',
                       ...(isMine
                         ? { background: 'linear-gradient(135deg,#1EBDB8,#17a5a1)', color: '#fff', borderBottomRightRadius: 6 }
                         : { background: '#fff', color: '#1e293b', border: '1px solid #f0f0f2', borderBottomLeftRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' })
                     }}>
                       {att?.url && att.type === 'image' && (
                         <a href={att.url} target="_blank" rel="noreferrer">
-                          <img src={att.url} alt="media" style={{ maxWidth: 260, maxHeight: 260, borderRadius: 12, display: 'block', objectFit: 'cover' }} />
+                          <img src={att.url} alt="media" style={{ maxWidth: isMobileView ? 180 : 260, maxHeight: isMobileView ? 180 : 260, borderRadius: 12, display: 'block', objectFit: 'cover' }} />
                         </a>
                       )}
                       {att?.url && att.type === 'video' && (
-                        <video src={att.url} controls style={{ maxWidth: 260, borderRadius: 12, display: 'block' }} />
+                        <video src={att.url} controls style={{ maxWidth: isMobileView ? 180 : 260, borderRadius: 12, display: 'block' }} />
                       )}
                       {msg.content ? <p style={{ margin: att?.url ? '6px 8px 4px' : '0', fontSize: 14, wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.content}</p> : null}
                       <p style={{ margin: att?.url ? '0 8px 6px' : '4px 0 0', fontSize: 10, textAlign: 'right', opacity: 0.65 }}>
@@ -486,14 +525,14 @@ export default function StoreChatScreen({
 
             {/* Composer */}
             {!isPatient && messages.length === 0 ? (
-              <div style={{ padding: '14px 24px', background: '#fff', borderTop: '1px solid #f0f0f2', textAlign: 'center' }}>
+              <div style={{ padding: isMobileView ? '12px 14px' : '14px 24px', background: '#fff', borderTop: '1px solid #f0f0f2', textAlign: 'center' }}>
                 <p style={{ margin: 0, fontSize: 13, color: '#94a3b8' }}>Wait for the patient to send the first message before you can reply.</p>
               </div>
             ) : (
               <div style={{ background: '#fff', borderTop: '1px solid #f0f0f2', flexShrink: 0 }}>
                 {/* Media preview */}
                 {mediaPreview && (
-                  <div style={{ padding: '10px 24px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ padding: isMobileView ? '8px 12px 0' : '10px 24px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
                     {mediaPreview.type === 'image'
                       ? <img src={mediaPreview.localUrl} alt="preview" style={{ height: 70, borderRadius: 10, objectFit: 'cover' }} />
                       : <video src={mediaPreview.localUrl} style={{ height: 70, borderRadius: 10 }} />}
@@ -502,7 +541,7 @@ export default function StoreChatScreen({
                   </div>
                 )}
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, margin: '10px 16px 12px',
+                  display: 'flex', alignItems: 'center', gap: 8, margin: isMobileView ? '8px 10px 10px' : '10px 16px 12px',
                   background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 18, padding: '6px 8px 6px 14px'
                 }}>
                   {/* Attach button */}
@@ -544,9 +583,6 @@ export default function StoreChatScreen({
 
       <style>{`
         @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
-        @media (max-width: 768px) {
-          .chat-back-btn { display: flex !important; }
-        }
       `}</style>
     </div>
   );

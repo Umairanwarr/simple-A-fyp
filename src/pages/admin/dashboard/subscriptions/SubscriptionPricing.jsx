@@ -22,6 +22,72 @@ const DEFAULT_CLINIC_PRICING = {
   diamondPriceInRupees: '4999'
 };
 
+const STORE_PLAN_TEXTS = [
+  {
+    id: 'platinum',
+    label: 'Platinum (Small Pharmacy)',
+    priceKey: 'platinumPriceInRupees',
+    features: [
+      { label: 'Media Uploads', value: '2 Images' },
+      { label: 'Analytics', value: 'Basic Orders Overview' }
+    ]
+  },
+  {
+    id: 'gold',
+    label: 'Gold (Growth)',
+    priceKey: 'goldPriceInRupees',
+    features: [
+      { label: 'Media Uploads', value: '5 Images + 1 Video' },
+      { label: 'Analytics', value: 'Orders, Popular Medicines' }
+    ]
+  },
+  {
+    id: 'diamond',
+    label: 'Diamond (Advanced)',
+    priceKey: 'diamondPriceInRupees',
+    features: [
+      { label: 'Media Uploads', value: 'Unlimited Media' },
+      { label: 'Advanced Analytics', value: 'Sales Trends, Customer Demand, Performance Insights' },
+      { label: 'Top Store Tag', value: 'Shown on Store Profile and Listing Cards' }
+    ]
+  }
+];
+
+const CLINIC_PLAN_TEXTS = [
+  {
+    id: 'platinum',
+    label: 'Platinum (Starter)',
+    priceKey: 'platinumPriceInRupees',
+    features: [
+      { label: 'Clinic Profile', value: 'Basic (Location, Timings and Services)' },
+      { label: 'Media Uploads', value: '2 Images' },
+      { label: 'Analytics', value: 'Essential' }
+    ]
+  },
+  {
+    id: 'gold',
+    label: 'Gold (Growth)',
+    priceKey: 'goldPriceInRupees',
+    features: [
+      { label: 'Clinic Profile', value: 'Enhanced (Services, Labs and Facilities)' },
+      { label: 'Clinic Updates System', value: 'Post offers, Announce camps' },
+      { label: 'Media Uploads', value: '5 Images' },
+      { label: 'Analytics', value: 'Performance Insights' }
+    ]
+  },
+  {
+    id: 'diamond',
+    label: 'Diamond (Advanced)',
+    priceKey: 'diamondPriceInRupees',
+    features: [
+      { label: 'Media Uploads', value: 'Unlimited Media' },
+      { label: 'Advanced Analytics', value: 'Bookings Conversion' },
+      { label: 'Verified Badge', value: 'Shown on Clinic Profile and Listing Cards' },
+      { label: 'Priority Support', value: 'Highlighted on Clinic Profile and Listing Cards' }
+    ]
+  }
+];
+
 const DEFAULT_CAMPAIGN_PLANS = [
   { id: 'starter', name: 'Starter Boost', priceInRupees: '999', durationDays: '7', isActive: true },
   { id: 'growth', name: 'Growth Boost', priceInRupees: '2499', durationDays: '15', isActive: true },
@@ -49,6 +115,12 @@ const formatUpdatedAtLabel = (value) => {
   const parsedDate = new Date(value);
   if (Number.isNaN(parsedDate.getTime())) return 'Not updated yet';
   return parsedDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
+
+const formatPlanPriceText = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue < 0) return 'Rs 0/month';
+  return `Rs ${numericValue.toLocaleString('en-PK')}/month`;
 };
 
 export default function SubscriptionPricing() {
@@ -207,6 +279,26 @@ export default function SubscriptionPricing() {
           </div>
 
           <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-7">
+            <div className="mb-5 p-4 rounded-xl bg-[#F0FBFA] border border-[#D1F2F0]">
+              <p className="text-[13px] font-semibold text-gray-600 mb-3">Plans and current prices (admin set):</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {STORE_PLAN_TEXTS.map((plan) => (
+                  <div key={plan.id} className="rounded-lg border border-[#D1F2F0] bg-white px-3 py-3">
+                    <p className="text-[12px] font-semibold text-gray-500">{plan.label}</p>
+                    <p className="text-[14px] font-bold text-gray-900 mt-0.5">
+                      {formatPlanPriceText(storeForm[plan.priceKey])}
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {plan.features.map((feature) => (
+                        <li key={`${plan.id}-${feature.label}`} className="text-[12px] text-gray-700 leading-5">
+                          {feature.label}: <span className="font-semibold text-gray-900">{feature.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                   { id: 'platinum', label: 'Platinum (Basic)', val: storeForm.platinumPriceInRupees },
@@ -248,6 +340,26 @@ export default function SubscriptionPricing() {
           </div>
 
           <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-7">
+            <div className="mb-5 p-4 rounded-xl bg-[#F0FBFA] border border-[#D1F2F0]">
+              <p className="text-[13px] font-semibold text-gray-600 mb-3">Plans and current prices (admin set):</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {CLINIC_PLAN_TEXTS.map((plan) => (
+                  <div key={plan.id} className="rounded-lg border border-[#D1F2F0] bg-white px-3 py-3">
+                    <p className="text-[12px] font-semibold text-gray-500">{plan.label}</p>
+                    <p className="text-[14px] font-bold text-gray-900 mt-0.5">
+                      {formatPlanPriceText(clinicForm[plan.priceKey])}
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {plan.features.map((feature) => (
+                        <li key={`${plan.id}-${feature.label}`} className="text-[12px] text-gray-700 leading-5">
+                          {feature.label}: <span className="font-semibold text-gray-900">{feature.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                   { id: 'platinum', label: 'Platinum (Basic)', val: clinicForm.platinumPriceInRupees },

@@ -467,6 +467,8 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
       font-family: 'Inter', sans-serif;
       display: flex;
       height: 78vh;
+      width: 100%;
+      min-width: 0;
       background: #ffffff;
       border-radius: 24px;
       overflow: hidden;
@@ -1022,7 +1024,7 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
     /* ─── Responsive ─── */
     @media (max-width: 768px) {
       .chat-container {
-        height: calc(100vh - 120px);
+        height: calc(100dvh - 140px);
         border-radius: 16px;
       }
 
@@ -1041,6 +1043,30 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
 
       .chat-room {
         width: 100%;
+      }
+
+      .chat-sidebar-header {
+        padding: 16px 14px 0;
+      }
+
+      .chat-search-wrapper {
+        margin: 0 14px 10px;
+      }
+
+      .chat-conversation-list {
+        padding: 4px 8px 8px;
+      }
+
+      .chat-room-header {
+        padding: 12px 14px;
+      }
+
+      .chat-messages-area {
+        padding: 12px 12px;
+      }
+
+      .chat-composer {
+        padding: 10px 10px 12px;
       }
 
       .chat-room-back-btn {
