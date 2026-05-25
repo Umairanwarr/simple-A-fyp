@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getPatientSessionProfile } from '../../utils/authSession';
 
 const formatNotificationDateTime = (dateValue) => {
@@ -56,6 +56,33 @@ export default function Header({
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const normalizedUnreadCount = Math.max(0, Math.trunc(Number(unreadNotificationCount || 0)));
   const hasUnreadNotifications = normalizedUnreadCount > 0;
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, []);
+
+  const handleNotificationsToggle = () => {
+    const nextOpenState = !isNotificationsOpen;
+    setIsNotificationsOpen(nextOpenState);
+
+    if (nextOpenState) {
+      onNotificationsOpen?.();
+    }
+  };
 
   return (
     <div className="w-full flex justify-between items-center py-5 sm:py-6 md:py-8 border-b border-gray-100 lg:border-none mb-2 lg:mb-0">
@@ -104,9 +131,10 @@ export default function Header({
           </svg>
         </button>
         
-        <div className="relative group" onMouseEnter={() => onNotificationsOpen?.()}>
+        <div className="relative" ref={notificationsRef}>
           <button
             type="button"
+            onClick={handleNotificationsToggle}
             className="relative cursor-pointer"
             aria-label="Booking notifications"
           >
@@ -121,7 +149,7 @@ export default function Header({
             ) : null}
           </button>
 
-          <div className="pointer-events-none absolute right-0 top-[calc(100%+12px)] z-40 w-[320px] rounded-[20px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] opacity-0 invisible translate-y-2 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto">
+          <div className={`absolute right-0 top-[calc(100%+12px)] z-40 w-[320px] rounded-[20px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] transition-all duration-200 ${isNotificationsOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
             <div className="px-4 py-3 border-b border-gray-100">
               <h3 className="text-[14px] font-bold text-[#1F2937]">Booking Notifications</h3>
             </div>

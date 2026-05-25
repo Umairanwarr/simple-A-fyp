@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getClinicSessionProfile } from '../../utils/authSession';
 
 const tabTitles = {
@@ -44,6 +44,33 @@ export default function ClinicHeader({
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const normalizedUnreadCount = Math.max(0, Math.trunc(Number(unreadCount || 0)));
   const hasUnreadNotifications = normalizedUnreadCount > 0;
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, []);
+
+  const handleNotificationsToggle = () => {
+    const nextOpenState = !isNotificationsOpen;
+    setIsNotificationsOpen(nextOpenState);
+
+    if (nextOpenState) {
+      onNotificationsOpen?.();
+    }
+  };
 
   return (
     <header className="flex items-center justify-between py-6 md:py-8 lg:py-10 bg-[#FAFAFB]/80 backdrop-blur-md sticky top-0 z-40 transition-all duration-300 w-full">
@@ -64,9 +91,10 @@ export default function ClinicHeader({
 
       <div className="flex items-center gap-3 lg:gap-5 shrink-0">
         {/* Notifications */}
-        <div className="relative group" onMouseEnter={() => onNotificationsOpen?.()}>
+        <div className="relative" ref={notificationsRef}>
           <button 
             type="button"
+            onClick={handleNotificationsToggle}
             className="p-3.5 bg-white rounded-2xl shadow-sm border border-gray-100 text-[#1F2432] hover:bg-gray-50 transition-all relative"
           >
             <svg className="group-hover:rotate-12 transition-transform" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -77,7 +105,7 @@ export default function ClinicHeader({
             )}
           </button>
 
-          <div className="pointer-events-none absolute right-0 top-[calc(100%+12px)] z-40 w-[320px] rounded-[24px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] opacity-0 invisible translate-y-2 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto overflow-hidden">
+          <div className={`absolute right-0 top-[calc(100%+12px)] z-40 w-[320px] rounded-[24px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] transition-all duration-200 overflow-hidden ${isNotificationsOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
             <div className="px-5 py-4 border-b border-gray-100 bg-[#FAFAFB]/50">
               <h3 className="text-[14px] font-bold text-[#1F2432]">Facility Alerts</h3>
             </div>
