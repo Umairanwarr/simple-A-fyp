@@ -36,6 +36,26 @@ const formatAppointmentFee = (amountInRupees) => {
   }).format(normalizedAmount);
 };
 
+const formatAppointmentTime = (timeValue) => {
+  const value = String(timeValue || '').trim();
+
+  if (!value) {
+    return '';
+  }
+
+  const [hoursValue, minutesValue] = value.split(':');
+  const hours = Number(hoursValue);
+  const minutes = Number(minutesValue);
+
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return value;
+  }
+
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const normalizedHour = hours % 12 || 12;
+  return `${normalizedHour}:${String(minutes).padStart(2, '0')} ${suffix}`;
+};
+
 const sortAppointmentsByDate = (appointments) => {
   const safeAppointments = Array.isArray(appointments) ? [...appointments] : [];
 
@@ -275,7 +295,7 @@ export default function AppointmentsPage() {
                         {formatAppointmentDateLabel(appointment.date)}
                       </p>
                       <h3 className="mt-1 text-[20px] font-bold text-[#1F2432]">
-                        {appointment.fromTime} - {appointment.toTime}
+                        {formatAppointmentTime(appointment.fromTime)} - {formatAppointmentTime(appointment.toTime)}
                       </h3>
                     </div>
 
