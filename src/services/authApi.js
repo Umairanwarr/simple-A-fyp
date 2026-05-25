@@ -933,6 +933,23 @@ export const rescheduleDoctorAppointment = async (token, appointmentId, payload 
   });
 };
 
+export const endDoctorOngoingAppointment = async (token, appointmentId) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!appointmentId) {
+    throw new Error('Appointment id is required');
+  }
+
+  return apiRequest(`/auth/doctor/appointments/${appointmentId}/end`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
 export const fetchDoctorCampaignPricing = async (token) => {
   if (!token) throw new Error('Unauthorized: Missing token');
   return apiRequest('/auth/doctor/campaign/pricing', {
@@ -2185,7 +2202,7 @@ export const fetchAdminPromotedAccounts = async (token) => {
   });
 };
 
-export const fetchAdminStoreMediaModeration = async (token, { status = 'pending', query = '' } = {}) => {
+export const fetchAdminStoreMediaModeration = async (token) => {
   if (!token) throw new Error('Unauthorized');
   return apiRequest('/store-media', {
     method: 'GET',

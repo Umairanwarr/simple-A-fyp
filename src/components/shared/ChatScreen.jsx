@@ -1160,7 +1160,11 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
                   {searchQuery ? 'No matching conversations' : 'No conversations yet'}
                 </p>
                 <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
-                  {searchQuery ? 'Try a different search term' : 'Start chatting with your patients'}
+                  {searchQuery
+                    ? 'Try a different search term'
+                    : role === 'patient'
+                      ? 'Doctors from your active appointments will appear here'
+                      : 'Start chatting with your patients'}
                 </p>
               </div>
             ) : (
@@ -1346,7 +1350,9 @@ export default function ChatScreen({ role = 'patient', tokenKey = 'patientToken'
               </div>
               <p className="chat-empty-title">Welcome to Messages</p>
               <p className="chat-empty-text">
-                Select a conversation from the left to start chatting, or wait for a new message to arrive.
+                {role === 'patient'
+                  ? 'Select a doctor from the left to start chatting.'
+                  : 'Select a conversation from the left to start chatting, or wait for a new message to arrive.'}
               </p>
             </div>
           )}
