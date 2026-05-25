@@ -388,14 +388,9 @@ export default function ClinicAppointmentsPanel() {
 
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[13px] font-bold text-[#6B7280]">Consultation Mode</span>
-                  <select
-                    value={availabilityForm.consultationMode}
-                    disabled
-                    className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl px-4 py-3 text-[14px] font-medium text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-4 focus:ring-[#1EBDB8]/10 transition-all"
-                    required
-                  >
-                    <option value="offline">Clinic Visit</option>
-                  </select>
+                  <div className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl px-4 py-3 text-[14px] font-medium text-[#1F2432]">
+                    Clinic Visit
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">

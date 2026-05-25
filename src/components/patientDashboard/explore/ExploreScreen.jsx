@@ -41,6 +41,22 @@ const stripeElementStyle = {
   }
 };
 
+const DOCTOR_SPECIALTY_CATEGORIES = [
+  { title: 'Primary Care', value: 'All', icon: '/top1.svg', color: 'from-blue-500/10 to-cyan-500/10', iconColor: 'text-blue-400' },
+  { title: 'Cardiologist', value: 'Cardiologist', icon: '/top5.svg', color: 'from-red-500/10 to-rose-500/10', iconColor: 'text-red-400' },
+  { title: 'Dermatologist', value: 'Dermatologist', icon: '/top8.svg', color: 'from-pink-500/10 to-fuchsia-500/10', iconColor: 'text-pink-400' },
+  { title: 'Endocrinologist', value: 'Endocrinologist', icon: '/top2.svg', color: 'from-purple-500/10 to-pink-500/10', iconColor: 'text-purple-400' },
+  { title: 'Gastroenterologist', value: 'Gastroenterologist', icon: '/top9.svg', color: 'from-orange-500/10 to-red-500/10', iconColor: 'text-orange-400' },
+  { title: 'Neurologist', value: 'Neurologist', icon: '/top6.svg', color: 'from-amber-500/10 to-yellow-500/10', iconColor: 'text-amber-400' },
+  { title: 'Orthopedic', value: 'Orthopedic', icon: '/top7.svg', color: 'from-green-500/10 to-lime-500/10', iconColor: 'text-green-400' },
+  { title: 'Pediatrician', value: 'Pediatrician', icon: '/top1.svg', color: 'from-blue-500/10 to-cyan-500/10', iconColor: 'text-blue-400' },
+  { title: 'Psychiatrist', value: 'Psychiatrist', icon: '/top3.svg', color: 'from-indigo-500/10 to-violet-500/10', iconColor: 'text-indigo-400' },
+  { title: 'Pulmonologist', value: 'Pulmonologist', icon: '/top10.svg', color: 'from-cyan-500/10 to-blue-500/10', iconColor: 'text-cyan-400' },
+  { title: 'Radiologist', value: 'Radiologist', icon: '/top4.svg', color: 'from-teal-500/10 to-emerald-500/10', iconColor: 'text-teal-400' },
+  { title: 'Surgeon', value: 'Surgeon', icon: '/top3.svg', color: 'from-indigo-500/10 to-violet-500/10', iconColor: 'text-indigo-400' },
+  { title: 'Urologist', value: 'Urologist', icon: '/top10.svg', color: 'from-cyan-500/10 to-blue-500/10', iconColor: 'text-cyan-400' }
+];
+
 function StripeCardPaymentForm({ canSubmitBooking, isBookingProcessing, onSubmitPayment }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -139,6 +155,22 @@ const formatSlotDate = (dateValue) => {
   });
 };
 
+const formatTimeToAMPM = (timeValue) => {
+  const value = String(timeValue || '').trim();
+  if (!value) return '';
+
+  const [hoursRaw, minutesRaw = '0'] = value.split(':');
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return value;
+
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = String(minutes).padStart(2, '0');
+  return `${displayHours}:${displayMinutes} ${period}`;
+};
+
 const createDefaultBookingForm = (profile = null) => ({
   phoneNumber: profile?.phoneNumber || profile?.phone || '',
   streetAddress: '',
@@ -174,7 +206,7 @@ const mapClinicProviders = (data = {}) => {
 const getClinicRankingTier = (item) => {
   const isDiamondPriority = Boolean(item?.isDiamondPriority || item?.isVerifiedBadge);
   if (isDiamondPriority) return 0;
-  if (Boolean(item?.isSponsored)) return 1;
+  if (item?.isSponsored) return 1;
   return 2;
 };
 
@@ -238,6 +270,8 @@ export default function ExploreScreen({
   onOrderFromStore
 }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDoctorSpecialty, setSelectedDoctorSpecialty] = useState('All');
+  const [selectedClinicSpecialty, setSelectedClinicSpecialty] = useState('All');
   const [activeResultType, setActiveResultType] = useState('doctor');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -288,6 +322,9 @@ export default function ExploreScreen({
   }, [favoriteActionDoctorIds]);
 
   const hasQuery = normalize(searchQuery).length > 0;
+  const selectedDoctorSpecialtyValue = selectedDoctorSpecialty === 'All' ? '' : selectedDoctorSpecialty;
+  const selectedClinicSpecialtyValue = selectedClinicSpecialty === 'All' ? '' : selectedClinicSpecialty;
+  const hasActiveFilters = hasQuery || Boolean(selectedDoctorSpecialtyValue) || Boolean(selectedClinicSpecialtyValue);
 
   useEffect(() => {
     let isMounted = true;
@@ -298,13 +335,15 @@ export default function ExploreScreen({
 
         const [doctorData, storeData, clinicData] = await Promise.all([
           fetchPatientExploreDoctors({
-            query: searchQuery
+            query: searchQuery,
+            specialty: selectedDoctorSpecialtyValue
           }),
           fetchPatientExploreStores({
             query: searchQuery
           }),
           fetchPatientExploreClinics({
-            query: searchQuery
+            query: searchQuery,
+            specialty: selectedClinicSpecialtyValue
           }).catch(() => ({ clinics: [] }))
         ]);
 
@@ -331,7 +370,7 @@ export default function ExploreScreen({
       isMounted = false;
       clearTimeout(delayTimer);
     };
-  }, [searchQuery, hasQuery]);
+  }, [searchQuery, selectedDoctorSpecialtyValue, selectedClinicSpecialtyValue]);
 
   const handleOpenClinic = async (clinic) => {
     if (!clinic?.id) return;
@@ -515,6 +554,53 @@ export default function ExploreScreen({
     }
   };
 
+  const shouldShowSearchResults = hasActiveFilters;
+  const filteredResults = useMemo(() => {
+    if (activeResultType === 'clinic') {
+      return results.filter((item) => item?.type === 'clinic');
+    }
+
+    if (activeResultType === 'store') {
+      return results.filter((item) => item?.type === 'store');
+    }
+
+    return results.filter((item) => item?.type === 'doctor');
+  }, [results, activeResultType]);
+
+  const resultTypeCounts = useMemo(() => {
+    return {
+      doctor: results.filter((item) => item?.type === 'doctor').length,
+      clinic: results.filter((item) => item?.type === 'clinic').length,
+      store: results.filter((item) => item?.type === 'store').length
+    };
+  }, [results]);
+
+  const sponsoredResults = useMemo(() => {
+    return sortByRatingAndReviews(filteredResults.filter((item) => Boolean(item?.isSponsored)));
+  }, [filteredResults]);
+
+  const remainingResults = useMemo(() => {
+    return sortByRatingAndReviews(filteredResults.filter((item) => !item?.isSponsored));
+  }, [filteredResults]);
+
+  const sponsoredResultsToDisplay = shouldShowSearchResults
+    ? sponsoredResults
+    : sponsoredResults.slice(0, 3);
+
+  const remainingResultsToDisplay = shouldShowSearchResults
+    ? remainingResults
+    : remainingResults.slice(0, 3);
+
+  const hasDisplayResults = sponsoredResultsToDisplay.length > 0 || remainingResultsToDisplay.length > 0;
+  const activeResultTypeLabel = activeResultType === 'clinic'
+    ? 'Clinics'
+    : activeResultType === 'store'
+    ? 'Medical Stores'
+    : 'Doctors';
+  const emptyStateText = hasQuery
+    ? `No ${activeResultTypeLabel.toLowerCase()} found for your search`
+    : `No ${activeResultTypeLabel.toLowerCase()} available right now`;
+
   if (selectedClinic) {
     const clinicProfile = selectedClinicProfile || {
       name: selectedClinic.name,
@@ -571,7 +657,9 @@ export default function ExploreScreen({
                   <p className="text-[14px] font-semibold text-[#1F2432]">
                     {selectedClinicDoctor?.providerType === 'service' ? 'Clinic Service Booking' : 'Clinic Visit'}
                   </p>
-                  <p className="text-[13px] text-[#4B5563]">{formatSlotDate(selectedClinicSlot.date)} . {selectedClinicSlot.fromTime} - {selectedClinicSlot.toTime}</p>
+                  <p className="text-[13px] text-[#4B5563]">
+                    {formatSlotDate(selectedClinicSlot.date)} . {formatTimeToAMPM(selectedClinicSlot.fromTime)} - {formatTimeToAMPM(selectedClinicSlot.toTime)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -698,22 +786,6 @@ export default function ExploreScreen({
                   <span className="text-[17px] font-bold text-[#1F2432]">{Number(clinicProfile.rating || 0).toFixed(2)}</span>
                   <span className="text-[#9CA3AF]">•</span>
                   <span className="text-[17px] font-semibold text-[#6B7280]">{clinicProfile.totalReviews || 0} reviews</span>
-                </div>
-                <div className="mt-5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const clinicId = String(selectedClinic?.id || '').trim();
-                      if (!clinicId) return;
-                      window.location.href = `/dashboard/chats?chat=clinics&partnerId=${encodeURIComponent(clinicId)}`;
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#1EBDB8] hover:bg-[#19A9A4] text-white px-5 py-2.5 text-[13px] font-bold transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    Chat with Clinic
-                  </button>
                 </div>
               </div>
             </div>
@@ -880,7 +952,7 @@ export default function ExploreScreen({
                           .map((slot) => (
                           <div key={slot._id || slot.id} className="rounded-2xl border border-gray-100 bg-[#FAFAFB] p-4">
                             <p className="text-[15px] font-extrabold text-[#1F2432]">{formatSlotDate(slot.date)}</p>
-                            <p className="text-[14px] font-semibold text-[#4B5563] mt-1">{slot.fromTime} - {slot.toTime}</p>
+                            <p className="text-[14px] font-semibold text-[#4B5563] mt-1">{formatTimeToAMPM(slot.fromTime)} - {formatTimeToAMPM(slot.toTime)}</p>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <span className="inline-flex px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-[0.08em]">Clinic Visit</span>
                               <span className="text-[14px] font-extrabold text-[#1F2432]">{formatCurrency(slot.priceInRupees || 0)}</span>
@@ -906,53 +978,6 @@ export default function ExploreScreen({
       </div>
     );
   }
-
-  const shouldShowSearchResults = hasQuery;
-  const filteredResults = useMemo(() => {
-    if (activeResultType === 'clinic') {
-      return results.filter((item) => item?.type === 'clinic');
-    }
-
-    if (activeResultType === 'store') {
-      return results.filter((item) => item?.type === 'store');
-    }
-
-    return results.filter((item) => item?.type === 'doctor');
-  }, [results, activeResultType]);
-
-  const resultTypeCounts = useMemo(() => {
-    return {
-      doctor: results.filter((item) => item?.type === 'doctor').length,
-      clinic: results.filter((item) => item?.type === 'clinic').length,
-      store: results.filter((item) => item?.type === 'store').length
-    };
-  }, [results]);
-
-  const sponsoredResults = useMemo(() => {
-    return sortByRatingAndReviews(filteredResults.filter((item) => Boolean(item?.isSponsored)));
-  }, [filteredResults]);
-
-  const remainingResults = useMemo(() => {
-    return sortByRatingAndReviews(filteredResults.filter((item) => !Boolean(item?.isSponsored)));
-  }, [filteredResults]);
-
-  const sponsoredResultsToDisplay = shouldShowSearchResults
-    ? sponsoredResults
-    : sponsoredResults.slice(0, 3);
-
-  const remainingResultsToDisplay = shouldShowSearchResults
-    ? remainingResults
-    : remainingResults.slice(0, 3);
-
-  const hasDisplayResults = sponsoredResultsToDisplay.length > 0 || remainingResultsToDisplay.length > 0;
-  const activeResultTypeLabel = activeResultType === 'clinic'
-    ? 'Clinics'
-    : activeResultType === 'store'
-    ? 'Medical Stores'
-    : 'Doctors';
-  const emptyStateText = hasQuery
-    ? `No ${activeResultTypeLabel.toLowerCase()} found for your search`
-    : `No ${activeResultTypeLabel.toLowerCase()} available right now`;
 
   const renderExploreCard = (item, isSponsoredSection = false) => (
     <DoctorCard
@@ -1040,6 +1065,45 @@ export default function ExploreScreen({
                 );
               })}
             </div>
+
+            {(activeResultType === 'doctor' || activeResultType === 'clinic') ? (
+              <div className="overflow-x-auto overflow-y-visible pt-2 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="flex items-stretch gap-4 sm:gap-5 lg:grid lg:grid-cols-5 min-w-max lg:min-w-0 pr-1">
+                  {DOCTOR_SPECIALTY_CATEGORIES.map((specialty) => {
+                    const selectedSpecialty = activeResultType === 'clinic'
+                      ? selectedClinicSpecialty
+                      : selectedDoctorSpecialty;
+                    const isActive = selectedSpecialty === specialty.value;
+                    return (
+                      <button
+                        key={specialty.title}
+                        type="button"
+                        onClick={() => {
+                          if (activeResultType === 'clinic') {
+                            setSelectedClinicSpecialty(specialty.value);
+                            return;
+                          }
+                          setSelectedDoctorSpecialty(specialty.value);
+                        }}
+                        className={`relative group h-full w-[156px] sm:w-[168px] lg:w-auto rounded-[2rem] border p-4 sm:p-5 flex flex-col items-center justify-center gap-3 transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] ${
+                          isActive
+                            ? 'bg-white border-[#1EBDB8]'
+                            : 'bg-white border-gray-100 hover:border-[#1EBDB8]/40'
+                        }`}
+                      >
+                        <div className={`absolute inset-0 bg-gradient-to-br ${specialty.color} ${isActive ? 'opacity-40' : 'opacity-0 group-hover:opacity-40'} transition-opacity duration-300 pointer-events-none`} />
+                        <div className={`relative w-[62px] h-[62px] rounded-2xl bg-gradient-to-br ${specialty.color} flex items-center justify-center border border-white/60 ${isActive ? 'ring-4 ring-white/50' : ''}`}>
+                          <img src={specialty.icon} alt={specialty.title} className="w-9 h-9 object-contain" />
+                        </div>
+                        <span className={`relative text-[13px] font-extrabold text-center leading-tight transition-colors ${isActive ? specialty.iconColor : 'text-[#1E232F]'}`}>
+                          {specialty.title}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 

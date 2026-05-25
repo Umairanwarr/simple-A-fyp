@@ -929,7 +929,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
               <p className="text-[13px] font-medium text-[#6B7280]">No slots available for this appointment type.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-5 gap-3 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
               {selectedModeSlots.slice(0, 10).map((slot) => {
                 const isSelected = String(selectedSlotId) === String(slot.id);
 
