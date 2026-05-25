@@ -33,6 +33,26 @@ const formatAppointmentFee = (amountInRupees) => {
   }).format(normalizedAmount);
 };
 
+const formatAppointmentTime = (timeValue) => {
+  const value = String(timeValue || '').trim();
+
+  if (!value) {
+    return '';
+  }
+
+  const [hoursValue, minutesValue] = value.split(':');
+  const hours = Number(hoursValue);
+  const minutes = Number(minutesValue);
+
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return value;
+  }
+
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const normalizedHour = hours % 12 || 12;
+  return `${normalizedHour}:${String(minutes).padStart(2, '0')} ${suffix}`;
+};
+
 const getLifecycleStatus = (appointment) => {
   const date = String(appointment?.date || '').trim();
   const fromTime = String(appointment?.fromTime || '').trim();
@@ -184,7 +204,9 @@ export default function UpcomingAppointments() {
           <div key={appt.id} className="min-w-[85%] sm:min-w-[380px] max-w-[380px] snap-start bg-white rounded-[32px] p-7 md:p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col justify-between h-[320px]">
             <div>
               <h3 className="text-[#1EBDB8] font-extrabold text-[23px] tracking-tight mb-5">{formatAppointmentDateLabel(appt.date)}</h3>
-              <p className="text-[#1F2937] font-extrabold text-[22px] tracking-tight mb-4">{appt.fromTime} - {appt.toTime}</p>
+              <p className="text-[#1F2937] font-extrabold text-[22px] tracking-tight mb-4">
+                {formatAppointmentTime(appt.fromTime)} - {formatAppointmentTime(appt.toTime)}
+              </p>
               <p className="text-[#05D182] font-bold text-[18px]">{appt.status}</p>
               <p className="text-[#6B7280] font-bold text-[13px] mt-1">{providerTypeLabel}</p>
               <p className="text-[#6B7280] font-bold text-[14px] mt-2">Fee: {formatAppointmentFee(appt.amountInRupees)}</p>
