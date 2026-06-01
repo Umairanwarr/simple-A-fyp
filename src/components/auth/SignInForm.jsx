@@ -8,7 +8,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import { auth, googleProvider } from '../../services/firebase';
 import {
   loginPatient,
-  loginPatientWithGoogle
+  loginPatientWithGoogle,
+  sendClinicLoginOtp,
+  sendDoctorLoginOtp,
+  sendMedicalStoreLoginOtp
 } from '../../services/authApi';
 import { saveSessionUser } from '../../utils/authSession';
 
@@ -38,7 +41,10 @@ export default function SignInForm() {
       return;
     }
 
-    navigate(`/verification-code?flow=reset&email=${encodeURIComponent(email.trim().toLowerCase())}&autoSend=1`);
+    const normalizedEmail = email.trim().toLowerCase();
+    const flow = activeTab === 'patient' ? 'reset' : `${activeTab}-reset`;
+
+    navigate(`/verification-code?flow=${encodeURIComponent(flow)}&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
   };
 
   const isFormValid = () => {
@@ -78,6 +84,7 @@ export default function SignInForm() {
       try {
         setIsSubmitting(true);
         const normalizedEmail = email.trim().toLowerCase();
+        await sendDoctorLoginOtp({ email: normalizedEmail, password });
         sessionStorage.setItem(
           'pendingLogin2fa',
           JSON.stringify({
@@ -86,9 +93,9 @@ export default function SignInForm() {
             password
           })
         );
-        navigate(`/verification-code?flow=doctor-login&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
+        navigate(`/verification-code?flow=doctor-login&email=${encodeURIComponent(normalizedEmail)}&sent=1`);
       } catch (error) {
-        toast.error(error.message || 'Could not continue to verification');
+        toast.error(error.message || 'Invalid credentials');
       } finally {
         setIsSubmitting(false);
       }
@@ -100,6 +107,7 @@ export default function SignInForm() {
       try {
         setIsSubmitting(true);
         const normalizedEmail = email.trim().toLowerCase();
+        await sendClinicLoginOtp({ email: normalizedEmail, password });
         sessionStorage.setItem(
           'pendingLogin2fa',
           JSON.stringify({
@@ -108,9 +116,9 @@ export default function SignInForm() {
             password
           })
         );
-        navigate(`/verification-code?flow=clinic-login&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
+        navigate(`/verification-code?flow=clinic-login&email=${encodeURIComponent(normalizedEmail)}&sent=1`);
       } catch (error) {
-        toast.error(error.message || 'Could not continue to verification');
+        toast.error(error.message || 'Invalid credentials');
       } finally {
         setIsSubmitting(false);
       }
@@ -122,6 +130,7 @@ export default function SignInForm() {
       try {
         setIsSubmitting(true);
         const normalizedEmail = email.trim().toLowerCase();
+        await sendMedicalStoreLoginOtp({ email: normalizedEmail, password });
         sessionStorage.setItem(
           'pendingLogin2fa',
           JSON.stringify({
@@ -130,9 +139,9 @@ export default function SignInForm() {
             password
           })
         );
-        navigate(`/verification-code?flow=medical-store-login&email=${encodeURIComponent(normalizedEmail)}&autoSend=1`);
+        navigate(`/verification-code?flow=medical-store-login&email=${encodeURIComponent(normalizedEmail)}&sent=1`);
       } catch (error) {
-        toast.error(error.message || 'Could not continue to verification');
+        toast.error(error.message || 'Invalid credentials');
       } finally {
         setIsSubmitting(false);
       }
@@ -272,11 +281,9 @@ export default function SignInForm() {
           />
 
           <div className="flex justify-end">
-            {activeTab === 'patient' && (
-              <button type="button" onClick={handleForgotPassword} className="text-[#1EBDB8] text-[13px] font-bold hover:underline">
-                Forgot Password?
-              </button>
-            )}
+            <button type="button" onClick={handleForgotPassword} className="text-[#1EBDB8] text-[13px] font-bold hover:underline">
+              Forgot Password?
+            </button>
           </div>
 
           {renderSecurityFields()}

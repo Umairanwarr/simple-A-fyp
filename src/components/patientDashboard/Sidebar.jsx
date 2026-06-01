@@ -5,7 +5,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
     { id: 'dashboard', label: 'Dashboard', iconSrc: '/dashboard.svg' },
     { id: 'profile', label: 'Profile', iconSrc: '/profile.svg' },
     { id: 'appointments', label: 'Appointments', iconSrc: '/appoinments.svg' },
-    { id: 'explore', label: 'Search', iconSvg: true },
+    { id: 'explore', label: 'Explore', iconSvg: true },
     { id: 'favorites', label: 'Favorites', iconSrc: '/fav.svg' },
     { id: 'history', label: 'History', iconSrc: '/history.svg' },
     { id: 'chats', label: 'Chats', iconSrc: '/chat.svg' },

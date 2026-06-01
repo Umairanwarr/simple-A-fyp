@@ -143,9 +143,7 @@ function StripeCardPaymentForm({ canSubmitBooking, isBookingProcessing, onSubmit
 
       {cardError ? (
         <p className="text-[12px] font-medium text-red-600">{cardError}</p>
-      ) : (
-        <p className="text-[12px] text-[#6B7280]">Use Stripe test card 4242 4242 4242 4242.</p>
-      )}
+      ) : null}
 
       {isCardDetailsComplete ? (
         <button
@@ -160,11 +158,7 @@ function StripeCardPaymentForm({ canSubmitBooking, isBookingProcessing, onSubmit
         >
           {isBookingProcessing ? 'Processing Payment...' : 'Pay & Book Appointment'}
         </button>
-      ) : (
-        <p className="text-[12px] font-semibold text-[#6B7280]">
-          Complete all card details to show payment button.
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -924,6 +918,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         </div>
 
         <div className="space-y-4 mt-10">
+          <h3 className="text-[18px] font-medium text-[#1F2432]">Choose Slot</h3>
           {selectedModeSlots.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-[#F8FAFC] px-4 py-6 text-center">
               <p className="text-[13px] font-medium text-[#6B7280]">No slots available for this appointment type.</p>

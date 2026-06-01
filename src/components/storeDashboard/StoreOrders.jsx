@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../services/apiClient';
 
-const API = 'http://localhost:3002/api/store-orders';
+const API = `${API_BASE_URL}/store-orders`;
 
 const STATUS_CONFIG = {
   pending:   { label: 'Pending',   bg: 'bg-amber-50',   text: 'text-amber-600',  border: 'border-amber-200' },

@@ -25,8 +25,8 @@ import {
 import { toast } from 'react-toastify';
 import { fetchStoreBankAccount, createStoreWithdrawRequest } from '../../services/authApi';
 import { getMedicalStoreSessionProfile } from '../../utils/authSession';
+import { API_BASE_URL } from '../../services/apiClient';
 
-const API_BASE = 'http://localhost:3002';
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function getAuthHeaders() {
@@ -66,8 +66,8 @@ export default function StoreAnalytics() {
     setError(null);
     try {
       const [ordersRes, medsRes, bankRes] = await Promise.all([
-        fetch(`${API_BASE}/api/store-orders`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE}/api/medicines`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/store-orders`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/medicines`, { headers: getAuthHeaders() }),
         fetchStoreBankAccount(localStorage.getItem('medicalStoreToken')).catch(() => ({ availableBalanceInRupees: 0, bankAccount: null, withdrawnAmountInRupees: 0 }))
       ]);
 

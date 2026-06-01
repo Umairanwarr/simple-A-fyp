@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Sidebar from '../../components/patientDashboard/Sidebar';
@@ -8,6 +8,7 @@ import StoreReviewPromptModal from '../../components/patientDashboard/StoreRevie
 import AvatarUploadModal from '../../components/shared/AvatarUploadModal';
 import ReportBugButton from '../../components/shared/ReportBugButton';
 import ReportBugModal from '../../components/shared/ReportBugModal';
+import { connectSocket, getSocket } from '../../services/socket';
 import {
   addPatientFavoriteDoctor,
   fetchPatientFavoriteDoctors,
@@ -55,6 +56,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(true);
   const [favoriteActionDoctorIds, setFavoriteActionDoctorIds] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const notificationIdsRef = useRef(new Set());
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(true);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [isMarkingNotificationsRead, setIsMarkingNotificationsRead] = useState(false);
@@ -70,6 +72,7 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
     const patientToken = localStorage.getItem('patientToken');
 
     if (!patientToken) {
+      notificationIdsRef.current = new Set();
       setNotifications([]);
       setUnreadNotificationCount(0);
       setIsNotificationsLoading(false);
@@ -82,7 +85,9 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       }
 
       const data = await fetchPatientNotifications(patientToken);
-      setNotifications(Array.isArray(data?.notifications) ? data.notifications : []);
+      const nextNotifications = Array.isArray(data?.notifications) ? data.notifications : [];
+      notificationIdsRef.current = new Set(nextNotifications.map((notification) => String(notification?.id || '')).filter(Boolean));
+      setNotifications(nextNotifications);
       setUnreadNotificationCount(Math.max(0, Math.trunc(Number(data?.unreadCount || 0))));
     } catch {
       setNotifications([]);
@@ -209,6 +214,42 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       isMounted = false;
       window.clearInterval(pollingIntervalId);
       window.removeEventListener('patient-appointment-updated', refreshHandler);
+    };
+  }, [loadPatientNotifications]);
+
+  useEffect(() => {
+    const patientToken = localStorage.getItem('patientToken');
+    if (!patientToken) {
+      return undefined;
+    }
+
+    const socket = connectSocket(patientToken);
+    if (!socket) {
+      return undefined;
+    }
+
+    const handleAppointmentReminder = (notification) => {
+      if (notification?.id) {
+        const notificationId = String(notification.id);
+        const didAddNotification = !notificationIdsRef.current.has(notificationId);
+
+        if (didAddNotification) {
+          notificationIdsRef.current.add(notificationId);
+          setNotifications((currentNotifications) => {
+            const safeCurrentNotifications = Array.isArray(currentNotifications) ? currentNotifications : [];
+            return [notification, ...safeCurrentNotifications];
+          });
+          setUnreadNotificationCount((currentCount) => Math.max(0, Math.trunc(Number(currentCount || 0))) + 1);
+        }
+      }
+
+      loadPatientNotifications();
+    };
+
+    socket.on('patient:appointment-reminder', handleAppointmentReminder);
+
+    return () => {
+      getSocket()?.off('patient:appointment-reminder', handleAppointmentReminder);
     };
   }, [loadPatientNotifications]);
 

@@ -5,7 +5,12 @@ import Footer from '../../components/landingPage/Footer';
 import { PasswordField, validatePassword } from '../../components/auth/SharedFields';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { resetPatientPassword } from '../../services/authApi';
+import {
+  resetClinicPassword,
+  resetDoctorPassword,
+  resetMedicalStorePassword,
+  resetPatientPassword
+} from '../../services/authApi';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -30,7 +35,9 @@ export default function ResetPassword() {
       return;
     }
 
-    const resetContextRaw = sessionStorage.getItem('patientResetContext');
+    const resetContextRaw =
+      sessionStorage.getItem('resetPasswordContext') ||
+      sessionStorage.getItem('patientResetContext');
 
     if (!resetContextRaw) {
       toast.error('Reset session is missing or expired. Please verify again.');
@@ -42,6 +49,14 @@ export default function ResetPassword() {
     try {
       resetContext = JSON.parse(resetContextRaw);
     } catch (error) {
+      sessionStorage.removeItem('resetPasswordContext');
+      sessionStorage.removeItem('patientResetContext');
+      toast.error('Reset session is invalid. Please verify again.');
+      return;
+    }
+
+    if (!resetContext?.email || !resetContext?.resetToken) {
+      sessionStorage.removeItem('resetPasswordContext');
       sessionStorage.removeItem('patientResetContext');
       toast.error('Reset session is invalid. Please verify again.');
       return;
@@ -49,13 +64,27 @@ export default function ResetPassword() {
 
     try {
       setIsSubmitting(true);
-      await resetPatientPassword({
+      const resetPasswordByRole = {
+        patient: resetPatientPassword,
+        doctor: resetDoctorPassword,
+        clinic: resetClinicPassword,
+        'medical-store': resetMedicalStorePassword
+      };
+      const resetRole = String(resetContext.role || 'patient').trim();
+      const resetPassword = resetPasswordByRole[resetRole];
+
+      if (!resetPassword) {
+        throw new Error('Reset session role is invalid. Please verify again.');
+      }
+
+      await resetPassword({
         email: resetContext.email,
         resetToken: resetContext.resetToken,
         password,
         confirmPassword
       });
 
+      sessionStorage.removeItem('resetPasswordContext');
       sessionStorage.removeItem('patientResetContext');
       toast.success('Password successfully reset');
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -30,6 +30,7 @@ export default function VerificationCodeForm() {
   const flow = searchParams.get('flow') || 'reset';
   const email = searchParams.get('email') || '';
   const autoSend = searchParams.get('autoSend') === '1';
+  const otpAlreadySent = searchParams.get('sent') === '1';
   const isPatientSignupFlow = flow === 'signup';
   const isDoctorSignupFlow = flow === 'doctor-signup';
   const isClinicSignupFlow = flow === 'clinic-signup';
@@ -37,12 +38,15 @@ export default function VerificationCodeForm() {
   const isDoctorLoginFlow = flow === 'doctor-login';
   const isClinicLoginFlow = flow === 'clinic-login';
   const isMedicalStoreLoginFlow = flow === 'medical-store-login';
+  const isDoctorResetFlow = flow === 'doctor-reset';
+  const isClinicResetFlow = flow === 'clinic-reset';
+  const isMedicalStoreResetFlow = flow === 'medical-store-reset';
+  const isResetFlow =
+    flow === 'reset' ||
+    isDoctorResetFlow ||
+    isClinicResetFlow ||
+    isMedicalStoreResetFlow;
   const isLogin2faFlow = isDoctorLoginFlow || isClinicLoginFlow || isMedicalStoreLoginFlow;
-  const isSignupFlow =
-    isPatientSignupFlow ||
-    isDoctorSignupFlow ||
-    isClinicSignupFlow ||
-    isMedicalStoreSignupFlow;
   const hasAutoSentRef = useRef(false);
 
   useEffect(() => {
@@ -51,6 +55,30 @@ export default function VerificationCodeForm() {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
+
+  useEffect(() => {
+    if (otpAlreadySent) {
+      setCountdown(60);
+    }
+  }, [otpAlreadySent]);
+
+  const getPendingLoginPassword = useCallback(() => {
+    const raw = sessionStorage.getItem('pendingLogin2fa');
+    if (!raw) {
+      throw new Error('Login session expired. Please sign in again.');
+    }
+
+    const pending = JSON.parse(raw);
+    const pendingPassword = String(pending?.password || '');
+    const pendingEmail = String(pending?.email || '').trim().toLowerCase();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!pendingPassword || pendingEmail !== normalizedEmail) {
+      throw new Error('Login session mismatch. Please sign in again.');
+    }
+
+    return pendingPassword;
+  }, [email]);
 
   useEffect(() => {
     const sendInitialOtp = async () => {
@@ -70,16 +98,22 @@ export default function VerificationCodeForm() {
 
         if (isDoctorSignupFlow) {
           await sendDoctorOtp(email);
+        } else if (isDoctorResetFlow) {
+          await sendDoctorOtp(email, 'reset');
         } else if (isDoctorLoginFlow) {
-          await sendDoctorLoginOtp(email);
+          await sendDoctorLoginOtp({ email, password: getPendingLoginPassword() });
         } else if (isClinicSignupFlow) {
           await sendClinicOtp(email);
+        } else if (isClinicResetFlow) {
+          await sendClinicOtp(email, 'reset');
         } else if (isClinicLoginFlow) {
-          await sendClinicLoginOtp(email);
+          await sendClinicLoginOtp({ email, password: getPendingLoginPassword() });
         } else if (isMedicalStoreSignupFlow) {
           await sendMedicalStoreOtp(email);
+        } else if (isMedicalStoreResetFlow) {
+          await sendMedicalStoreOtp(email, 'reset');
         } else if (isMedicalStoreLoginFlow) {
-          await sendMedicalStoreLoginOtp(email);
+          await sendMedicalStoreLoginOtp({ email, password: getPendingLoginPassword() });
         } else {
           await sendPatientOtp(email, isPatientSignupFlow ? 'signup' : 'reset');
         }
@@ -97,11 +131,15 @@ export default function VerificationCodeForm() {
   }, [
     autoSend,
     email,
+    getPendingLoginPassword,
     isClinicLoginFlow,
+    isClinicResetFlow,
     isClinicSignupFlow,
     isDoctorLoginFlow,
+    isDoctorResetFlow,
     isDoctorSignupFlow,
     isMedicalStoreLoginFlow,
+    isMedicalStoreResetFlow,
     isMedicalStoreSignupFlow,
     isPatientSignupFlow
   ]);
@@ -154,16 +192,22 @@ export default function VerificationCodeForm() {
 
       if (isDoctorSignupFlow) {
         await sendDoctorOtp(email);
+      } else if (isDoctorResetFlow) {
+        await sendDoctorOtp(email, 'reset');
       } else if (isDoctorLoginFlow) {
-        await sendDoctorLoginOtp(email);
+        await sendDoctorLoginOtp({ email, password: getPendingLoginPassword() });
       } else if (isClinicSignupFlow) {
         await sendClinicOtp(email);
+      } else if (isClinicResetFlow) {
+        await sendClinicOtp(email, 'reset');
       } else if (isClinicLoginFlow) {
-        await sendClinicLoginOtp(email);
+        await sendClinicLoginOtp({ email, password: getPendingLoginPassword() });
       } else if (isMedicalStoreSignupFlow) {
         await sendMedicalStoreOtp(email);
+      } else if (isMedicalStoreResetFlow) {
+        await sendMedicalStoreOtp(email, 'reset');
       } else if (isMedicalStoreLoginFlow) {
-        await sendMedicalStoreLoginOtp(email);
+        await sendMedicalStoreLoginOtp({ email, password: getPendingLoginPassword() });
       } else {
         await sendPatientOtp(email, isPatientSignupFlow ? 'signup' : 'reset');
       }
@@ -219,6 +263,12 @@ export default function VerificationCodeForm() {
           localStorage.setItem('medicalStoreToken', data.token);
           saveSessionUser('medicalStore', data.medicalStore);
         }
+      } else if (isDoctorResetFlow) {
+        data = await verifyDoctorOtp({ email, otp, purpose: 'reset' });
+      } else if (isClinicResetFlow) {
+        data = await verifyClinicOtp({ email, otp, purpose: 'reset' });
+      } else if (isMedicalStoreResetFlow) {
+        data = await verifyMedicalStoreOtp({ email, otp, purpose: 'reset' });
       } else if (isDoctorSignupFlow) {
         data = await verifyDoctorOtp({ email, otp });
       } else if (isClinicSignupFlow) {
@@ -280,14 +330,24 @@ export default function VerificationCodeForm() {
             : 'Verification successful!'
       );
 
-      if (!isSignupFlow && data?.resetToken) {
+      if (isResetFlow && data?.resetToken) {
+        const resetRole = isDoctorResetFlow
+          ? 'doctor'
+          : isClinicResetFlow
+            ? 'clinic'
+            : isMedicalStoreResetFlow
+              ? 'medical-store'
+              : 'patient';
+
         sessionStorage.setItem(
-          'patientResetContext',
+          'resetPasswordContext',
           JSON.stringify({
             email,
+            role: resetRole,
             resetToken: data.resetToken
           })
         );
+        sessionStorage.removeItem('patientResetContext');
       }
 
       setTimeout(() => {

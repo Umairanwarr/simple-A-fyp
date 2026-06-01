@@ -120,7 +120,7 @@ function StripeCardPaymentForm({ canSubmitBooking, isBookingProcessing, onSubmit
           </div>
         </div>
       </div>
-      {cardError ? <p className="text-[12px] font-medium text-red-600">{cardError}</p> : <p className="text-[12px] text-[#6B7280]">Use Stripe test card 4242 4242 4242 4242.</p>}
+      {cardError ? <p className="text-[12px] font-medium text-red-600">{cardError}</p> : null}
       {isCardDetailsComplete && (
         <button
           type="button"

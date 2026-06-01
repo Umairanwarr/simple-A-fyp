@@ -221,71 +221,92 @@ export const verifyPatientOtp = async ({ email, otp, purpose = 'signup' }) => {
   });
 };
 
-export const sendDoctorOtp = async (email) => {
+export const sendDoctorOtp = async (email, purpose = 'signup') => {
   return apiRequest('/auth/doctor/send-otp', {
     method: 'POST',
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, purpose })
   });
 };
 
-export const sendDoctorLoginOtp = async (email) => {
+export const sendDoctorLoginOtp = async ({ email, password }) => {
   return apiRequest('/auth/doctor/send-login-otp', {
     method: 'POST',
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, password })
   });
 };
 
-export const sendClinicOtp = async (email) => {
+export const sendClinicOtp = async (email, purpose = 'signup') => {
   return apiRequest('/auth/clinic/send-otp', {
     method: 'POST',
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, purpose })
   });
 };
 
-export const sendClinicLoginOtp = async (email) => {
+export const sendClinicLoginOtp = async ({ email, password }) => {
   return apiRequest('/auth/clinic/send-login-otp', {
     method: 'POST',
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, password })
   });
 };
 
-export const sendMedicalStoreOtp = async (email) => {
+export const sendMedicalStoreOtp = async (email, purpose = 'signup') => {
   return apiRequest('/auth/store/send-otp', {
     method: 'POST',
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, purpose })
   });
 };
 
-export const sendMedicalStoreLoginOtp = async (email) => {
+export const sendMedicalStoreLoginOtp = async ({ email, password }) => {
   return apiRequest('/auth/store/send-login-otp', {
     method: 'POST',
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, password })
   });
 };
 
-export const verifyDoctorOtp = async ({ email, otp }) => {
+export const verifyDoctorOtp = async ({ email, otp, purpose = 'signup' }) => {
   return apiRequest('/auth/doctor/verify-otp', {
     method: 'POST',
-    body: JSON.stringify({ email, otp })
+    body: JSON.stringify({ email, otp, purpose })
   });
 };
 
-export const verifyClinicOtp = async ({ email, otp }) => {
+export const verifyClinicOtp = async ({ email, otp, purpose = 'signup' }) => {
   return apiRequest('/auth/clinic/verify-otp', {
     method: 'POST',
-    body: JSON.stringify({ email, otp })
+    body: JSON.stringify({ email, otp, purpose })
   });
 };
 
-export const verifyMedicalStoreOtp = async ({ email, otp }) => {
+export const verifyMedicalStoreOtp = async ({ email, otp, purpose = 'signup' }) => {
   return apiRequest('/auth/store/verify-otp', {
     method: 'POST',
-    body: JSON.stringify({ email, otp })
+    body: JSON.stringify({ email, otp, purpose })
   });
 };
 
 export const resetPatientPassword = async ({ email, resetToken, password, confirmPassword }) => {
   return apiRequest('/auth/patient/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, resetToken, password, confirmPassword })
+  });
+};
+
+export const resetDoctorPassword = async ({ email, resetToken, password, confirmPassword }) => {
+  return apiRequest('/auth/doctor/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, resetToken, password, confirmPassword })
+  });
+};
+
+export const resetClinicPassword = async ({ email, resetToken, password, confirmPassword }) => {
+  return apiRequest('/auth/clinic/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, resetToken, password, confirmPassword })
+  });
+};
+
+export const resetMedicalStorePassword = async ({ email, resetToken, password, confirmPassword }) => {
+  return apiRequest('/auth/store/reset-password', {
     method: 'POST',
     body: JSON.stringify({ email, resetToken, password, confirmPassword })
   });
