@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 
 export default function Stores() {
   const [selectedStore, setSelectedStore] = useState(0);
+  const goToSignIn = () => {
+    window.location.href = '/signin';
+  };
 
   const stores = [
     {
@@ -21,7 +24,7 @@ export default function Stores() {
       status: "Closing at 11 PM",
       distance: "1.2 km",
       rating: "4.8",
-      image: "https://images.unsplash.com/photo-1585435557343-3b0928aa3932?auto=format&fit=crop&q=80&w=400",
+      image: "https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=400",
       coords: { x: '65%', y: '20%' }
     },
     {
@@ -125,7 +128,7 @@ export default function Stores() {
               </div>
             ))}
 
-            <button className="mt-2 w-full py-3.5 rounded-[16px] border-2 border-dashed border-gray-200 text-gray-400 font-semibold text-[14px] hover:border-[#1EBDB8]/40 hover:text-[#1EBDB8] transition-all duration-300 flex items-center justify-center gap-2">
+            <button onClick={goToSignIn} className="mt-2 w-full py-3.5 rounded-[16px] border-2 border-dashed border-gray-200 text-gray-400 font-semibold text-[14px] hover:border-[#1EBDB8]/40 hover:text-[#1EBDB8] transition-all duration-300 flex items-center justify-center gap-2">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 8v8M8 12h8" />
@@ -242,18 +245,18 @@ export default function Stores() {
                 </div>
 
                 <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                  <button className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
+                  <button onClick={goToSignIn} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="3" />
                       <path d="M12 5v-2M12 21v-2M5 12H3M21 12h-2" />
                     </svg>
                   </button>
-                  <button className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
+                  <button onClick={goToSignIn} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 5v14M5 12h14" />
                     </svg>
                   </button>
-                  <button className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
+                  <button onClick={goToSignIn} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-[#1EBDB8] hover:border-[#1EBDB8]/30 transition-all">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polygon points="3 11 22 2 13 21 11 13 3 11" />
                     </svg>

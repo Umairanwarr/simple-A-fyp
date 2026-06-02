@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { fetchDoctorCompletedPatients, createDoctorPrescription, fetchDoctorPrescriptions, deleteDoctorPrescription } from '../../services/authApi';
 
+const getPrescriptionSerialNumber = (prescription) => {
+  const suffix = String(prescription?._id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
+  return prescription?.serialNumber || `#SIMPLE-${suffix || '000000'}`;
+};
+
 export default function DigitalPrescription() {
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
@@ -21,7 +26,7 @@ export default function DigitalPrescription() {
       setIsPrescriptionsLoading(true);
       const data = await fetchDoctorPrescriptions(token);
       if (data.prescriptions) setSentPrescriptions(data.prescriptions);
-    } catch (err) {
+    } catch {
       // silent
     } finally {
       setIsPrescriptionsLoading(false);
@@ -38,7 +43,7 @@ export default function DigitalPrescription() {
         setIsLoading(true);
         const data = await fetchDoctorCompletedPatients(token);
         if (mounted && data.patients) setPatients(data.patients);
-      } catch (err) {
+      } catch {
         toast.error('Could not load patients list');
       } finally {
         if (mounted) setIsLoading(false);
@@ -88,8 +93,9 @@ export default function DigitalPrescription() {
       if (notes.trim()) formData.append('notes', notes);
       if (imageFile) formData.append('prescriptions', imageFile);
 
-      await createDoctorPrescription(token, formData);
-      toast.success('Prescription sent successfully');
+      const data = await createDoctorPrescription(token, formData);
+      const serialNumber = getPrescriptionSerialNumber(data?.prescription);
+      toast.success(`Prescription ${serialNumber} sent successfully`);
       
       setSelectedPatientId('');
       setNotes('');
@@ -241,6 +247,7 @@ export default function DigitalPrescription() {
               const patient = rx.patientId || {};
               const patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Patient';
               const hasImage = !!rx.attachmentUrl;
+              const serialNumber = getPrescriptionSerialNumber(rx);
               return (
                 <div key={rx._id} className="flex items-center justify-between py-4 px-5 bg-gray-50 rounded-2xl border border-gray-100 gap-4">
                   <div className="flex items-center gap-3 min-w-0">
@@ -254,7 +261,12 @@ export default function DigitalPrescription() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-[14px] text-[#1F2432] truncate">{patientName}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-[14px] text-[#1F2432] truncate">{patientName}</p>
+                        <span className="text-[11px] font-bold text-[#1EBDB8] bg-[#E8FBFA] px-2 py-0.5 rounded-full">
+                          {serialNumber}
+                        </span>
+                      </div>
                       <p className="text-[12px] text-[#6B7280] truncate">
                         {hasImage ? '📎 Image prescription' : rx.notes?.slice(0, 60) + (rx.notes?.length > 60 ? '...' : '')}
                       </p>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../services/apiClient';
 
 const CATEGORY_OPTIONS = [
   'Painkiller', 'Antibiotic', 'Antiviral', 'Antifungal', 'Vitamin & Supplement',
@@ -36,7 +37,7 @@ export default function StoreInventory() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('medicalStoreToken');
-      const res = await fetch(`http://localhost:3002/api/medicines`, {
+      const res = await fetch(`${API_BASE_URL}/medicines`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch inventory');
@@ -96,8 +97,8 @@ export default function StoreInventory() {
     try {
       const token = localStorage.getItem('medicalStoreToken');
       const url = isEditing
-        ? `http://localhost:3002/api/medicines/${currentMedicine._id}`
-        : `http://localhost:3002/api/medicines`;
+        ? `${API_BASE_URL}/medicines/${currentMedicine._id}`
+        : `${API_BASE_URL}/medicines`;
 
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -137,7 +138,7 @@ export default function StoreInventory() {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('medicalStoreToken');
-      const res = await fetch(`http://localhost:3002/api/medicines/${itemToDelete._id}`, {
+      const res = await fetch(`${API_BASE_URL}/medicines/${itemToDelete._id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

@@ -3,10 +3,89 @@ import { toast } from 'react-toastify';
 import PatientDashboardLayout from './PatientDashboardLayout';
 import { fetchPatientPrescriptions } from '../../services/authApi';
 
+const getPrescriptionSerialNumber = (prescription) => {
+  const suffix = String(prescription?._id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
+  return prescription?.serialNumber || `#SIMPLE-${suffix || '000000'}`;
+};
+
+const escapeHtml = (value) => String(value || '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const formatPrescriptionDate = (date) => (
+  date
+    ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'N/A'
+);
+
+const downloadPrescription = (prescription) => {
+  const doctor = prescription.doctorId || {};
+  const serialNumber = getPrescriptionSerialNumber(prescription);
+  const safeSerial = serialNumber.replace(/[^a-zA-Z0-9-]/g, '');
+  const date = formatPrescriptionDate(prescription.createdAt);
+  const hasAttachment = Boolean(prescription.attachmentUrl);
+  const isPdf = prescription.attachmentFileType === 'raw';
+
+  const prescriptionContent = hasAttachment
+    ? `<div class="section">
+        <h2>${isPdf ? 'PDF Prescription' : 'Image Prescription'}</h2>
+        ${isPdf
+          ? `<p><strong>Attached PDF:</strong> <a href="${escapeHtml(prescription.attachmentUrl)}">${escapeHtml(prescription.attachmentUrl)}</a></p>`
+          : `<div class="attachment"><img src="${escapeHtml(prescription.attachmentUrl)}" alt="Prescription attachment" /></div>`
+        }
+      </div>`
+    : `<div class="section">
+        <h2>Prescription Notes</h2>
+        <div class="notes">${escapeHtml(prescription.notes || 'No content provided.')}</div>
+      </div>`;
+
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Prescription ${escapeHtml(serialNumber)}</title>
+    <style>
+      body { font-family: Arial, sans-serif; color: #1f2432; margin: 40px; line-height: 1.5; }
+      .header { border-bottom: 2px solid #1ebdb8; margin-bottom: 24px; padding-bottom: 16px; }
+      .serial { color: #1ebdb8; font-size: 22px; font-weight: 700; margin: 0 0 8px; }
+      .meta { color: #6b7280; margin: 4px 0; }
+      .section { margin-top: 24px; }
+      .notes { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; white-space: pre-wrap; }
+      .attachment img { border: 1px solid #e5e7eb; border-radius: 12px; display: block; max-width: 100%; margin-top: 12px; }
+      a { color: #1ebdb8; word-break: break-all; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <p class="serial">${escapeHtml(serialNumber)}</p>
+      <h1>Prescription</h1>
+      <p class="meta"><strong>Doctor:</strong> Dr. ${escapeHtml(doctor.fullName || 'Doctor')}</p>
+      <p class="meta"><strong>Specialization:</strong> ${escapeHtml(doctor.specialization || 'General')}</p>
+      <p class="meta"><strong>Date:</strong> ${escapeHtml(date)}</p>
+    </div>
+    ${prescriptionContent}
+  </body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `prescription-${safeSerial || 'SIMPLE'}.html`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
 function PrescriptionCard({ prescription }) {
   const doctor = prescription.doctorId || {};
   const hasImage = !!prescription.attachmentUrl;
   const isPdf = prescription.attachmentFileType === 'raw';
+  const serialNumber = getPrescriptionSerialNumber(prescription);
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
@@ -26,8 +105,13 @@ function PrescriptionCard({ prescription }) {
             <p className="text-[13px] text-[#6B7280]">{doctor.specialization || 'General'}</p>
           </div>
         </div>
-        <div className="text-[13px] font-semibold text-[#1EBDB8] bg-[#E8FBFA] px-3 py-1 rounded-full shrink-0">
-          {new Date(prescription.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="text-[12px] font-bold text-[#1EBDB8] bg-[#E8FBFA] px-3 py-1 rounded-full">
+            {serialNumber}
+          </div>
+          <div className="text-[13px] font-semibold text-[#6B7280]">
+            {formatPrescriptionDate(prescription.createdAt)}
+          </div>
         </div>
       </div>
 
@@ -65,6 +149,17 @@ function PrescriptionCard({ prescription }) {
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => downloadPrescription(prescription)}
+        className="self-start inline-flex items-center gap-2 rounded-xl bg-[#1EBDB8] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#1CAAAE] transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+        </svg>
+        Download Prescription
+      </button>
     </div>
   );
 }
@@ -83,7 +178,7 @@ export default function Prescriptions() {
         if (mounted && data.prescriptions) {
           setPrescriptions(data.prescriptions);
         }
-      } catch (err) {
+      } catch {
         toast.error('Could not load prescriptions');
       } finally {
         if (mounted) setIsLoading(false);

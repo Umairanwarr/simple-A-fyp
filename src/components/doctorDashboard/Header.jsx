@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getDoctorSessionProfile } from '../../utils/authSession';
 
 const formatNotificationDateTime = (dateValue) => {
@@ -32,16 +32,38 @@ export default function Header({
   const {
     name: doctorName,
     email: doctorEmail,
-    avatarUrl: doctorAvatarUrl,
-    currentPlan: doctorCurrentPlan
+    avatarUrl: doctorAvatarUrl
   } = getDoctorSessionProfile();
-  const doctorPlanLabel = String(doctorCurrentPlan || 'platinum')
-    .trim()
-    .toLowerCase()
-    .replace(/^./, (firstLetter) => firstLetter.toUpperCase());
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const normalizedUnreadCount = Math.max(0, Math.trunc(Number(unreadNotificationCount || 0)));
   const hasUnreadNotifications = normalizedUnreadCount > 0;
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, []);
+
+  const handleNotificationsToggle = () => {
+    const nextOpenState = !isNotificationsOpen;
+    setIsNotificationsOpen(nextOpenState);
+
+    if (nextOpenState) {
+      onNotificationsOpen?.();
+    }
+  };
 
   const getTitle = () => {
     switch (activeTab) {
@@ -53,7 +75,6 @@ export default function Header({
       case 'clinic': return 'Virtual Clinic';
       case 'availability': return 'Set Availability';
       case 'streaming': return 'Advanced Live Streaming';
-      case 'subscriptions': return 'Subscription & Ads Manager';
       case 'prescriptions': return 'Digital Prescriptions';
       case 'media': return 'Media Management';
       default: return 'Doctor Dashboard';
@@ -77,9 +98,10 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6">
-        <div className="hidden sm:block relative group" onMouseEnter={() => onNotificationsOpen?.()}>
+        <div className="relative" ref={notificationsRef}>
           <button
             type="button"
+            onClick={handleNotificationsToggle}
             className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow text-[#1F2432]"
             aria-label="Booking notifications"
           >
@@ -93,7 +115,7 @@ export default function Header({
             ) : null}
           </button>
 
-          <div className="pointer-events-none absolute right-0 top-[calc(100%+12px)] z-40 w-[340px] rounded-[20px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] opacity-0 invisible translate-y-2 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto">
+          <div className={`absolute right-0 top-[calc(100%+12px)] z-40 w-[340px] rounded-[20px] border border-gray-100 bg-white shadow-[0px_20px_45px_rgba(0,0,0,0.12)] transition-all duration-200 ${isNotificationsOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
             <div className="px-4 py-3 border-b border-gray-100">
               <h3 className="text-[14px] font-bold text-[#1F2432]">Recent Notifications</h3>
             </div>
@@ -125,9 +147,6 @@ export default function Header({
           <div className="hidden sm:block text-right">
             <p className="text-[14px] font-bold text-[#1F2432]">{doctorName}</p>
             <p className="text-[12px] text-[#9ca3af] font-medium">{doctorEmail || 'Doctor Account'}</p>
-            <p className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#1EBDB8]/12 text-[#0F766E] border border-[#1EBDB8]/25">
-              {doctorPlanLabel} Plan
-            </p>
           </div>
           <button
             type="button"

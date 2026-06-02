@@ -30,8 +30,7 @@ const EMPTY_FORM = {
 const formatModeLabel = (mode) => {
   const m = String(mode || '').toLowerCase();
   if (m === 'offline') return 'Offline (Clinic Visit)';
-  if (m === 'video') return 'Online (Video Call)';
-  return 'Online (Text)';
+  return 'Online';
 };
 
 const toMinutes = (timeValue) => {

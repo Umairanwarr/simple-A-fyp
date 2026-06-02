@@ -75,6 +75,7 @@ export default function StoreHeader({ onMenuClick, activeTab, onAvatarClick }) {
     .trim()
     .toLowerCase()
     .replace(/^./, (c) => c.toUpperCase());
+  const isDiamondPlan = String(storeCurrentPlan || '').trim().toLowerCase() === 'diamond';
 
   const getTitle = () => {
     switch (activeTab) {
@@ -179,6 +180,11 @@ export default function StoreHeader({ onMenuClick, activeTab, onAvatarClick }) {
             <p className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#1EBDB8]/12 text-[#0F766E] border border-[#1EBDB8]/25">
               {storePlanLabel} Plan
             </p>
+            {isDiamondPlan ? (
+              <p className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-[0.08em] bg-[#FFF7ED] border border-[#FCD9BD] text-[#9A3412]">
+                Top Store
+              </p>
+            ) : null}
           </div>
           <button
             type="button"

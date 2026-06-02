@@ -26,9 +26,13 @@ import {
 const TAB_PATHS = {
   analytics: '/clinic/dashboard',
   staff: '/clinic/dashboard/staff',
+  schedule: '/clinic/dashboard/schedule',
   availability: '/clinic/dashboard/availability',
+  appointments: '/clinic/dashboard/appointments',
+  chats: '/clinic/dashboard/chats',
   subscriptions: '/clinic/dashboard/subscriptions',
   media: '/clinic/dashboard/media',
+  reviews: '/clinic/dashboard/reviews',
   profile: '/clinic/dashboard/profile'
 };
 
@@ -52,7 +56,7 @@ export default function ClinicDashboardLayout({ activeTab = 'analytics', childre
       const data = await fetchClinicNotifications(clinicToken);
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
+    } catch {
       // Fail silently
     } finally {
       setIsLoadingNotifications(false);
@@ -69,7 +73,7 @@ export default function ClinicDashboardLayout({ activeTab = 'analytics', childre
       setIsMarkingNotificationsRead(true);
       await markClinicNotificationsRead(clinicToken);
       setUnreadCount(0);
-    } catch (error) {
+    } catch {
       // Fail silently
     } finally {
       setIsMarkingNotificationsRead(false);
@@ -174,7 +178,9 @@ export default function ClinicDashboardLayout({ activeTab = 'analytics', childre
           </main>
         </div>
 
-        <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        {activeTab !== 'chats' && (
+          <ReportBugButton onClick={() => setIsBugReportModalOpen(true)} />
+        )}
       </div>
 
       <style jsx="true">{`

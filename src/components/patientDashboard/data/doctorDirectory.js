@@ -119,14 +119,16 @@ export const patientDoctorDirectory = [
 ];
 
 export const exploreSpecialties = [
-  { id: 'Oncology', label: 'Oncology', icon: '/top1.svg' },
-  { id: 'Endocrinology', label: 'Endocrinology', icon: '/top2.svg' },
-  { id: 'Infertility', label: 'Infertility', icon: '/top3.svg' },
-  { id: 'Mental Health', label: 'Mental Health', icon: '/top4.svg' },
-  { id: 'Cardiology', label: 'Cardiology', icon: '/top5.svg' },
-  { id: 'Neurology', label: 'Neurology', icon: '/top6.svg' },
-  { id: 'Rheumatology', label: 'Rheumatology', icon: '/top7.svg' },
-  { id: 'Plastic Surgery', label: 'Plastic Surgery', icon: '/top8.svg' },
-  { id: 'Rare Diseases', label: 'Rare Diseases', icon: '/top9.svg' },
-  { id: 'Surrogacy', label: 'Surrogacy', icon: '/top10.svg' }
+  { id: 'Cardiologist', label: 'Cardiologist', icon: '/top1.svg' },
+  { id: 'Dermatologist', label: 'Dermatologist', icon: '/top2.svg' },
+  { id: 'Endocrinologist', label: 'Endocrinologist', icon: '/top3.svg' },
+  { id: 'Gastroenterologist', label: 'Gastroenterologist', icon: '/top4.svg' },
+  { id: 'Neurologist', label: 'Neurologist', icon: '/top5.svg' },
+  { id: 'Orthopedic', label: 'Orthopedic', icon: '/top6.svg' },
+  { id: 'Pediatrician', label: 'Pediatrician', icon: '/top7.svg' },
+  { id: 'Psychiatrist', label: 'Psychiatrist', icon: '/top8.svg' },
+  { id: 'Pulmonologist', label: 'Pulmonologist', icon: '/top9.svg' },
+  { id: 'Radiologist', label: 'Radiologist', icon: '/top10.svg' },
+  { id: 'Surgeon', label: 'Surgeon', icon: '/top1.svg' },
+  { id: 'Urologist', label: 'Urologist', icon: '/top2.svg' }
 ];

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -30,6 +30,8 @@ export default function AdminHeader({ onMenuClick }) {
   const [reviewUnreadCount, setReviewUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [markingReviewNotificationsRead, setMarkingReviewNotificationsRead] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef(null);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -156,6 +158,31 @@ export default function AdminHeader({ onMenuClick }) {
   const reviewNotificationPreview = useMemo(() => reviewNotifications.slice(0, 5), [reviewNotifications]);
   const notificationCount = pendingApplications.length + reviewUnreadCount;
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, []);
+
+  const handleNotificationsToggle = () => {
+    const nextOpenState = !isNotificationsOpen;
+    setIsNotificationsOpen(nextOpenState);
+
+    if (nextOpenState) {
+      markReviewNotificationsAsRead();
+    }
+  };
+
   return (
     <header className="h-[72px] bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-8 font-sans sticky top-0 z-30">
       
@@ -190,30 +217,9 @@ export default function AdminHeader({ onMenuClick }) {
 
       {/* Right side: Notifications & Quick Actions */}
       <div className="flex items-center gap-3 sm:gap-5">
-        <div className="relative group/notifications" onMouseEnter={markReviewNotificationsAsRead}>
+        <div className="relative" ref={notificationsRef}>
           <button
-            onClick={() => {
-              if (reviewNotificationPreview.length > 0) {
-                const latestNotification = reviewNotificationPreview[0];
-                markReviewNotificationsAsRead();
-                navigate(getNotificationTargetPath(latestNotification));
-                return;
-              }
-
-              const firstPending = pendingNotificationPreview[0];
-
-              if (firstPending?.type === 'clinic') {
-                navigate('/admin/users/clinics');
-                return;
-              }
-
-              if (firstPending?.type === 'store') {
-                navigate('/admin/users/stores');
-                return;
-              }
-
-              navigate('/admin/users/doctors');
-            }}
+            onClick={handleNotificationsToggle}
             className="relative p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -228,7 +234,7 @@ export default function AdminHeader({ onMenuClick }) {
             )}
           </button>
 
-          <div className="absolute right-0 top-[46px] w-[340px] bg-white border border-gray-200 rounded-2xl shadow-[0_14px_38px_rgb(15,23,42,0.12)] p-3 opacity-0 invisible translate-y-1 group-hover/notifications:opacity-100 group-hover/notifications:visible group-hover/notifications:translate-y-0 transition-all duration-200 z-50">
+          <div className={`absolute right-0 top-[46px] w-[340px] bg-white border border-gray-200 rounded-2xl shadow-[0_14px_38px_rgb(15,23,42,0.12)] p-3 transition-all duration-200 z-50 ${isNotificationsOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-1 pointer-events-none'}`}>
             <div className="flex items-center justify-between px-1 py-2 border-b border-gray-100 mb-2">
               <h3 className="text-[13px] font-bold text-gray-900">Notifications</h3>
               {notificationCount > 0 && (

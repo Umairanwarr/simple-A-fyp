@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import {
   cancelDoctorUpcomingAppointment,
+  endDoctorOngoingAppointment,
   fetchDoctorAppointments
 } from '../../../services/authApi';
 
@@ -36,6 +37,26 @@ const formatAppointmentFee = (amountInRupees) => {
   }).format(normalizedAmount);
 };
 
+const formatAppointmentTime = (timeValue) => {
+  const value = String(timeValue || '').trim();
+
+  if (!value) {
+    return '';
+  }
+
+  const [hoursValue, minutesValue] = value.split(':');
+  const hours = Number(hoursValue);
+  const minutes = Number(minutesValue);
+
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return value;
+  }
+
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const normalizedHour = hours % 12 || 12;
+  return `${normalizedHour}:${String(minutes).padStart(2, '0')} ${suffix}`;
+};
+
 const sortAppointmentsByDate = (appointments) => {
   const safeAppointments = Array.isArray(appointments) ? [...appointments] : [];
 
@@ -56,6 +77,8 @@ export default function AppointmentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [isCancellingAppointmentId, setIsCancellingAppointmentId] = useState('');
+  const [appointmentToEnd, setAppointmentToEnd] = useState(null);
+  const [isEndingAppointmentId, setIsEndingAppointmentId] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -159,6 +182,14 @@ export default function AppointmentsPage() {
     setAppointmentToCancel(null);
   };
 
+  const closeEndModal = () => {
+    if (isEndingAppointmentId) {
+      return;
+    }
+
+    setAppointmentToEnd(null);
+  };
+
   const handleConfirmCancelAppointment = async () => {
     if (!appointmentToCancel?.id || isCancellingAppointmentId) {
       return;
@@ -188,6 +219,38 @@ export default function AppointmentsPage() {
       toast.error(error?.message || 'Could not cancel appointment. Please try again.');
     } finally {
       setIsCancellingAppointmentId('');
+    }
+  };
+
+  const handleConfirmEndAppointment = async () => {
+    if (!appointmentToEnd?.id || isEndingAppointmentId) {
+      return;
+    }
+
+    const doctorToken = localStorage.getItem('doctorToken');
+
+    if (!doctorToken) {
+      toast.error('Session expired. Please sign in again.');
+      return;
+    }
+
+    try {
+      setIsEndingAppointmentId(String(appointmentToEnd.id));
+
+      const response = await endDoctorOngoingAppointment(doctorToken, appointmentToEnd.id);
+
+      setOngoingAppointments((previousAppointments) => {
+        return previousAppointments.filter((appointment) => String(appointment?.id) !== String(appointmentToEnd.id));
+      });
+
+      toast.success(response?.message || 'Appointment ended successfully.');
+      window.dispatchEvent(new Event('doctor-appointment-updated'));
+      window.dispatchEvent(new Event('patient-appointment-updated'));
+      setAppointmentToEnd(null);
+    } catch (error) {
+      toast.error(error?.message || 'Could not end appointment. Please try again.');
+    } finally {
+      setIsEndingAppointmentId('');
     }
   };
 
@@ -263,6 +326,7 @@ export default function AppointmentsPage() {
               const isOngoing = activeSection === 'ongoing';
               const isCancelled = activeSection === 'cancelled';
               const canCancelAppointment = activeSection === 'upcoming';
+              const canEndAppointment = activeSection === 'ongoing';
 
               return (
                 <div
@@ -275,7 +339,7 @@ export default function AppointmentsPage() {
                         {formatAppointmentDateLabel(appointment.date)}
                       </p>
                       <h3 className="mt-1 text-[20px] font-bold text-[#1F2432]">
-                        {appointment.fromTime} - {appointment.toTime}
+                        {formatAppointmentTime(appointment.fromTime)} - {formatAppointmentTime(appointment.toTime)}
                       </h3>
                     </div>
 
@@ -294,6 +358,9 @@ export default function AppointmentsPage() {
                     <p className="text-[16px] font-bold text-[#111827]">{appointment.patient?.name || 'Patient'}</p>
                     <p className="text-[13px] text-[#4B5563]">{appointment.patient?.email || 'N/A'}</p>
                     <p className="text-[13px] text-[#4B5563]">{appointment.patient?.phoneNumber || 'N/A'}</p>
+                    <p className="text-[13px] text-[#4B5563]">
+                      Reason: <span className="font-semibold text-[#1F2432]">{appointment.bookingReason || 'Not provided'}</span>
+                    </p>
                     <p className="text-[13px] font-semibold text-[#0F766E]">
                       {appointment.consultationMode === 'offline' ? 'Clinic Visit' : 'Online Consultation'}
                     </p>
@@ -302,16 +369,29 @@ export default function AppointmentsPage() {
                     </p>
                   </div>
 
-                  {canCancelAppointment ? (
+                  {canCancelAppointment || canEndAppointment ? (
                     <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setAppointmentToCancel(appointment)}
-                        disabled={Boolean(isCancellingAppointmentId)}
-                        className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#FFF1F1] border border-[#E11D48]/30 text-[#E11D48] text-[13px] font-bold transition hover:bg-[#FFE4E6] disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isCancellingAppointmentId === String(appointment.id) ? 'Cancelling...' : 'Cancel Appointment'}
-                      </button>
+                      {canCancelAppointment ? (
+                        <button
+                          type="button"
+                          onClick={() => setAppointmentToCancel(appointment)}
+                          disabled={Boolean(isCancellingAppointmentId) || Boolean(isEndingAppointmentId)}
+                          className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#FFF1F1] border border-[#E11D48]/30 text-[#E11D48] text-[13px] font-bold transition hover:bg-[#FFE4E6] disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {isCancellingAppointmentId === String(appointment.id) ? 'Cancelling...' : 'Cancel Appointment'}
+                        </button>
+                      ) : null}
+
+                      {canEndAppointment ? (
+                        <button
+                          type="button"
+                          onClick={() => setAppointmentToEnd(appointment)}
+                          disabled={Boolean(isEndingAppointmentId) || Boolean(isCancellingAppointmentId)}
+                          className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#FEF3C7] border border-[#D97706]/30 text-[#B45309] text-[13px] font-bold transition hover:bg-[#FDE68A] disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {isEndingAppointmentId === String(appointment.id) ? 'Ending...' : 'End Appointment'}
+                        </button>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -341,7 +421,7 @@ export default function AppointmentsPage() {
               <button
                 type="button"
                 onClick={closeCancelModal}
-                disabled={Boolean(isCancellingAppointmentId)}
+                disabled={Boolean(isCancellingAppointmentId) || Boolean(isEndingAppointmentId)}
                 className="px-4 py-2 rounded-full border border-gray-300 text-[#374151] text-[14px] font-semibold transition hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Keep Appointment
@@ -350,10 +430,49 @@ export default function AppointmentsPage() {
               <button
                 type="button"
                 onClick={handleConfirmCancelAppointment}
-                disabled={Boolean(isCancellingAppointmentId)}
+                disabled={Boolean(isCancellingAppointmentId) || Boolean(isEndingAppointmentId)}
                 className="px-4 py-2 rounded-full bg-[#E11D48] text-white text-[14px] font-semibold transition hover:bg-[#be123c] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isCancellingAppointmentId ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {appointmentToEnd ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            onClick={closeEndModal}
+            disabled={Boolean(isEndingAppointmentId)}
+            aria-label="Close end appointment confirmation"
+          />
+
+          <div className="relative w-full max-w-md rounded-[28px] bg-white p-6 sm:p-7 shadow-[0px_20px_50px_rgba(0,0,0,0.2)] border border-gray-100">
+            <h3 className="text-[#111827] text-[22px] font-extrabold tracking-tight">End Appointment?</h3>
+            <p className="mt-3 text-[#4B5563] text-[15px] leading-relaxed">
+              This will immediately end the consultation, clear chat messages between you and this patient, and disable chat until another appointment becomes ongoing.
+            </p>
+
+            <div className="mt-7 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeEndModal}
+                disabled={Boolean(isEndingAppointmentId)}
+                className="px-4 py-2 rounded-full border border-gray-300 text-[#374151] text-[14px] font-semibold transition hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Keep Open
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmEndAppointment}
+                disabled={Boolean(isEndingAppointmentId)}
+                className="px-4 py-2 rounded-full bg-[#D97706] text-white text-[14px] font-semibold transition hover:bg-[#B45309] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isEndingAppointmentId ? 'Ending...' : 'Yes, End'}
               </button>
             </div>
           </div>

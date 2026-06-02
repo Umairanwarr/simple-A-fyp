@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { Package, Truck, CheckCircle2, Clock, MapPin, Search, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../services/apiClient';
 
-const API = 'http://localhost:3002/api/store-orders';
+const API = `${API_BASE_URL}/store-orders`;
 
 const DELIVERY_STATUSES = ['accepted', 'ready', 'Processing', 'Processed', 'Dispatched', 'Delivered', 'completed'];
 const DELIVERY_STAGES   = ['Processing', 'Processed', 'Dispatched', 'Delivered'];

@@ -28,7 +28,6 @@ const TAB_PATHS = {
   clinic: '/doctor/dashboard/clinic',
   availability: '/doctor/dashboard/availability',
   streaming: '/doctor/dashboard/streaming',
-  subscriptions: '/doctor/dashboard/subscriptions',
   prescriptions: '/doctor/dashboard/prescriptions',
   media: '/doctor/dashboard/media',
   chats: '/doctor/dashboard/chats'

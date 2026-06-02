@@ -18,6 +18,11 @@ import { getPatientSessionProfile } from '../../../utils/authSession';
 const STRIPE_PUBLISHABLE_KEY = String(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').trim();
 const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
+const getPrescriptionSerialNumber = (prescription) => {
+  const suffix = String(prescription?._id || prescription?.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
+  return prescription?.serialNumber || `#SIMPLE-${suffix || '000000'}`;
+};
+
 const formatCurrency = (amount) => {
   const n = Number(amount);
   return new Intl.NumberFormat('en-PK', {
@@ -122,7 +127,7 @@ function StripePaymentForm({ canSubmit, isProcessing, onSubmitPayment }) {
 
       {cardError
         ? <p className="text-[12px] font-medium text-red-600">{cardError}</p>
-        : <p className="text-[12px] text-[#6B7280]">Use Stripe test card 4242 4242 4242 4242.</p>
+        : null
       }
 
       {isCardComplete ? (
@@ -208,7 +213,7 @@ export default function StoreProfileScreen({ storeId, onBack }) {
   // Order form
   const [orderNotes, setOrderNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'stripe'
-  const [stripeClientSecret, setStripeClientSecret] = useState(null);
+  const [, setStripeClientSecret] = useState(null);
   const [orderForm, setOrderForm] = useState({
     phoneNumber: '',
     streetAddress: '',
@@ -683,6 +688,20 @@ export default function StoreProfileScreen({ storeId, onBack }) {
           <div className="space-y-1.5 text-center sm:text-left mt-2">
             <h1 className="text-[32px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{store.name}</h1>
             <p className="text-[18px] font-semibold text-[#1EBDB8]">Medical Store</p>
+            {(store?.isTopStore || store?.hasPrioritySupport) ? (
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                {store?.isTopStore ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FFF7ED] border border-[#FCD9BD] text-[#9A3412] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                    Top Store
+                  </span>
+                ) : null}
+                {store?.hasPrioritySupport ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFEFF] border border-[#A5F3FC] text-[#0F766E] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                    Priority Support
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             <p className="text-[16px] font-medium text-[#6B7280]">{store.location || 'Location not provided'}</p>
             
             {/* Business Info - Left Side */}
@@ -1070,11 +1089,12 @@ function PrescriptionPickerStep({ onBack, store, selectedPrescription, onSelectE
                 const isSelected = selectedPrescription?.source === 'existing' && selectedPrescription?.id === p._id;
                 const doc = p.doctorId || {};
                 const hasAttachment = Boolean(p.attachmentUrl);
+                const serialNumber = getPrescriptionSerialNumber(p);
                 return (
                   <button
                     key={p._id}
                     type="button"
-                    onClick={() => onSelectExisting({ id: p._id, doctorName: doc.fullName, date: p.createdAt, attachmentUrl: p.attachmentUrl, attachmentFileType: p.attachmentFileType, notes: p.notes })}
+                    onClick={() => onSelectExisting({ id: p._id, serialNumber, doctorName: doc.fullName, date: p.createdAt, attachmentUrl: p.attachmentUrl, attachmentFileType: p.attachmentFileType, notes: p.notes })}
                     className={`w-full text-left rounded-[16px] border p-4 transition-all flex items-center gap-4 ${isSelected ? 'border-[#1EBDB8] bg-[#ECFAFA] ring-2 ring-[#1EBDB8]/20' : 'border-gray-200 bg-white hover:border-[#1EBDB8]/50'}`}
                   >
                     {/* Selection indicator */}
@@ -1091,7 +1111,10 @@ function PrescriptionPickerStep({ onBack, store, selectedPrescription, onSelectE
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-bold text-[#1F2432] truncate">Dr. {doc.fullName || 'Doctor'}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[14px] font-bold text-[#1F2432] truncate">Dr. {doc.fullName || 'Doctor'}</p>
+                        <span className="text-[11px] font-bold text-[#1EBDB8] bg-[#E8FBFA] px-2 py-0.5 rounded-full">{serialNumber}</span>
+                      </div>
                       <p className="text-[12px] text-[#6B7280]">{new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       {hasAttachment && <p className="text-[11px] text-[#1EBDB8] font-semibold mt-0.5">Has attachment</p>}
                     </div>

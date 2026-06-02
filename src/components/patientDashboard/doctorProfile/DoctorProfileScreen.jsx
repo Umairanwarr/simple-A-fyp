@@ -19,11 +19,7 @@ import { getPatientSessionProfile } from '../../../utils/authSession';
 const APPOINTMENT_TYPE_OPTIONS = [
   {
     id: 'online',
-    label: 'Online (Text)'
-  },
-  {
-    id: 'video',
-    label: 'Online (Video)'
+    label: 'Online'
   },
   {
     id: 'offline',
@@ -147,9 +143,7 @@ function StripeCardPaymentForm({ canSubmitBooking, isBookingProcessing, onSubmit
 
       {cardError ? (
         <p className="text-[12px] font-medium text-red-600">{cardError}</p>
-      ) : (
-        <p className="text-[12px] text-[#6B7280]">Use Stripe test card 4242 4242 4242 4242.</p>
-      )}
+      ) : null}
 
       {isCardDetailsComplete ? (
         <button
@@ -164,11 +158,7 @@ function StripeCardPaymentForm({ canSubmitBooking, isBookingProcessing, onSubmit
         >
           {isBookingProcessing ? 'Processing Payment...' : 'Pay & Book Appointment'}
         </button>
-      ) : (
-        <p className="text-[12px] font-semibold text-[#6B7280]">
-          Complete all card details to show payment button.
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -191,13 +181,30 @@ const formatSlotDate = (dateValue) => {
   });
 };
 
+const formatTimeToAMPM = (timeValue) => {
+  if (!timeValue) {
+    return '';
+  }
+
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return timeValue;
+  }
+
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = minutes.toString().padStart(2, '0');
+  
+  return `${displayHours}:${displayMinutes} ${period}`;
+};
+
 const formatAppointmentDateTime = (slot) => {
   if (!slot) {
     return '';
   }
 
   const slotDateLabel = formatSlotDate(slot.date);
-  return `${slotDateLabel} . ${slot.fromTime} - ${slot.toTime}`;
+  return `${slotDateLabel} . ${formatTimeToAMPM(slot.fromTime)} - ${formatTimeToAMPM(slot.toTime)}`;
 };
 
 const formatCurrency = (amountValue) => {
@@ -221,6 +228,7 @@ const createDefaultBookingForm = (profile = null) => {
     city: '',
     state: '',
     zip: '',
+    bookingReason: '',
     termsAccepted: false
   };
 };
@@ -229,21 +237,22 @@ const buildModeSlots = (value) => {
   if (!value || typeof value !== 'object') {
     return {
       online: [],
-      video: [],
       offline: []
     };
   }
 
+  const onlineSlots = Array.isArray(value.online) ? value.online : [];
+  const legacyVideoSlots = Array.isArray(value.video) ? value.video : [];
+
   return {
-    online: Array.isArray(value.online) ? value.online : [],
-    video: Array.isArray(value.video) ? value.video : [],
+    online: [...onlineSlots, ...legacyVideoSlots],
     offline: Array.isArray(value.offline) ? value.offline : []
   };
 };
 
 export default function DoctorProfileScreen({ doctorId, onBack }) {
   const [doctor, setDoctor] = useState(null);
-  const [slotsByMode, setSlotsByMode] = useState({ online: [], video: [], offline: [] });
+  const [slotsByMode, setSlotsByMode] = useState({ online: [], offline: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [selectedMode, setSelectedMode] = useState('online');
@@ -259,13 +268,13 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
     let isMounted = true;
 
     const loadDoctorProfile = async () => {
-      if (!doctorId) {
-        if (isMounted) {
-          setDoctor(null);
-          setSlotsByMode({ online: [], video: [], offline: [] });
-          setLoadError('Doctor profile could not be opened.');
-          setIsLoading(false);
-        }
+        if (!doctorId) {
+          if (isMounted) {
+            setDoctor(null);
+            setSlotsByMode({ online: [], offline: [] });
+            setLoadError('Doctor profile could not be opened.');
+            setIsLoading(false);
+          }
 
         return;
       }
@@ -275,7 +284,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       if (!patientToken) {
         if (isMounted) {
           setDoctor(null);
-          setSlotsByMode({ online: [], video: [], offline: [] });
+          setSlotsByMode({ online: [], offline: [] });
           setLoadError('Please sign in again to continue.');
           setIsLoading(false);
         }
@@ -304,8 +313,6 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
 
         if (normalizedSlots.online.length > 0) {
           setSelectedMode('online');
-        } else if (normalizedSlots.video.length > 0) {
-          setSelectedMode('video');
         } else if (normalizedSlots.offline.length > 0) {
           setSelectedMode('offline');
         } else {
@@ -317,7 +324,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         }
 
         setDoctor(null);
-        setSlotsByMode({ online: [], video: [], offline: [] });
+        setSlotsByMode({ online: [], offline: [] });
         setLoadError(error?.message || 'Could not load doctor profile right now');
       } finally {
         if (isMounted) {
@@ -335,7 +342,6 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
 
   const selectedModeSlots = useMemo(() => {
     if (selectedMode === 'offline') return slotsByMode.offline;
-    if (selectedMode === 'video') return slotsByMode.video;
     return slotsByMode.online;
   }, [selectedMode, slotsByMode]);
 
@@ -345,8 +351,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
 
   const selectedAppointmentTypeLabel = useMemo(() => {
     if (selectedMode === 'offline') return 'Offline (Clinic Visit)';
-    if (selectedMode === 'video') return 'Online Video Call';
-    return 'Online Text Consultation';
+    return 'Online Consultation';
   }, [selectedMode]);
 
   const selectedSlotFeeLabel = useMemo(() => {
@@ -375,6 +380,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       && bookingForm.city.trim()
       && bookingForm.state.trim()
       && bookingForm.zip.trim()
+      && bookingForm.bookingReason.trim().length >= 3
     );
   }, [bookingForm]);
 
@@ -460,7 +466,8 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         aptSuite: bookingForm.aptSuite,
         city: bookingForm.city,
         state: bookingForm.state,
-        zip: bookingForm.zip
+        zip: bookingForm.zip,
+        bookingReason: bookingForm.bookingReason
       });
 
       const paymentResult = await stripe.confirmCardPayment(paymentSession.clientSecret, {
@@ -496,7 +503,6 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       setSlotsByMode((previousSlots) => {
         return {
           online: previousSlots.online.filter((slot) => String(slot.id) !== bookedSlotId),
-          video: previousSlots.video.filter((slot) => String(slot.id) !== bookedSlotId),
           offline: previousSlots.offline.filter((slot) => String(slot.id) !== bookedSlotId)
         };
       });
@@ -668,6 +674,20 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                     className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="bookingReason" className="text-[14px] font-semibold text-[#1F2432]">Reason for Appointment</label>
+                <textarea
+                  id="bookingReason"
+                  value={bookingForm.bookingReason}
+                  onChange={handleBookingFieldChange('bookingReason')}
+                  placeholder="Briefly describe your concern"
+                  rows={4}
+                  maxLength={500}
+                  className="w-full rounded-[12px] border border-gray-300 bg-white px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/15"
+                />
+                <p className="text-[12px] text-[#6B7280]">Minimum 3 characters. This will be shared with your doctor.</p>
               </div>
             </div>
 
@@ -876,7 +896,6 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
               const isSelected = selectedMode === option.id;
               let slotCount = 0;
               if (option.id === 'online') slotCount = slotsByMode.online.length;
-              else if (option.id === 'video') slotCount = slotsByMode.video.length;
               else slotCount = slotsByMode.offline.length;
 
               return (
@@ -899,20 +918,13 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         </div>
 
         <div className="space-y-4 mt-10">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[20px] font-medium text-[#1F2432]">Today, Dec 13 - Thu, Dec 26</h3>
-            <button type="button" className="p-1">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1F2432]">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
+          <h3 className="text-[18px] font-medium text-[#1F2432]">Choose Slot</h3>
           {selectedModeSlots.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-[#F8FAFC] px-4 py-6 text-center">
               <p className="text-[13px] font-medium text-[#6B7280]">No slots available for this appointment type.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-5 gap-3 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
               {selectedModeSlots.slice(0, 10).map((slot) => {
                 const isSelected = String(selectedSlotId) === String(slot.id);
 
@@ -921,16 +933,19 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
                     key={slot.id}
                     type="button"
                     onClick={() => setSelectedSlotId(String(slot.id))}
-                    className={`rounded-[12px] p-0 flex flex-col overflow-hidden text-center transition-colors h-[100px] ${
+                    className={`rounded-[12px] p-0 flex flex-col overflow-hidden text-center transition-colors h-[128px] ${
                       isSelected
                         ? 'border border-[#1EBDB8]'
                         : 'border-0'
                     }`}
                   >
-                    <div className="bg-[#f0f0f0] text-[12px] font-medium text-[#6B7280] w-full py-3 h-1/2 flex items-center justify-center">
-                        {formatSlotDate(slot.date)}
+                    <div className="bg-[#f0f0f0] text-[12px] font-medium text-[#6B7280] w-full py-2 h-[58%] flex flex-col items-center justify-center">
+                      <span>{formatSlotDate(slot.date)}</span>
+                      <span className="mt-1 text-[12px] font-semibold text-[#374151]">
+                        {formatTimeToAMPM(slot.fromTime)} - {formatTimeToAMPM(slot.toTime)}
+                      </span>
                     </div>
-                    <div className="bg-[#1EBDB8] text-white text-[13px] font-semibold w-full py-3 h-1/2 flex items-center justify-center">
+                    <div className="bg-[#1EBDB8] text-white text-[13px] font-semibold w-full py-3 h-[42%] flex items-center justify-center">
                         {formatCurrency(slot.priceInRupees)}
                     </div>
                   </button>
@@ -938,6 +953,18 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
               })}
             </div>
           )}
+
+          {selectedSlot ? (
+            <div className="mt-5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-4 py-3">
+              <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#047857]">Selected Slot</p>
+              <p className="text-[14px] font-semibold text-[#1F2432] mt-1">
+                {formatSlotDate(selectedSlot.date)} • {formatTimeToAMPM(selectedSlot.fromTime)} - {formatTimeToAMPM(selectedSlot.toTime)}
+              </p>
+              <p className="text-[13px] font-bold text-[#0F766E] mt-1">
+                {selectedAppointmentTypeLabel} • {selectedSlotFeeLabel}
+              </p>
+            </div>
+          ) : null}
 
           {selectedSlot && selectedMode === 'offline' ? (
             <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3">

@@ -3,7 +3,9 @@ import { toast } from 'react-toastify';
 import AdminLayout from '../AdminLayout';
 import {
   deleteAdminDoctorReview,
+  deleteAdminClinicReview,
   fetchAdminDoctorReviews,
+  fetchAdminClinicReviews,
   fetchAdminStoreReviews,
   deleteAdminStoreReview
 } from '../../../../services/authApi';
@@ -78,9 +80,10 @@ export default function DoctorReviews() {
           setIsLoading(true);
         }
 
-        const [doctorResponse, storeResponse] = await Promise.all([
+        const [doctorResponse, storeResponse, clinicResponse] = await Promise.all([
           fetchAdminDoctorReviews(adminToken, searchQuery).catch(() => ({ reviews: [] })),
-          fetchAdminStoreReviews(adminToken, searchQuery).catch(() => ({ reviews: [] }))
+          fetchAdminStoreReviews(adminToken, searchQuery).catch(() => ({ reviews: [] })),
+          fetchAdminClinicReviews(adminToken, searchQuery).catch(() => ({ reviews: [] }))
         ]);
 
         if (!isMounted) return;
@@ -111,7 +114,20 @@ export default function DoctorReviews() {
           }))
           : [];
 
-        const nextReviews = [...doctorReviews, ...storeReviews].sort((a, b) => {
+        const clinicReviews = Array.isArray(clinicResponse?.reviews)
+          ? clinicResponse.reviews.map((review) => ({
+            id: review?.id || review?._id,
+            type: 'clinic',
+            targetName: review?.clinicName || 'Unknown Clinic',
+            targetDetails: review?.clinicFacilityType || 'Clinic',
+            patientName: review?.patientName || 'Anonymous',
+            rating: Number(review?.rating) || 0,
+            comment: review?.comment || '',
+            createdAt: review?.createdAt || null
+          }))
+          : [];
+
+        const nextReviews = [...doctorReviews, ...storeReviews, ...clinicReviews].sort((a, b) => {
           const firstTimestamp = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
           const secondTimestamp = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
           return secondTimestamp - firstTimestamp;
@@ -155,6 +171,8 @@ export default function DoctorReviews() {
       setDeletingReviewId(String(review.id));
       if (review.type === 'doctor') {
         await deleteAdminDoctorReview(adminToken, review.id);
+      } else if (review.type === 'clinic') {
+        await deleteAdminClinicReview(adminToken, review.id);
       } else {
         await deleteAdminStoreReview(adminToken, review.id);
       }
@@ -174,7 +192,7 @@ export default function DoctorReviews() {
           <div>
             <h1 className="text-[24px] font-bold text-gray-900">Reviews Management</h1>
             <p className="text-[14px] text-gray-500 font-medium mt-1">
-              Search doctor & store reviews and remove inappropriate feedback.
+              Search doctor, clinic, and store reviews and remove inappropriate feedback.
             </p>
           </div>
         </div>
@@ -189,7 +207,7 @@ export default function DoctorReviews() {
               type="text"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by doctor or store name..."
+              placeholder="Search by doctor, clinic, or store name..."
               className="w-full bg-[#FAFAFA] text-[#4B5563] text-[14px] font-medium py-2.5 pl-10 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 border border-gray-200 focus:border-[#1EBDB8] transition-all"
             />
           </div>
@@ -214,7 +232,7 @@ export default function DoctorReviews() {
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-10 text-center text-sm font-medium text-gray-500">
+                    <td colSpan="7" className="px-6 py-10 text-center text-sm font-medium text-gray-500">
                       Loading reviews...
                     </td>
                   </tr>
@@ -222,8 +240,8 @@ export default function DoctorReviews() {
 
                 {!isLoading && reviews.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-10 text-center text-sm font-medium text-gray-500">
-                      No doctor reviews found.
+                    <td colSpan="7" className="px-6 py-10 text-center text-sm font-medium text-gray-500">
+                      No reviews found.
                     </td>
                   </tr>
                 ) : null}
@@ -232,7 +250,11 @@ export default function DoctorReviews() {
                   <tr key={review.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide ${
-                        review.type === 'doctor' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                        review.type === 'doctor'
+                          ? 'bg-blue-50 text-blue-600'
+                          : review.type === 'clinic'
+                            ? 'bg-teal-50 text-teal-600'
+                            : 'bg-emerald-50 text-emerald-600'
                       }`}>
                         {review.type}
                       </span>

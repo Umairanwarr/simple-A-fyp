@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { fetchDoctorAppointments } from '../../services/authApi';
+import { endDoctorOngoingAppointment, fetchDoctorAppointments } from '../../services/authApi';
 
 const formatTimeRange = (fromTime, toTime) => {
   const safeFromTime = String(fromTime || '').trim();
@@ -17,6 +17,7 @@ const formatTimeRange = (fromTime, toTime) => {
 export default function VirtualClinic() {
   const [ongoingAppointments, setOngoingAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEndingAppointmentId, setIsEndingAppointmentId] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -149,7 +150,8 @@ export default function VirtualClinic() {
                   <p className="text-[14px] font-bold text-[#1F2432]">{formatTimeRange(appointment?.fromTime, appointment?.toTime)}</p>
                   <button
                     type="button"
-                    className="px-4 py-2 bg-[#1EBDB8] text-white text-[12px] font-bold rounded-xl hover:bg-[#1CAAAE]"
+                    className="px-4 py-2 bg-[#1EBDB8] text-white text-[12px] font-bold rounded-xl hover:bg-[#1CAAAE] disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={Boolean(isEndingAppointmentId)}
                     onClick={() => {
                       const partnerId = String(appointment?.patient?.id || '').trim();
                       if (!partnerId) {
@@ -161,6 +163,42 @@ export default function VirtualClinic() {
                     }}
                   >
                     Start Chat
+                  </button>
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-[#FEF3C7] text-[#B45309] text-[12px] font-bold rounded-xl border border-[#D97706]/30 hover:bg-[#FDE68A] disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={Boolean(isEndingAppointmentId)}
+                    onClick={async () => {
+                      const appointmentId = String(appointment?.id || '').trim();
+                      const doctorToken = localStorage.getItem('doctorToken');
+
+                      if (!appointmentId) {
+                        toast.error('Unable to end this appointment');
+                        return;
+                      }
+
+                      if (!doctorToken) {
+                        toast.error('Session expired. Please sign in again.');
+                        return;
+                      }
+
+                      try {
+                        setIsEndingAppointmentId(appointmentId);
+                        const response = await endDoctorOngoingAppointment(doctorToken, appointmentId);
+                        setOngoingAppointments((previousAppointments) => (
+                          previousAppointments.filter((entry) => String(entry?.id) !== appointmentId)
+                        ));
+                        toast.success(response?.message || 'Appointment ended successfully.');
+                        window.dispatchEvent(new Event('doctor-appointment-updated'));
+                        window.dispatchEvent(new Event('patient-appointment-updated'));
+                      } catch (error) {
+                        toast.error(error?.message || 'Could not end appointment');
+                      } finally {
+                        setIsEndingAppointmentId('');
+                      }
+                    }}
+                  >
+                    {isEndingAppointmentId === String(appointment?.id || '') ? 'Ending...' : 'End Appointment'}
                   </button>
                 </div>
               </div>

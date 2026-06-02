@@ -20,10 +20,14 @@ import PatientDoctorProfile from './pages/patientDashboard/DoctorProfile';
 import PatientStoreProfile from './pages/patientDashboard/StoreProfile';
 import ClinicDashboard from './pages/clinicDashboard/Dashboard';
 import ClinicStaff from './pages/clinicDashboard/Staff';
+import ClinicSchedule from './pages/clinicDashboard/Schedule';
 import ClinicAppointments from './pages/clinicDashboard/Appointments';
+import ClinicAppointmentsPage from './pages/clinicDashboard/ClinicAppointmentsPage';
+import ClinicChats from './pages/clinicDashboard/Chats';
 import ClinicSubscriptions from './pages/clinicDashboard/Subscriptions';
 import ClinicMedia from './pages/clinicDashboard/Media';
 import ClinicProfilePage from './pages/clinicDashboard/Profile';
+import ClinicReviewsPage from './pages/clinicDashboard/Reviews';
 import DoctorDashboard from './pages/doctorDashboard/Dashboard';
 import DoctorProfile from './pages/doctorDashboard/Profile';
 import DoctorReviewsPage from './pages/doctorDashboard/Reviews';
@@ -32,7 +36,6 @@ import DoctorAppointments from './pages/doctorDashboard/Appointments';
 import DoctorClinic from './pages/doctorDashboard/Clinic';
 import DoctorAvailability from './pages/doctorDashboard/Availability';
 import DoctorStreaming from './pages/doctorDashboard/Streaming';
-import DoctorSubscriptions from './pages/doctorDashboard/Subscriptions';
 import DoctorPrescriptions from './pages/doctorDashboard/Prescriptions';
 import DoctorMedia from './pages/doctorDashboard/Media';
 import DoctorChats from './pages/doctorDashboard/Chats';
@@ -53,6 +56,7 @@ import Clinics from './pages/admin/dashboard/users/Clinics';
 import Stores from './pages/admin/dashboard/users/Stores';
 import SubscriptionPricing from './pages/admin/dashboard/subscriptions/SubscriptionPricing';
 import PremiumUsers from './pages/admin/dashboard/subscriptions/PremiumUsers';
+import PromotedAccounts from './pages/admin/dashboard/subscriptions/PromotedAccounts';
 import MediaModeration from './pages/admin/dashboard/media/MediaModeration';
 import DoctorReviews from './pages/admin/dashboard/reviews/DoctorReviews';
 import BugReports from './pages/admin/dashboard/bugs/BugReports';
@@ -206,6 +210,30 @@ function App() {
           )}
         />
         <Route
+          path="/clinic/dashboard/schedule"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicSchedule />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/clinic/dashboard/appointments"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicAppointmentsPage />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/clinic/dashboard/chats"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicChats />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
           path="/clinic/dashboard/availability"
           element={(
             <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
@@ -226,6 +254,14 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
               <ClinicMedia />
+            </RequireRoleAuth>
+          )}
+        />
+        <Route
+          path="/clinic/dashboard/reviews"
+          element={(
+            <RequireRoleAuth tokenKey="clinicToken" userKey="clinic" expectedRole="clinic">
+              <ClinicReviewsPage />
             </RequireRoleAuth>
           )}
         />
@@ -306,14 +342,6 @@ function App() {
           element={(
             <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
               <DoctorChats />
-            </RequireRoleAuth>
-          )}
-        />
-        <Route
-          path="/doctor/dashboard/subscriptions"
-          element={(
-            <RequireRoleAuth tokenKey="doctorToken" userKey="doctor" expectedRole="doctor">
-              <DoctorSubscriptions />
             </RequireRoleAuth>
           )}
         />
@@ -466,6 +494,14 @@ function App() {
           element={(
             <RequireAdminAuth>
               <PremiumUsers />
+            </RequireAdminAuth>
+          )}
+        />
+        <Route
+          path="/admin/promoted-accounts"
+          element={(
+            <RequireAdminAuth>
+              <PromotedAccounts />
             </RequireAdminAuth>
           )}
         />

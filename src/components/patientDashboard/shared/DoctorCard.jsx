@@ -15,6 +15,9 @@ export default function DoctorCard({
 
   const isStore = doctor.type === 'store';
   const isClinic = doctor.type === 'clinic';
+  const showVerifiedBadge = isClinic && Boolean(doctor?.isVerifiedBadge);
+  const showTopStoreBadge = isStore && Boolean(doctor?.isTopStore);
+  const showPrioritySupport = Boolean(doctor?.hasPrioritySupport) && (isClinic || isStore);
   
   // Logic to check if store is open
   const isStoreOpen = React.useMemo(() => {
@@ -79,8 +82,25 @@ export default function DoctorCard({
           <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
         </div>
         <div className="flex flex-col pr-6 pt-0.5">
-          <h3 className="text-[#1EBDB8] font-bold text-[17px]">{doctor.name}</h3>
+          <h3 className="text-[#1EBDB8] font-bold text-[17px] flex items-center gap-1.5 flex-wrap">
+            <span>{doctor.name}</span>
+            {showVerifiedBadge ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ECFEFF] border border-[#A5F3FC] text-[#0F766E] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                Verified
+              </span>
+            ) : null}
+            {showTopStoreBadge ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FFF7ED] border border-[#FCD9BD] text-[#9A3412] text-[10px] font-extrabold uppercase tracking-[0.08em]">
+                Top Store
+              </span>
+            ) : null}
+          </h3>
           <p className="text-[#1F2937] font-semibold text-[13px] mt-0.5">{doctor.specialty}</p>
+          {showPrioritySupport ? (
+            <p className={`text-[10px] font-extrabold uppercase tracking-[0.08em] mt-1 ${isStore ? 'text-[#0F766E]' : 'text-amber-700'}`}>
+              Priority Support
+            </p>
+          ) : null}
           <div className="flex items-center gap-1.5 mt-1.5">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>

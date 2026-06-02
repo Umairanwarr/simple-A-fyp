@@ -12,7 +12,6 @@ export default function AvailabilityForm({
   onCancelEdit
 }) {
   const isDisabled = isSubmitting || isBlocked;
-  const isPremium = ['gold', 'diamond'].includes(String(currentPlan).toLowerCase());
 
   return (
     <div className="bg-white p-6 sm:p-7 rounded-[30px] border border-gray-100 shadow-sm">
@@ -84,8 +83,7 @@ export default function AvailabilityForm({
             className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl px-4 py-3 text-[14px] font-medium text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/20"
             required
           >
-            <option value="online">Online (Text)</option>
-            {isPremium && <option value="video">Online (Video Call)</option>}
+            <option value="online">Online</option>
             <option value="offline">Offline (Clinic Visit)</option>
           </select>
         </label>

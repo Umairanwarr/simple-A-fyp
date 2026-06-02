@@ -5,7 +5,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
     { id: 'dashboard', label: 'Dashboard', iconSrc: '/dashboard.svg' },
     { id: 'profile', label: 'Profile', iconSrc: '/profile.svg' },
     { id: 'appointments', label: 'Appointments', iconSrc: '/appoinments.svg' },
-    { id: 'explore', label: 'Explore', iconSrc: '/explore.svg' },
+    { id: 'explore', label: 'Explore', iconSvg: true },
     { id: 'favorites', label: 'Favorites', iconSrc: '/fav.svg' },
     { id: 'history', label: 'History', iconSrc: '/history.svg' },
     { id: 'chats', label: 'Chats', iconSrc: '/chat.svg' },
@@ -24,7 +24,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
         />
       )}
 
-      <div className={`w-[260px] h-screen bg-[#1F2432] rounded-tr-[40px] rounded-br-[40px] flex flex-col fixed left-0 top-0 z-[70] transition-transform duration-300 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:shadow-none'}`}>
+      <div className={`w-[260px] h-screen bg-[#1F2432] rounded-tr-[40px] rounded-br-[40px] flex flex-col fixed left-0 top-0 z-[70] transition-transform duration-300 overflow-hidden ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:shadow-none'}`}>
         <div className="flex items-center justify-between pt-12 pb-10 pl-8 pr-6">
           <div className="flex items-center gap-3">
             <img 
@@ -42,7 +42,8 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
           </button>
         </div>
       
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="flex-1 mt-4 overflow-y-auto overflow-x-hidden pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-col gap-3 pb-6">
           {menuItems.map((item) => {
             const isActive = activeTab === item.id;
 
@@ -63,7 +64,9 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
                 <div className={`flex justify-center items-center w-[22px] h-[22px] ${isActive ? 'opacity-100' : 'opacity-60 grayscale'}`}>
                   {item.iconSvg ? (
                     <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                      {item.id === 'livestreams' ? (
+                      {item.id === 'explore' ? (
+                        <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>
+                      ) : item.id === 'livestreams' ? (
                         <><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></>
                       ) : item.id === 'store-chats' ? (
                         <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></>
@@ -83,19 +86,18 @@ export default function Sidebar({ isOpen, onClose, onLogout, activeTab, onTabCha
               </button>
             );
           })}
-        </div>
 
-        <div className="mt-auto mb-10 px-6">
           <button
             type="button"
             onClick={onLogout}
-            className="flex items-center gap-4 py-4 pl-2 text-[#9ca3af] hover:text-red-400 transition-colors w-full"
+            className="flex items-center gap-4 py-4 pl-8 pr-6 text-[#9ca3af] hover:text-red-400 transition-colors w-full text-left"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
             <span className="text-[16px] font-medium">Logout</span>
           </button>
+          </div>
         </div>
       </div>
     </>

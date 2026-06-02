@@ -12,7 +12,7 @@ export default function StoreSidebar({ isOpen, onClose, activeTab, onTabChange, 
         <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
       </svg>
     )},
-    { id: 'subscriptions', label: 'Subscriptions', icon: (
+    { id: 'subscriptions', label: 'Subscription & Ads', icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
       </svg>
@@ -79,7 +79,7 @@ export default function StoreSidebar({ isOpen, onClose, activeTab, onTabChange, 
         </div>
 
         <div className="flex-1 mt-4 px-3 overflow-y-auto">
-          <div className="flex flex-col gap-2 pb-4">
+          <div className="flex flex-col gap-2 pb-6">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -101,23 +101,20 @@ export default function StoreSidebar({ isOpen, onClose, activeTab, onTabChange, 
                 </span>
               </button>
             ))}
-          </div>
-        </div>
 
-        <div className="mt-auto mb-10 px-6 shrink-0">
-          <button
-            type="button"
-            onClick={onLogout}
-            className="flex items-center gap-4 py-4 pl-2 text-[#9ca3af] hover:text-red-400 transition-colors w-full group"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-colors group-hover:text-red-400">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            <span className="text-[16px] font-medium">Logout</span>
-          </button>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="flex items-center gap-4 py-4 pl-6 pr-6 w-full text-left transition-all duration-200 group text-[#9ca3af] hover:text-red-400 hover:bg-white/5 rounded-[20px]"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-colors group-hover:text-red-400 shrink-0">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <span className="text-[16px] font-medium tracking-wide truncate">Logout</span>
+            </button>
+          </div>
         </div>
       </div>
     </>
   );
 }
-

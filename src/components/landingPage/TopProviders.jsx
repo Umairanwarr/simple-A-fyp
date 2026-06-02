@@ -1,6 +1,9 @@
 import React from 'react';
 
 export default function TopProviders() {
+  const goToSignIn = () => {
+    window.location.href = '/signin';
+  };
   const providers = [
     {
       name: "Dr. Adam Cooper",
@@ -96,11 +99,11 @@ export default function TopProviders() {
         </div>
         
         {/* Doctor Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-2 md:pb-0 snap-x snap-mandatory md:snap-none hide-scrollbar">
           {providers.map((doc, index) => (
             <div 
               key={index} 
-              className="group bg-white rounded-[32px] p-7 border border-gray-100 hover:border-[#1EBDB8]/30 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(30,189,184,0.15)] hover:-translate-y-2 flex flex-col relative overflow-hidden"
+              className="group bg-white rounded-[32px] p-7 border border-gray-100 hover:border-[#1EBDB8]/30 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(30,189,184,0.15)] hover:-translate-y-2 flex flex-col relative overflow-hidden min-w-[320px] md:min-w-0 snap-start"
             >
               
               {/* Decorative Accent inside Card */}
@@ -186,7 +189,7 @@ export default function TopProviders() {
 
               {/* Call to Action Wrapper */}
               <div className="mt-6 pt-1 relative z-10 w-full">
-                <button className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 shadow-sm text-[#1E232F] hover:bg-gradient-to-r hover:from-[#1EBDB8] hover:to-[#1CAAAE] hover:text-white hover:border-transparent py-4 rounded-[18px] font-bold text-[14.5px] transition-all duration-300 transform group/btn hover:shadow-xl hover:shadow-[#1EBDB8]/25 active:scale-[0.98]">
+                <button onClick={goToSignIn} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 shadow-sm text-[#1E232F] hover:bg-gradient-to-r hover:from-[#1EBDB8] hover:to-[#1CAAAE] hover:text-white hover:border-transparent py-4 rounded-[18px] font-bold text-[14.5px] transition-all duration-300 transform group/btn hover:shadow-xl hover:shadow-[#1EBDB8]/25 active:scale-[0.98]">
                   <span>Schedule Appointment</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover/btn:translate-x-1">
                     <line x1="5" y1="12" x2="19" y2="12"></line>

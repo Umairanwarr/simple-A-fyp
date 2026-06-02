@@ -2,14 +2,11 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/landingPage/Navbar';
 import Hero from '../components/landingPage/Hero';
 import Services from '../components/landingPage/Services';
-import ProvidersBanner from '../components/landingPage/ProvidersBanner';
-import SubscriptionPlans from '../components/landingPage/SubscriptionPlans';
 import LiveStreams from '../components/landingPage/LiveStreams';
 import Hospitals from '../components/landingPage/Hospitals';
 import TopSpecialties from '../components/landingPage/TopSpecialties';
 import TopProviders from '../components/landingPage/TopProviders';
 import Stores from '../components/landingPage/Stores';
-import MediaGallery from '../components/landingPage/MediaGallery';
 import Footer from '../components/landingPage/Footer';
 
 export default function LandingPage() {
@@ -82,10 +79,6 @@ export default function LandingPage() {
       </div>
       <div id="specialties">
         <TopSpecialties />
-      </div>
-
-      <div id="subscription-plans">
-        <SubscriptionPlans />
       </div>
 
       <div id="live-streams">
