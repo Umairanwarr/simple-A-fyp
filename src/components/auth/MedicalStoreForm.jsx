@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { PasswordField, FilePicker, validatePassword, validateEmail } from './SharedFields';
 import { registerMedicalStore } from '../../services/authApi';
+import GoogleAddressPicker from './GoogleAddressPicker';
 
 export default function MedicalStoreForm() {
   const navigate = useNavigate();
@@ -13,6 +14,9 @@ export default function MedicalStoreForm() {
     phone: '',
     licenseNumber: '',
     address: '',
+    addressPlaceId: '',
+    addressLatitude: '',
+    addressLongitude: '',
     operatingFrom: '',
     operatingTo: '',
     password: '',
@@ -34,6 +38,17 @@ export default function MedicalStoreForm() {
     }
     setFormData({ ...formData, [e.target.name]: value });
   };
+
+  const handleAddressChange = useCallback(({ address, placeId, latitude, longitude }) => {
+    setFormData((prev) => ({
+      ...prev,
+      address,
+      addressPlaceId: placeId || '',
+      addressLatitude: latitude === '' ? '' : String(latitude),
+      addressLongitude: longitude === '' ? '' : String(longitude)
+    }));
+  }, []);
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFormData({ ...formData, [e.target.name]: e.target.files[0] });
@@ -96,6 +111,9 @@ export default function MedicalStoreForm() {
       formPayload.append('phone', formData.phone);
       formPayload.append('licenseNumber', formData.licenseNumber);
       formPayload.append('address', formData.address);
+      formPayload.append('addressPlaceId', formData.addressPlaceId);
+      formPayload.append('addressLatitude', formData.addressLatitude);
+      formPayload.append('addressLongitude', formData.addressLongitude);
       formPayload.append(
         'operatingHours',
         `${formatTimeLabel(formData.operatingFrom)} - ${formatTimeLabel(formData.operatingTo)}`
@@ -145,10 +163,12 @@ export default function MedicalStoreForm() {
         <input name="licenseNumber" type="text" placeholder="Drug regulatory authority ID" value={formData.licenseNumber} onChange={handleChange} className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8]" />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Store Physical Address</label>
-        <textarea name="address" placeholder="For local delivery area and discovery" value={formData.address} onChange={handleChange} className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] min-h-[80px]" />
-      </div>
+      <GoogleAddressPicker
+        label="Store Physical Address"
+        placeholder="Search or type the store address"
+        value={formData.address}
+        onChange={handleAddressChange}
+      />
 
       <div className="flex flex-col gap-2">
         <label className="text-[13.5px] font-bold text-[#6B7280]">Operating Hours</label>

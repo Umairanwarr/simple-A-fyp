@@ -28,8 +28,7 @@ const PLAN_BLUEPRINTS = [
     priceKey: 'platinumPriceInRupees',
     features: [
       { label: 'Clinic Profile', value: 'Basic (Location, Timings and Services)' },
-      { label: 'Media Uploads', value: '2 Images' },
-      { label: 'Analytics', value: 'Essential' }
+      { label: 'Media Uploads', value: '2 Images' }
     ]
   },
   {
@@ -40,9 +39,7 @@ const PLAN_BLUEPRINTS = [
     isPopular: true,
     features: [
       { label: 'Clinic Profile', value: 'Enhanced (Services, Labs and Facilities)' },
-      { label: 'Clinic Updates System', value: 'Post offers, Announce camps' },
-      { label: 'Media Uploads', value: '5 Images' },
-      { label: 'Analytics', value: 'Performance Insights' }
+      { label: 'Media Uploads', value: '5 Images' }
     ]
   },
   {
@@ -52,7 +49,6 @@ const PLAN_BLUEPRINTS = [
     priceKey: 'diamondPriceInRupees',
     features: [
       { label: 'Media Uploads', value: 'Unlimited Media' },
-      { label: 'Advanced Analytics', value: 'Bookings Conversion' },
       { label: 'Verified Badge', value: 'Shown on Clinic Profile and Listing Cards' },
       { label: 'Priority Support', value: 'Highlighted on Clinic Profile and Listing Cards' }
     ]

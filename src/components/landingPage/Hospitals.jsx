@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchPatientExploreClinics } from '../../services/authApi';
 
 export default function Hospitals() {
-  const cards = [
+  const [clinics, setClinics] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadClinics = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetchPatientExploreClinics();
+        const list = res?.clinics || [];
+        setClinics(list);
+      } catch (err) {
+        console.error('Error fetching clinics:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadClinics();
+  }, []);
+
+  const fallbackImages = [
     '/hosp1.png',
     '/hosp2.png',
     '/hosp3.png',
@@ -9,13 +29,48 @@ export default function Hospitals() {
     '/hosp5.png',
   ];
 
+  const displayedClinics = [];
+  for (let i = 0; i < 5; i++) {
+    if (i < clinics.length) {
+      displayedClinics.push(clinics[i].image || fallbackImages[i]);
+    } else {
+      displayedClinics.push(fallbackImages[i]);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white py-20 md:py-28 px-6 lg:px-10 relative overflow-hidden">
+        <div className="max-w-[1300px] mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-16 lg:gap-20 xl:gap-28 relative z-10 animate-pulse">
+          <div className="w-full md:w-1/2 flex justify-center md:justify-start gap-4 sm:gap-6 lg:gap-8 xl:gap-10">
+            <div className="flex flex-col gap-5 sm:gap-6 lg:gap-8 pt-10 sm:pt-14 md:pt-16 lg:pt-20">
+              {[1, 2].map((i) => (
+                <div key={i} className="bg-gray-100 rounded-[32px] lg:rounded-[40px] w-[150px] sm:w-[180px] lg:w-[210px] aspect-[1/1.05]" />
+              ))}
+            </div>
+            <div className="flex flex-col gap-5 sm:gap-6 lg:gap-8">
+              {[3, 4, 5].map((i) => (
+                <div key={i} className="bg-gray-100 rounded-[32px] lg:rounded-[40px] w-[150px] sm:w-[180px] lg:w-[210px] aspect-[1/1.05]" />
+              ))}
+            </div>
+          </div>
+          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left mb-8 md:mb-0">
+            <div className="h-4 w-32 bg-gray-100 rounded-full mb-4" />
+            <div className="h-12 w-64 bg-gray-100 rounded-xl mb-6" />
+            <div className="h-4 w-96 bg-gray-100 rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-white py-20 md:py-28 px-6 lg:px-10 relative overflow-hidden">
       <div className="max-w-[1300px] mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-16 lg:gap-20 xl:gap-28 relative z-10">
 
         <div className="w-full md:w-1/2 flex justify-center md:justify-start gap-4 sm:gap-6 lg:gap-8 xl:gap-10">
           <div className="flex flex-col gap-5 sm:gap-6 lg:gap-8 pt-10 sm:pt-14 md:pt-16 lg:pt-20">
-            {cards.slice(0, 2).map((img, idx) => (
+            {displayedClinics.slice(0, 2).map((img, idx) => (
               <div key={idx} className="group bg-[#F9FAFB] rounded-[32px] lg:rounded-[40px] w-[150px] sm:w-[180px] lg:w-[210px] aspect-[1/1.05] flex items-center justify-center p-6 sm:p-8 border border-gray-100 hover:border-gray-200 transition-all duration-500 hover:shadow-xl hover:-translate-y-1">
                 <img src={img} alt={`Clinic ${idx + 1}`} className="w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" />
               </div>
@@ -23,7 +78,7 @@ export default function Hospitals() {
           </div>
 
           <div className="flex flex-col gap-5 sm:gap-6 lg:gap-8">
-            {cards.slice(2, 5).map((img, idx) => (
+            {displayedClinics.slice(2, 5).map((img, idx) => (
               <div key={idx + 2} className="group bg-[#F9FAFB] rounded-[32px] lg:rounded-[40px] w-[150px] sm:w-[180px] lg:w-[210px] aspect-[1/1.05] flex items-center justify-center p-6 sm:p-8 border border-gray-100 hover:border-gray-200 transition-all duration-500 hover:shadow-xl hover:-translate-y-1">
                 <img src={img} alt={`Clinic ${idx + 3}`} className="w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" />
               </div>

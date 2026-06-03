@@ -1,77 +1,146 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchPatientExploreDoctors, fetchPatientSponsoredAccounts } from '../../services/authApi';
 
 export default function TopProviders() {
+  const [providers, setProviders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const goToSignIn = () => {
     window.location.href = '/signin';
   };
-  const providers = [
-    {
-      name: "Dr. Adam Cooper",
-      specialty: "Dermatologist, Cosmetologist",
-      degree: "M.B.B.S., F.C.P.S. (Dermatology)",
-      rating: "5.00",
-      reviews: "7 reviews",
-      location: "San Antonio, California",
-      tags: "New Patient Appointments . Excellent wait time . Highly Recommended",
-      availability: "Next Available Today at 11 AM",
-      image: "/topdoc.svg"
-    },
-    {
-      name: "Dr. Sarah Mitchell",
-      specialty: "Cardiologist",
-      degree: "M.D., F.A.C.C.",
-      rating: "4.95",
-      reviews: "12 reviews",
-      location: "New York, NY",
-      tags: "Heart Specialist . 15+ Years Experience . Top Rated",
-      availability: "Next Available Tomorrow at 9 AM",
-      image: "/topdoc.svg"
-    },
-    {
-      name: "Dr. James Wilson",
-      specialty: "Neurologist",
-      degree: "M.D., Ph.D. (Neuroscience)",
-      rating: "4.98",
-      reviews: "9 reviews",
-      location: "Los Angeles, CA",
-      tags: "Brain & Spine Expert . Board Certified . Available Online",
-      availability: "Next Available Today at 2 PM",
-      image: "/topdoc.svg"
-    },
-    {
-      name: "Dr. Emily Chen",
-      specialty: "Endocrinologist",
-      degree: "M.D., F.A.C.E.",
-      rating: "4.92",
-      reviews: "15 reviews",
-      location: "Chicago, IL",
-      tags: "Diabetes Specialist . Hormone Expert . Patient Favorite",
-      availability: "Next Available Wed at 10 AM",
-      image: "/topdoc.svg"
-    },
-    {
-      name: "Dr. Michael Brown",
-      specialty: "Orthopedic Surgeon",
-      degree: "M.D., F.A.A.O.S.",
-      rating: "4.97",
-      reviews: "21 reviews",
-      location: "Houston, TX",
-      tags: "Joint Replacement . Sports Medicine . Minimally Invasive",
-      availability: "Next Available Today at 4 PM",
-      image: "/topdoc.svg"
-    },
-    {
-      name: "Dr. Lisa Anderson",
-      specialty: "Psychiatrist",
-      degree: "M.D., F.A.P.A.",
-      rating: "4.99",
-      reviews: "18 reviews",
-      location: "Seattle, WA",
-      tags: "Mental Health Expert . Telehealth Available . Compassionate Care",
-      availability: "Next Available Today at 3 PM",
-      image: "/topdoc.svg"
-    }
-  ];
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const [docsRes, sponsoredRes] = await Promise.allSettled([
+          fetchPatientExploreDoctors(),
+          fetchPatientSponsoredAccounts()
+        ]);
+
+        const allDocs = docsRes.status === 'fulfilled' && docsRes.value?.doctors ? docsRes.value.doctors : [];
+        const sponsoredItems = sponsoredRes.status === 'fulfilled' && sponsoredRes.value?.sponsored ? sponsoredRes.value.sponsored : [];
+
+        const sponsoredDoctors = sponsoredItems.filter(item => item.type === 'doctor');
+        const sponsoredDocIds = new Set(sponsoredDoctors.map(doc => doc.id));
+
+        const doctorMap = new Map();
+
+        // 1. Add sponsored doctors first (flagging them as sponsored)
+        sponsoredDoctors.forEach(doc => {
+          doctorMap.set(doc.id, { ...doc, isSponsored: true });
+        });
+
+        // 2. Add other doctors
+        allDocs.forEach(doc => {
+          if (!doctorMap.has(doc.id)) {
+            const isSponsored = sponsoredDocIds.has(doc.id);
+            doctorMap.set(doc.id, { ...doc, isSponsored });
+          }
+        });
+
+        const mergedList = Array.from(doctorMap.values());
+
+        // Sort: sponsored first, then rating descending
+        mergedList.sort((a, b) => {
+          if (a.isSponsored && !b.isSponsored) return -1;
+          if (!a.isSponsored && b.isSponsored) return 1;
+
+          const ratingA = parseFloat(a.rating) || 0;
+          const ratingB = parseFloat(b.rating) || 0;
+          if (ratingB !== ratingA) {
+            return ratingB - ratingA;
+          }
+
+          const reviewsA = parseInt(a.reviews) || 0;
+          const reviewsB = parseInt(b.reviews) || 0;
+          return reviewsB - reviewsA;
+        });
+
+        setProviders(mergedList.slice(0, 6));
+      } catch (err) {
+        console.error('Error fetching landing page doctors:', err);
+        setError('Failed to load top doctors.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProviders();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-[#F9F9F9] py-20 md:py-28 px-4 md:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #1EBDB8 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+        <div className="max-w-[1300px] mx-auto relative z-10 animate-pulse">
+          <div className="text-center mb-14 md:mb-20">
+            <div className="h-6 w-32 bg-gray-200/80 rounded-full mx-auto mb-5" />
+            <div className="h-12 w-64 bg-gray-200/80 rounded-xl mx-auto mb-6" />
+            <div className="h-4 w-96 bg-gray-200/80 rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-[32px] p-7 border border-gray-100 flex flex-col h-[480px]">
+                <div className="flex items-start gap-5 mb-6">
+                  <div className="w-24 h-24 rounded-[22px] bg-gray-100 shrink-0" />
+                  <div className="flex-1 space-y-3 pt-2">
+                    <div className="h-5 bg-gray-200/80 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200/80 rounded w-1/2" />
+                    <div className="h-3 bg-gray-200/80 rounded w-1/3" />
+                    <div className="h-6 bg-yellow-50 rounded-full w-24 border border-yellow-100/50" />
+                  </div>
+                </div>
+                <div className="border-t border-gray-50 pt-5 space-y-4 flex-1">
+                  <div className="h-4 bg-gray-200/80 rounded w-5/6" />
+                  <div className="h-4 bg-gray-200/80 rounded w-2/3" />
+                  <div className="h-12 bg-gray-100 rounded-2xl mt-4" />
+                </div>
+                <div className="h-14 bg-gray-200/80 rounded-[18px] mt-6" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && providers.length === 0) {
+    return (
+      <div className="w-full bg-[#F9F9F9] py-20 md:py-28 px-4 md:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #1EBDB8 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+        <div className="max-w-[1300px] mx-auto relative z-10 text-center">
+          <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="h-[2px] w-10 bg-gradient-to-r from-transparent to-[#1EBDB8] rounded-full" />
+            <span className="text-[#1EBDB8] text-[11px] md:text-[12px] font-bold uppercase tracking-[3px] md:tracking-[4px] bg-[#1EBDB8]/10 px-4 py-1.5 rounded-full">Expert Physicians</span>
+            <div className="h-[2px] w-10 bg-gradient-to-l from-transparent to-[#1EBDB8] rounded-full" />
+          </div>
+          <h2 className="text-[#1E232F] text-3xl md:text-[48px] lg:text-[56px] font-extrabold leading-tight mb-6 tracking-tight">
+            Our Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE]">Doctors</span>
+          </h2>
+          <div className="bg-white rounded-[32px] p-10 md:p-16 border border-gray-100 max-w-xl mx-auto shadow-sm mt-10">
+            <div className="w-20 h-20 bg-[#1EBDB8]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1EBDB8]">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="18" y1="8" x2="23" y2="13" />
+                <line x1="23" y1="8" x2="18" y2="13" />
+              </svg>
+            </div>
+            <h3 className="text-[#1E232F] text-[20px] font-bold mb-3">No Doctors Registered Yet</h3>
+            <p className="text-gray-500 text-[14.5px] leading-relaxed mb-8">
+              We are currently onboarding top-tier medical specialists. Please check back soon or sign in to explore other medical services.
+            </p>
+            <button onClick={goToSignIn} className="bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] text-white px-8 py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-[#1EBDB8]/20 transition-all active:scale-[0.98]">
+              Sign In to Your Account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-[#F9F9F9] py-20 md:py-28 px-4 md:px-6 relative overflow-hidden">
@@ -102,12 +171,23 @@ export default function TopProviders() {
         <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-2 md:pb-0 snap-x snap-mandatory md:snap-none hide-scrollbar">
           {providers.map((doc, index) => (
             <div 
-              key={index} 
-              className="group bg-white rounded-[32px] p-7 border border-gray-100 hover:border-[#1EBDB8]/30 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(30,189,184,0.15)] hover:-translate-y-2 flex flex-col relative overflow-hidden min-w-[320px] md:min-w-0 snap-start"
+              key={doc.id || index} 
+              className={`group bg-white rounded-[32px] p-7 border transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(30,189,184,0.15)] hover:-translate-y-2 flex flex-col relative overflow-hidden min-w-[320px] md:min-w-0 snap-start ${
+                doc.isSponsored 
+                  ? 'border-[#1EBDB8]/30 bg-gradient-to-b from-[#1EBDB8]/5 to-white' 
+                  : 'border-gray-100 hover:border-[#1EBDB8]/30'
+              }`}
             >
               
               {/* Decorative Accent inside Card */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#1EBDB8]/10 to-transparent rounded-bl-full opacity-50 pointer-events-none group-hover:scale-110 transition-transform duration-700" />
+
+              {/* Sponsored/Featured Badge */}
+              {doc.isSponsored && (
+                <span className="absolute top-4 right-4 bg-gradient-to-r from-[#1EBDB8] to-[#1CAAAE] text-white text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm z-20">
+                  Featured
+                </span>
+              )}
 
               {/* Profile Top Layer */}
               <div className="flex items-start gap-5 mb-6 relative z-10">
@@ -137,7 +217,7 @@ export default function TopProviders() {
                   </p>
                   <div className="flex items-center gap-1.5 bg-yellow-50 w-fit px-2.5 py-1 rounded-full border border-yellow-100/50">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" className="text-yellow-400">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                     <span className="text-gray-700 text-[12px] font-bold">
                       {doc.rating} <span className="font-medium text-gray-400 mx-0.5">·</span> <span className="text-gray-500 font-medium">{doc.reviews}</span>
@@ -168,12 +248,14 @@ export default function TopProviders() {
                      </svg>
                    </div>
                    <p className="text-gray-500 text-[12.5px] font-medium leading-[1.6] pt-[2px] flex-1">
-                     {doc.tags.split('.').map((tag, i, arr) => (
+                     {doc.tags ? doc.tags.split('.').map((tag, i, arr) => (
                        <React.Fragment key={i}>
                          <span className="text-gray-600">{tag.trim()}</span>
                          {i < arr.length - 1 && <span className="mx-1.5 text-gray-300 font-black">•</span>}
                        </React.Fragment>
-                     ))}
+                     )) : (
+                       <span className="text-gray-600">Verified Professional</span>
+                     )}
                    </p>
                 </div>
                 
@@ -181,7 +263,7 @@ export default function TopProviders() {
                   <div className="bg-gradient-to-r from-[#1EBDB8]/10 to-[#1CAAAE]/5 rounded-2xl px-4 py-3.5 border border-[#1EBDB8]/10 flex items-center gap-3 group-hover:from-[#1EBDB8]/15 transition-colors duration-300">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#1EBDB8] animate-pulse shadow-[0_0_8px_#1EBDB8]" />
                     <p className="text-[#1EBDB8] text-[13.5px] font-bold tracking-wide">
-                      {doc.availability}
+                      {doc.availability || 'Next Available Tomorrow'}
                     </p>
                   </div>
                 </div>

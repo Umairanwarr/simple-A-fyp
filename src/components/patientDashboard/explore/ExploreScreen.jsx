@@ -16,7 +16,8 @@ import {
   fetchPatientExploreClinics,
   fetchPatientClinicDoctors,
   createPatientClinicAppointmentPaymentIntent,
-  confirmPatientClinicAppointmentPayment
+  confirmPatientClinicAppointmentPayment,
+  submitDirectClinicReview
 } from '../../../services/authApi';
 import { getPatientSessionProfile } from '../../../utils/authSession';
 
@@ -191,7 +192,7 @@ const mapClinicProviders = (data = {}) => {
     name: String(service?.name || '').trim() || 'Clinic Service',
     specialty: String(service?.serviceType || '').trim().toLowerCase() === 'facility' ? 'Facility Service' : 'Lab Service',
     specialtyTag: 'Clinic Service',
-    image: '',
+    image: String(service?.image || '').trim(),
     slots: Array.isArray(service?.slots) ? service.slots : [],
     providerType: 'service',
     serviceType: String(service?.serviceType || '').trim().toLowerCase() === 'facility' ? 'facility' : 'lab'
@@ -292,6 +293,44 @@ export default function ExploreScreen({
   const patientProfile = useMemo(() => getPatientSessionProfile(), []);
   const [clinicBookingForm, setClinicBookingForm] = useState(() => createDefaultBookingForm(patientProfile));
   const [initialClinicHandled, setInitialClinicHandled] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
+  // Direct Review States & Helpers
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const patientUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('patient') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+  const patientId = patientUser?.id || patientUser?._id;
+
+  const hasPatientReviewedClinic = useMemo(() => {
+    if (!patientId || !selectedClinicReviews) return false;
+    return selectedClinicReviews.some(
+      (review) => String(review?.patientId || '') === String(patientId)
+    );
+  }, [patientId, selectedClinicReviews]);
+
+  useEffect(() => {
+    if (!selectedClinic || !clinicDoctors || clinicDoctors.length === 0) return;
+    let filtered = [];
+    if (activeClinicTab === 'doctor') {
+      filtered = clinicDoctors.filter(doc => doc.providerType === 'doctor');
+    } else if (activeClinicTab === 'laboratory') {
+      filtered = clinicDoctors.filter(doc => doc.providerType === 'service' && doc.serviceType === 'lab');
+    } else if (activeClinicTab === 'facility') {
+      filtered = clinicDoctors.filter(doc => doc.providerType === 'service' && doc.serviceType === 'facility');
+    } else {
+      return;
+    }
+    setSelectedClinicDoctor(filtered.length > 0 ? filtered[0] : null);
+  }, [activeClinicTab, clinicDoctors, selectedClinic]);
 
   const setClinicIdInUrl = (clinicId) => {
     const params = new URLSearchParams(window.location.search);
@@ -398,6 +437,47 @@ export default function ExploreScreen({
       toast.error(err?.message || 'Could not load clinic doctors list');
     } finally {
       setIsLoadingClinicDoctors(false);
+    }
+  };
+
+  const openReviewModal = () => {
+    setReviewRating(0);
+    setReviewComment('');
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewSubmit = async () => {
+    if (reviewRating < 1 || reviewRating > 5) {
+      toast.error('Please select a rating between 1 and 5 stars');
+      return;
+    }
+    if (reviewComment.trim().length < 3) {
+      toast.error('Feedback comment must be at least 3 characters long');
+      return;
+    }
+    const token = localStorage.getItem('patientToken');
+    if (!token) {
+      toast.error('You must be logged in as a patient to leave a review');
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+      const res = await submitDirectClinicReview(token, selectedClinic.id, {
+        rating: reviewRating,
+        comment: reviewComment.trim()
+      });
+      toast.success(res?.message || 'Review submitted successfully!');
+      setIsReviewModalOpen(false);
+
+      // Refresh clinic profile & reviews
+      const data = await fetchPatientClinicDoctors(selectedClinic.id);
+      setSelectedClinicProfile(data?.clinic || null);
+      setSelectedClinicReviews(Array.isArray(data?.reviews) ? data.reviews : []);
+    } catch (err) {
+      toast.error(err?.message || 'Failed to submit review');
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -735,8 +815,9 @@ export default function ExploreScreen({
     }
 
     return (
-      <div className="pb-24">
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] gap-8 items-start">
+      <>
+        <div className="pb-24">
+          <div className="grid grid-cols-1 gap-8 items-start">
           <section className="min-w-0 bg-[#F0FCFC] rounded-[30px] p-6 sm:p-8 min-h-[760px]">
             <button
               type="button"
@@ -752,14 +833,14 @@ export default function ExploreScreen({
               </svg>
             </button>
 
-            <div className="flex flex-col md:flex-row xl:flex-col 2xl:flex-row md:items-center xl:items-start 2xl:items-center gap-8">
+            <div className="flex flex-col sm:flex-row md:items-center gap-8">
               <div className="w-[168px] h-[168px] rounded-full overflow-hidden bg-white border border-white shadow-md shrink-0">
                 <img src={clinicProfile.image || '/clinic-placeholder.svg'} alt={clinicProfile.name} className="w-full h-full object-cover" />
               </div>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-[32px] sm:text-[40px] xl:text-[36px] 2xl:text-[46px] font-extrabold text-[#1F2432] tracking-tight leading-tight">{clinicProfile.name}</h1>
+                  <h1 className="text-[32px] sm:text-[40px] font-extrabold text-[#1F2432] tracking-tight leading-tight">{clinicProfile.name}</h1>
                   {clinicProfile.isVerifiedBadge ? (
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#ECFEFF] border border-[#A5F3FC] text-[#0F766E] text-[11px] font-extrabold uppercase tracking-[0.08em]">
                       Verified
@@ -775,34 +856,68 @@ export default function ExploreScreen({
                 <p className="text-[19px] font-semibold text-[#6B7280] mt-3">{clinicProfile.address || selectedClinic.location}</p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <span className="inline-flex items-center rounded-full bg-white/80 border border-[#D8EEEE] px-3 py-1.5 text-[13px] font-bold text-[#1F2432]">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 text-[#1EBDB8] shrink-0">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
                     {clinicProfile.phone || 'Phone not provided'}
                   </span>
                   <span className="inline-flex items-center rounded-full bg-white/80 border border-[#D8EEEE] px-3 py-1.5 text-[13px] font-bold text-[#1F2432]">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 text-[#1EBDB8] shrink-0">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <polyline points="22,6 12,13 2,6" />
+                    </svg>
                     {clinicProfile.email || 'Email not provided'}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-4">
-                  <span className="text-amber-500 text-[20px]">★</span>
-                  <span className="text-[17px] font-bold text-[#1F2432]">{Number(clinicProfile.rating || 0).toFixed(2)}</span>
-                  <span className="text-[#9CA3AF]">•</span>
-                  <span className="text-[17px] font-semibold text-[#6B7280]">{clinicProfile.totalReviews || 0} reviews</span>
+                <div className="flex flex-wrap items-center gap-4 mt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-500 text-[20px]">★</span>
+                    <span className="text-[17px] font-bold text-[#1F2432]">{Number(clinicProfile.rating || 0).toFixed(2)}</span>
+                    <span className="text-[#9CA3AF]">•</span>
+                    <span className="text-[17px] font-semibold text-[#6B7280]">{clinicProfile.totalReviews || 0} reviews</span>
+                  </div>
+                  <div>
+                    {hasPatientReviewedClinic ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-gray-100 text-gray-400 text-[12.5px] font-bold cursor-not-allowed border border-gray-200"
+                      >
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-gray-300">
+                          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        Already Rated
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openReviewModal}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white text-[12.5px] font-bold transition-all shadow-sm active:scale-95 duration-150"
+                      >
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        Rate & Review Clinic
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-12 flex items-center gap-10 border-b border-[#D6E8E8]">
-              {['about', 'media', 'reviews'].map((tabId) => (
+            <div className="mt-12 flex items-center gap-10 border-b border-[#D6E8E8] overflow-x-auto scrollbar-none">
+              {['about', 'doctor', 'laboratory', 'facility', 'media', 'reviews'].map((tabId) => (
                 <button
                   key={tabId}
                   type="button"
                   onClick={() => setActiveClinicTab(tabId)}
-                  className={`pb-5 text-[17px] font-bold capitalize border-b-2 transition-colors ${
+                  className={`pb-5 text-[17px] font-bold capitalize border-b-2 transition-colors shrink-0 ${
                     activeClinicTab === tabId
                       ? 'border-[#1F2432] text-[#1F2432]'
                       : 'border-transparent text-[#6B7280] hover:text-[#1F2432]'
                   }`}
                 >
-                  {tabId === 'media' ? 'Gallery' : tabId}
+                  {tabId === 'media' ? 'Gallery' : tabId === 'doctor' ? 'Doctors' : tabId === 'laboratory' ? 'Laboratory' : tabId === 'facility' ? 'Facility' : tabId}
                 </button>
               ))}
             </div>
@@ -811,6 +926,162 @@ export default function ExploreScreen({
               {activeClinicTab === 'about' && (
                 <div className="space-y-5">
                   <p className="text-[16px] leading-7 text-[#1F2937]">{clinicProfile.about}</p>
+                </div>
+              )}
+
+              {['doctor', 'laboratory', 'facility'].includes(activeClinicTab) && (
+                <div className="space-y-4">
+                  {isLoadingClinicDoctors ? (
+                    <div className="py-12 text-center">
+                      <div className="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-[#1EBDB8] rounded-full"></div>
+                      <p className="text-[14px] font-semibold text-[#6B7280] mt-3">Loading clinic providers...</p>
+                    </div>
+                  ) : (
+                    (() => {
+                      const filtered = clinicDoctors.filter((doc) => {
+                        if (activeClinicTab === 'doctor') return doc.providerType === 'doctor';
+                        if (activeClinicTab === 'laboratory') return doc.providerType === 'service' && doc.serviceType === 'lab';
+                        if (activeClinicTab === 'facility') return doc.providerType === 'service' && doc.serviceType === 'facility';
+                        return false;
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
+                            <p className="text-[15px] font-bold text-[#6B7280]">
+                              No {activeClinicTab === 'doctor' ? 'doctors' : activeClinicTab === 'laboratory' ? 'laboratories' : 'facilities'} found.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {filtered.map((doc) => {
+                            const isSelected = selectedClinicDoctor?.id === doc.id;
+                            const minPrice = doc.slots && doc.slots.length > 0
+                              ? Math.min(...doc.slots.map(s => s.priceInRupees || 0))
+                              : null;
+
+                            return (
+                              <div
+                                key={doc.id}
+                                onClick={() => setSelectedClinicDoctor(doc)}
+                                className={`flex flex-col bg-white rounded-3xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-[#1EBDB8]/30 group cursor-pointer relative ${
+                                  isSelected
+                                    ? 'border-[#1EBDB8] ring-2 ring-[#1EBDB8]/15 shadow-md'
+                                    : 'border-gray-100 shadow-[0px_4px_20px_rgba(0,0,0,0.02)]'
+                                }`}
+                              >
+                                {/* Top Image Section */}
+                                <div
+                                  onClick={(e) => {
+                                    if (doc.image) {
+                                      e.stopPropagation();
+                                      setPreviewImage(doc.image);
+                                    }
+                                  }}
+                                  className={`h-44 w-full relative overflow-hidden bg-slate-50 shrink-0 group/img ${
+                                    doc.image ? 'cursor-zoom-in' : ''
+                                  }`}
+                                >
+                                  {doc.image ? (
+                                    <>
+                                      <img
+                                        src={doc.image}
+                                        alt={doc.name}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                      />
+                                      <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                        <svg className="w-7 h-7 text-white filter drop-shadow-md" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                                        </svg>
+                                      </div>
+                                    </>
+                                  ) : doc.providerType === 'service' ? (
+                                    doc.serviceType === 'facility' ? (
+                                      <div className="w-full h-full bg-gradient-to-br from-teal-50/70 to-cyan-100/50 flex items-center justify-center">
+                                        <svg className="w-12 h-12 text-[#1EBDB8] transition-transform duration-500 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M2.25 21h19.5M3 3.545c0-.621.504-1.125 1.125-1.125h15.75c.621 0 1.125.504 1.125 1.125v17.455M5.25 6h1.5m-1.5 3h1.5m-1.5 3h1.5M17.25 6h1.5m-1.5 3h1.5m-1.5 3h1.5" />
+                                        </svg>
+                                      </div>
+                                    ) : (
+                                      <div className="w-full h-full bg-gradient-to-br from-emerald-50/70 to-teal-100/50 flex items-center justify-center">
+                                        <svg className="w-12 h-12 text-[#10B981] transition-transform duration-500 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v11.896m0-11.896a1.5 1.5 0 013 0v11.896m-3-11.896H6.18c-.496 0-.974.198-1.324.55a1.5 1.5 0 00-.45 1.06v11.89c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-11.89a1.5 1.5 0 00-.45-1.06 1.5 1.5 0 00-1.324-.55H12.75m-3 11.896h3" />
+                                          <circle cx="12" cy="18" r="1.5" />
+                                        </svg>
+                                      </div>
+                                    )
+                                  ) : (
+                                    <img
+                                      src="/topdoc.svg"
+                                      alt={doc.name}
+                                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    />
+                                  )}
+                                </div>
+
+                                {/* Body Section */}
+                                <div className="p-5 flex flex-col flex-1 justify-between bg-white">
+                                  <div className="space-y-1">
+                                    {/* Name & Pricing Row */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className="text-[16px] font-extrabold text-[#1F2432] leading-tight truncate group-hover:text-[#1EBDB8] transition-colors">
+                                        {doc.providerType === 'service' ? doc.name : doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`}
+                                      </p>
+                                      {minPrice !== null && (
+                                        <p className="text-[15.5px] font-black text-[#1F2432] whitespace-nowrap shrink-0">
+                                          {formatCurrency(minPrice)}
+                                        </p>
+                                      )}
+                                    </div>
+                                    {/* Specialty */}
+                                    <p className="text-[13px] font-semibold text-[#6B7280] truncate">
+                                      {doc.specialty}
+                                    </p>
+                                  </div>
+
+                                  {/* Availability Slots / Inline Booking */}
+                                  {doc.slots && doc.slots.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {doc.slots.slice(0, 3).map((slot) => (
+                                          <button
+                                            key={slot._id || slot.id}
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleBookClinicDoctorSlot(slot);
+                                            }}
+                                            className="px-2.5 py-1.5 text-[11px] font-extrabold rounded-xl bg-[#ECFAFA] hover:bg-[#1EBDB8] text-[#1EBDB8] hover:text-white border border-[#D5EFF0] hover:border-transparent transition-all shadow-sm"
+                                          >
+                                            {formatTimeToAMPM(slot.fromTime)}
+                                          </button>
+                                        ))}
+                                        {doc.slots.length > 3 && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedClinicDoctor(doc);
+                                            }}
+                                            className="px-2.5 py-1.5 text-[11px] font-extrabold rounded-xl bg-slate-50 hover:bg-slate-100 text-[#6B7280] border border-gray-100 transition-all shadow-sm"
+                                          >
+                                            +{doc.slots.length - 3} more
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
               )}
 
@@ -854,128 +1125,124 @@ export default function ExploreScreen({
               )}
             </div>
           </section>
-
-          <aside className="bg-white rounded-[30px] border border-gray-100 shadow-sm p-6 sm:p-7">
-            <h2 className="text-[28px] font-extrabold text-[#1F2432] tracking-tight">Book clinic services</h2>
-            <p className="text-[16px] text-[#6B7280] mt-2">Choose a doctor, lab, or facility and then select an available slot.</p>
-
-            {isLoadingClinicDoctors ? (
-              <div className="py-12 text-center">
-                <div className="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-[#1EBDB8] rounded-full"></div>
-                <p className="text-[14px] font-semibold text-[#6B7280] mt-3">Loading clinic providers...</p>
-              </div>
-            ) : clinicDoctors.length === 0 ? (
-              <div className="mt-8 rounded-2xl border border-dashed border-gray-200 bg-[#F8FAFC] p-8 text-center">
-                <p className="text-[15px] font-bold text-[#6B7280]">No doctors, labs, or facilities found at this clinic.</p>
-              </div>
-            ) : (
-              <div className="mt-7 space-y-6">
-                <div className="space-y-3">
-                  {clinicDoctors.map((doc) => {
-                    const isSelected = String(selectedClinicDoctor?.id) === String(doc.id);
-                    return (
-                      <button
-                        key={doc.id}
-                        type="button"
-                        onClick={() => setSelectedClinicDoctor(doc)}
-                        className={`w-full flex items-center justify-between gap-4 p-3 rounded-2xl border transition-all ${
-                          isSelected
-                            ? 'border-[#1EBDB8] bg-[#E6FAF9]'
-                            : 'border-gray-100 bg-white hover:border-[#1EBDB8]/30'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-gray-100 shrink-0">
-                            {doc.providerType === 'service' ? (
-                              <div className="w-full h-full flex items-center justify-center text-[#1EBDB8]">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M9 3H5a2 2 0 0 0-2 2v4" />
-                                  <path d="M15 3h4a2 2 0 0 1 2 2v4" />
-                                  <path d="M9 21H5a2 2 0 0 1-2-2v-4" />
-                                  <path d="M15 21h4a2 2 0 0 0 2-2v-4" />
-                                  <path d="M12 8v8" />
-                                  <path d="M8 12h8" />
-                                </svg>
-                              </div>
-                            ) : (
-                              <img src={doc.image || '/topdoc.svg'} alt={doc.name} className="w-full h-full object-cover" />
-                            )}
-                          </div>
-                          <div className="text-left min-w-0">
-                            <p className="text-[16px] font-bold text-[#1F2432] truncate">{doc.providerType === 'service' ? doc.name : `Dr. ${doc.name}`}</p>
-                            <p className="text-[13px] font-semibold text-[#1EBDB8] truncate">{doc.specialty}</p>
-                          </div>
-                        </div>
-                        <span className="shrink-0 text-[11px] font-extrabold text-[#1EBDB8] uppercase tracking-[0.08em] bg-[#1EBDB8]/10 px-2.5 py-1 rounded-lg">
-                          {(doc.slots || []).length} slots
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedClinicDoctor && (
-                  <div className="border-t border-gray-100 pt-6">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 border border-gray-100 shrink-0">
-                        {selectedClinicDoctor?.providerType === 'service' ? (
-                          <div className="w-full h-full flex items-center justify-center text-[#1EBDB8]">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M9 3H5a2 2 0 0 0-2 2v4" />
-                              <path d="M15 3h4a2 2 0 0 1 2 2v4" />
-                              <path d="M9 21H5a2 2 0 0 1-2-2v-4" />
-                              <path d="M15 21h4a2 2 0 0 0 2-2v-4" />
-                              <path d="M12 8v8" />
-                              <path d="M8 12h8" />
-                            </svg>
-                          </div>
-                        ) : (
-                          <img src={selectedClinicDoctor.image || '/topdoc.svg'} alt={selectedClinicDoctor.name} className="w-full h-full object-cover" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-[18px] font-bold text-[#1F2432] truncate">
-                          {selectedClinicDoctor?.providerType === 'service' ? selectedClinicDoctor.name : `Dr. ${selectedClinicDoctor.name}`}
-                        </h3>
-                        <p className="text-[13px] font-semibold text-[#6B7280] truncate">{selectedClinicDoctor.specialty}</p>
-                      </div>
-                    </div>
-
-                    {(selectedClinicDoctor.slots || []).filter((slot) => String(slot?.consultationMode || '').toLowerCase() === 'offline').length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-gray-200 bg-[#F8FAFC] p-6 text-center">
-                        <p className="text-[14px] font-bold text-[#6B7280]">No clinic-visit slots set up</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-4">
-                        {(selectedClinicDoctor.slots || [])
-                          .filter((slot) => String(slot?.consultationMode || '').toLowerCase() === 'offline')
-                          .map((slot) => (
-                          <div key={slot._id || slot.id} className="rounded-2xl border border-gray-100 bg-[#FAFAFB] p-4">
-                            <p className="text-[15px] font-extrabold text-[#1F2432]">{formatSlotDate(slot.date)}</p>
-                            <p className="text-[14px] font-semibold text-[#4B5563] mt-1">{formatTimeToAMPM(slot.fromTime)} - {formatTimeToAMPM(slot.toTime)}</p>
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <span className="inline-flex px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-[0.08em]">Clinic Visit</span>
-                              <span className="text-[14px] font-extrabold text-[#1F2432]">{formatCurrency(slot.priceInRupees || 0)}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleBookClinicDoctorSlot(slot)}
-                              disabled={isBookingAppointment}
-                              className="mt-4 w-full py-3 rounded-xl bg-[#1EBDB8] hover:bg-[#1CAAAE] text-white text-[14px] font-bold disabled:opacity-60 transition-colors"
-                            >
-                              {isBookingAppointment ? 'Booking...' : 'Book Timeslot'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </aside>
         </div>
       </div>
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-[2px] flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[90vh] bg-black rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors flex items-center justify-center"
+              aria-label="Close preview"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <div className="w-full h-full flex items-center justify-center p-2">
+              <img src={previewImage} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isReviewModalOpen && (
+        <div
+          className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-[4px] flex items-center justify-center p-4"
+          onClick={() => setIsReviewModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl relative border border-gray-100"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-[20px] font-extrabold text-[#1F2432]">Rate & Review</h3>
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-50 text-[#6B7280] hover:text-[#1F2432] transition-colors flex items-center justify-center"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* Stars Selector */}
+            <div className="space-y-4">
+              <p className="text-[14px] font-bold text-[#4B5563] text-center">How was your experience at {clinicProfile.name}?</p>
+              <div className="flex justify-center gap-2 py-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    className="text-[36px] transition-transform hover:scale-110 focus:outline-none"
+                  >
+                    <span className={star <= reviewRating ? 'text-amber-500' : 'text-gray-200'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Comment Textarea */}
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#6B7280]">Your Feedback</label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Share your thoughts about this clinic's doctors, services, or facilities..."
+                  rows={4}
+                  maxLength={500}
+                  className="w-full rounded-[16px] border border-gray-200 bg-slate-50/50 px-4 py-3.5 text-[14px] text-[#1F2432] outline-none focus:border-[#1EBDB8] focus:bg-white transition-all resize-none"
+                />
+                <div className="flex justify-between text-[11px] text-[#9CA3AF]">
+                  <span>Minimum 3 characters</span>
+                  <span>{reviewComment.length}/500</span>
+                </div>
+              </div>
+
+              {/* Submit / Cancel Buttons */}
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 hover:bg-slate-50 text-[#6B7280] text-[14px] font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReviewSubmit}
+                  disabled={isSubmittingReview || reviewRating === 0 || reviewComment.trim().length < 3}
+                  className="flex-1 py-3 rounded-xl bg-[#1EBDB8] disabled:bg-gray-100 disabled:text-gray-400 hover:bg-[#1CAAAE] text-white text-[14px] font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Review'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -1002,7 +1269,8 @@ export default function ExploreScreen({
   );
 
   return (
-    <div className="space-y-8 pb-24">
+    <>
+      <div className="space-y-8 pb-24">
       <div className="flex flex-col gap-6">
         <div className="bg-[#1F2432] rounded-full pl-5 pr-2 py-2.5 flex items-center gap-3 shadow-sm">
           <input
@@ -1150,5 +1418,32 @@ export default function ExploreScreen({
         )}
       </section>
     </div>
+    {previewImage && (
+      <div
+        className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-[2px] flex items-center justify-center p-4"
+        onClick={() => setPreviewImage(null)}
+      >
+        <div
+          className="relative w-full max-w-4xl max-h-[90vh] bg-black rounded-2xl overflow-hidden shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors flex items-center justify-center"
+            aria-label="Close preview"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <div className="w-full h-full flex items-center justify-center p-2">
+            <img src={previewImage} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg" />
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

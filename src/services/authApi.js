@@ -632,6 +632,24 @@ export const submitPatientAppointmentReview = async (token, appointmentId, paylo
   });
 };
 
+export const submitDirectClinicReview = async (token, clinicId, payload) => {
+  if (!token) {
+    throw new Error('Unauthorized: Missing token');
+  }
+
+  if (!clinicId) {
+    throw new Error('Clinic id is required');
+  }
+
+  return apiRequest(`/auth/patient/clinics/${clinicId}/direct-review`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload || {})
+  });
+};
+
 export const skipPatientAppointmentReview = async (token, appointmentId, confirmSkip = true) => {
   if (!token) {
     throw new Error('Unauthorized: Missing token');
@@ -1433,28 +1451,34 @@ export const fetchClinicServices = async (token) => {
   });
 };
 
-export const createClinicService = async (token, payload = {}) => {
+export const createClinicService = async (token, payload) => {
   if (!token) throw new Error('Unauthorized: Missing token');
+  
+  const isFormData = payload instanceof FormData;
+  
   return apiRequest('/auth/clinic/services', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' })
     },
-    body: JSON.stringify(payload || {})
+    body: isFormData ? payload : JSON.stringify(payload || {})
   });
 };
 
-export const updateClinicService = async (token, serviceId, payload = {}) => {
+export const updateClinicService = async (token, serviceId, payload) => {
   if (!token) throw new Error('Unauthorized: Missing token');
   if (!serviceId) throw new Error('Service id is required');
+  
+  const isFormData = payload instanceof FormData;
+  
   return apiRequest(`/auth/clinic/services/${serviceId}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' })
     },
-    body: JSON.stringify(payload || {})
+    body: isFormData ? payload : JSON.stringify(payload || {})
   });
 };
 

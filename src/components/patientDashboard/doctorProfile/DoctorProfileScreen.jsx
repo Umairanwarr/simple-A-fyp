@@ -751,16 +751,16 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_500px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_440px] gap-6 md:gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
       {/* Left Column (Profile info) */}
       <section className="min-w-0 bg-transparent p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-center sm:items-start xl:items-start gap-6 sm:gap-8 mb-10">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 mb-10">
           <div className="w-[180px] h-[180px] rounded-full overflow-hidden bg-[#F3F4F6] border-[4px] border-white shadow-sm shrink-0">
             <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
           </div>
 
-          <div className="space-y-1.5 text-center sm:text-left xl:text-left mt-2 min-w-0">
-            <h1 className="text-[28px] sm:text-[38px] xl:text-[32px] 2xl:text-[38px] leading-tight font-bold text-[#1F2432]">{doctor.name}</h1>
+          <div className="space-y-1.5 text-center sm:text-left mt-2 min-w-0">
+            <h1 className="text-[28px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{doctor.name}</h1>
             <p className="text-[22px] font-semibold text-[#1F2432]">{doctor.specialty}</p>
             <p className="text-[18px] font-medium text-[#6B7280]">{doctor.location || 'Doctors Address'}</p>
             <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 text-[16px] font-medium">
@@ -785,6 +785,17 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
             }`}
           >
             About
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('education')}
+            className={`pb-3 text-[16px] font-bold border-b-2 transition-colors ${
+              activeTab === 'education'
+                ? 'border-[#1F2432] text-[#1F2432]'
+                : 'border-transparent text-[#6B7280] hover:text-[#1F2432]'
+            }`}
+          >
+            Education
           </button>
           <button
             type="button"
@@ -824,18 +835,27 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
         <div className="min-h-[200px]">
           {activeTab === 'about' && (
             <div className="space-y-6">
-              {doctor.education && (
-                <div className="bg-[#ECFCFB] border border-[#1EBDB8]/15 rounded-[20px] p-5 shadow-sm">
-                  <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#0FA6A2] mb-1.5">Education & Qualifications</h4>
-                  <p className="text-[15px] font-semibold text-[#1F2432]">{doctor.education}</p>
-                </div>
-              )}
               <div className="space-y-2">
                 <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#9CA3AF]">Biography</h4>
                 <p className="text-[15px] leading-relaxed text-[#1F2432] pr-0 lg:pr-12">
                   {doctor.bio || 'This doctor has not provided a biography yet.'}
                 </p>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'education' && (
+            <div className="space-y-4">
+              {doctor.education ? (
+                <div className="bg-[#ECFCFB] border border-[#1EBDB8]/15 rounded-[20px] p-5 shadow-sm">
+                  <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#0FA6A2] mb-1.5">Education</h4>
+                  <p className="text-[15px] font-semibold text-[#1F2432]">{doctor.education}</p>
+                </div>
+              ) : (
+                <div className="bg-[#F9FAFB] rounded-xl p-6 text-center border border-gray-100">
+                  <p className="text-[14px] font-medium text-[#6B7280]">Education details not provided.</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -918,7 +938,7 @@ export default function DoctorProfileScreen({ doctorId, onBack }) {
       </section>
 
       {/* Right Column (Booking card) */}
-      <section className="bg-white rounded-3xl p-8 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] m-4 mb-24 max-w-[600px] w-full ml-auto">
+      <section className="bg-white rounded-3xl p-8 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] m-4 mb-24 max-w-[460px] w-full ml-auto">
         <div className="space-y-2 mb-8">
           <h2 className="text-[28px] leading-tight font-semibold text-[#1F2432]">Book an appointment on Simple</h2>
           <p className="text-[16px] text-[#6B7280]">The office partners with Simple to schedule appointments</p>

@@ -8,6 +8,7 @@ import {
   fetchClinicDoctors,
   fetchClinicServices,
   registerClinicDoctor,
+  updateClinicService,
   updateClinicDoctor
 } from '../../services/authApi';
 import { getClinicSessionProfile } from '../../utils/authSession';
@@ -60,7 +61,8 @@ export default function StaffManagement() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [serviceTypeToCreate, setServiceTypeToCreate] = useState('lab');
-  const [serviceForm, setServiceForm] = useState({ name: '', date: '', fromTime: '', toTime: '', priceInRupees: '' });
+  const [editingServiceId, setEditingServiceId] = useState('');
+  const [serviceForm, setServiceForm] = useState({ name: '', image: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
@@ -113,7 +115,8 @@ export default function StaffManagement() {
   };
 
   const resetServiceForm = () => {
-    setServiceForm({ name: '', date: '', fromTime: '', toTime: '', priceInRupees: '' });
+    setEditingServiceId('');
+    setServiceForm({ name: '', image: null });
   };
 
   const openServiceModal = (serviceType) => {
@@ -121,6 +124,7 @@ export default function StaffManagement() {
       toast.info(`Upgrade to Gold or Diamond plan to use ${serviceType === 'facility' ? 'Facilities' : 'Labs'}.`);
       return;
     }
+    setEditingServiceId('');
     setServiceTypeToCreate(serviceType);
     resetServiceForm();
     setIsServiceModalOpen(true);
@@ -130,6 +134,14 @@ export default function StaffManagement() {
     if (isSubmitting) return;
     setIsServiceModalOpen(false);
     resetServiceForm();
+  };
+
+  const handleEditService = (service) => {
+    if (!canManageServices) return;
+    setEditingServiceId(String(service.id || ''));
+    setServiceTypeToCreate(service.serviceType === 'facility' ? 'facility' : 'lab');
+    setServiceForm({ name: service.name || '', image: null });
+    setIsServiceModalOpen(true);
   };
 
   const handleRegisterDoctor = async (event) => {
@@ -218,13 +230,9 @@ export default function StaffManagement() {
     }
 
     const name = String(serviceForm.name || '').trim();
-    const date = String(serviceForm.date || '').trim();
-    const fromTime = String(serviceForm.fromTime || '').trim();
-    const toTime = String(serviceForm.toTime || '').trim();
-    const priceInRupees = Math.max(0, Math.trunc(Number(serviceForm.priceInRupees || 0)));
 
-    if (!name || !date || !fromTime || !toTime || priceInRupees <= 0) {
-      toast.error('Service name, slot date/time and price are required');
+    if (!name) {
+      toast.error('Service name is required');
       return;
     }
 
@@ -233,26 +241,26 @@ export default function StaffManagement() {
       const clinicToken = localStorage.getItem('clinicToken');
       if (!clinicToken) throw new Error('Please login again to continue');
 
-      const createResponse = await createClinicService(clinicToken, {
-        name,
-        serviceType: serviceTypeToCreate
-      });
-      const createdService = createResponse?.service;
-      if (!createdService?.id) throw new Error('Service could not be created');
+      const payload = new FormData();
+      payload.append('name', name);
+      payload.append('serviceType', serviceTypeToCreate);
+      if (serviceForm.image) {
+        payload.append('avatar', serviceForm.image); // backend uploader expects `avatar`
+      }
 
-      const slotResponse = await createClinicServiceAvailability(clinicToken, createdService.id, {
-        date,
-        fromTime,
-        toTime,
-        priceInRupees
-      });
-
-      const serviceWithSlot = {
-        ...createdService,
-        slots: Array.isArray(slotResponse?.slots) ? slotResponse.slots : (createdService?.slots || [])
-      };
-      setServices((prev) => [serviceWithSlot, ...prev]);
-      toast.success(`${serviceTypeToCreate === 'facility' ? 'Facility' : 'Lab'} added successfully`);
+      if (editingServiceId) {
+        const updateResponse = await updateClinicService(clinicToken, editingServiceId, payload);
+        const updatedService = updateResponse?.service;
+        if (!updatedService?.id) throw new Error('Service could not be updated');
+        setServices((prev) => prev.map((s) => (String(s.id) === String(editingServiceId) ? { ...s, ...updatedService } : s)));
+        toast.success('Service updated successfully');
+      } else {
+        const createResponse = await createClinicService(clinicToken, payload);
+        const createdService = createResponse?.service;
+        if (!createdService?.id) throw new Error('Service could not be created');
+        setServices((prev) => [{ ...createdService, slots: [] }, ...prev]);
+        toast.success(`${serviceTypeToCreate === 'facility' ? 'Facility' : 'Lab'} added successfully`);
+      }
       closeServiceModal();
     } catch (error) {
       toast.error(error?.message || 'Could not create service');
@@ -343,8 +351,6 @@ export default function StaffManagement() {
                 <tr className="bg-slate-50/60">
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Doctor Info</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Specialization</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Upcoming</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Next Appointment</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
@@ -378,14 +384,6 @@ export default function StaffManagement() {
                       <span className="px-3 py-1 bg-slate-50 text-slate-600 text-[12px] font-medium rounded-md border border-slate-100">
                         {doctor.specialization || 'General'}
                       </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]">
-                        {Math.max(0, Math.trunc(Number(doctor?.appointmentStats?.upcomingAppointments || 0)))} upcoming
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-[13px] font-medium text-slate-500">{formatNextAppointment(doctor?.appointmentStats?.nextAppointment)}</span>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-2">
@@ -426,7 +424,6 @@ export default function StaffManagement() {
                 <tr className="bg-slate-50/60">
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Service</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Type</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Available Slots</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
@@ -434,7 +431,16 @@ export default function StaffManagement() {
                 {services.map((service) => (
                   <tr key={service.id} className="hover:bg-slate-50/40 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="text-[15px] font-semibold text-slate-800">{service.name}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-gray-100 shrink-0">
+                          {service.image ? (
+                            <img src={service.image} alt={service.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[#1EBDB8] text-xs font-bold">No Image</div>
+                          )}
+                        </div>
+                        <p className="text-[15px] font-semibold text-slate-800">{service.name}</p>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 rounded-md text-[12px] font-bold bg-slate-50 border border-slate-100 text-slate-700 capitalize">
@@ -442,19 +448,28 @@ export default function StaffManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[13px] font-semibold text-slate-700">{Array.isArray(service.slots) ? service.slots.length : 0}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteService(service)}
-                        disabled={!canManageServices}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
-                          canManageServices ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }`}
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditService(service)}
+                          disabled={!canManageServices}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+                            canManageServices ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteService(service)}
+                          disabled={!canManageServices}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+                            canManageServices ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -558,8 +573,8 @@ export default function StaffManagement() {
           <div className="bg-white rounded-[28px] w-full max-w-lg shadow-2xl p-7">
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-[22px] font-bold text-[#1F2432]">Add {serviceTypeToCreate === 'facility' ? 'Facility' : 'Lab'}</h3>
-                <p className="text-[13px] text-[#6B7280] mt-1">Create a bookable clinic service with its first slot.</p>
+                <h3 className="text-[22px] font-bold text-[#1F2432]">{editingServiceId ? 'Edit Service' : `Add ${serviceTypeToCreate === 'facility' ? 'Facility' : 'Lab'}`}</h3>
+                <p className="text-[13px] text-[#6B7280] mt-1">{editingServiceId ? 'Update service details or image.' : 'Create a clinic service. You can add bookable slots later.'}</p>
               </div>
               <button type="button" onClick={closeServiceModal} disabled={isSubmitting} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -567,33 +582,39 @@ export default function StaffManagement() {
             </div>
 
             <form onSubmit={handleCreateService} className="space-y-4">
-              <input
-                type="text"
-                placeholder={`${serviceTypeToCreate === 'facility' ? 'Facility' : 'Lab'} name`}
-                value={serviceForm.name}
-                onChange={(event) => setServiceForm((prev) => ({ ...prev, name: event.target.value }))}
-                className="w-full bg-[#F8FAFC] rounded-[12px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none border border-gray-200"
-                required
-              />
-              <div className="grid grid-cols-3 gap-3">
-                <input type="date" value={serviceForm.date} onChange={(event) => setServiceForm((prev) => ({ ...prev, date: event.target.value }))} className="bg-[#F8FAFC] rounded-[12px] px-3 py-3 text-[13px] text-[#1F2432] border border-gray-200 [color-scheme:light]" required />
-                <input type="time" value={serviceForm.fromTime} onChange={(event) => setServiceForm((prev) => ({ ...prev, fromTime: event.target.value }))} className="bg-[#F8FAFC] rounded-[12px] px-3 py-3 text-[13px] text-[#1F2432] border border-gray-200 [color-scheme:light]" required />
-                <input type="time" value={serviceForm.toTime} onChange={(event) => setServiceForm((prev) => ({ ...prev, toTime: event.target.value }))} className="bg-[#F8FAFC] rounded-[12px] px-3 py-3 text-[13px] text-[#1F2432] border border-gray-200 [color-scheme:light]" required />
+              <div className="flex flex-col gap-2">
+                <label className="text-[13.5px] font-bold text-[#6B7280]">Service Name</label>
+                <input
+                  type="text"
+                  placeholder={`${serviceTypeToCreate === 'facility' ? 'Facility' : 'Lab'} name`}
+                  value={serviceForm.name}
+                  onChange={(event) => setServiceForm((prev) => ({ ...prev, name: event.target.value }))}
+                  className="w-full bg-[#F8FAFC] rounded-[12px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none border border-gray-200 focus:border-[#1EBDB8] focus:ring-2 focus:ring-[#1EBDB8]/30 transition-all"
+                  required
+                />
               </div>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Service fee (Rs.)"
-                value={serviceForm.priceInRupees}
-                onChange={(event) => setServiceForm((prev) => ({ ...prev, priceInRupees: event.target.value }))}
-                className="w-full bg-[#F8FAFC] rounded-[12px] px-4 py-3.5 text-[#1F2432] placeholder:text-[#9CA3AF] text-[14px] border border-gray-200"
-                required
-              />
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[13.5px] font-bold text-[#6B7280]">Cover Image (JPG, PNG, WEBP)</label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={isSubmitting}
+                  onChange={(event) => {
+                    const selectedFile = event.target.files?.[0] || null;
+                    setServiceForm((prev) => ({ ...prev, image: selectedFile }));
+                  }}
+                  className="bg-[#F8FAFC] rounded-[12px] px-4 py-3 text-[#4B5563] text-[13px] font-medium outline-none border border-gray-200 file:mr-3 file:border-0 file:bg-[#1EBDB8]/10 file:text-[#0F766E] file:px-3 file:py-1.5 file:rounded-lg file:font-semibold"
+                />
+                <p className="text-[11px] text-slate-400">
+                  {serviceForm.image ? `Selected: ${serviceForm.image.name}` : 'Choose an image to represent this service.'}
+                </p>
+              </div>
+
               <div className="pt-2 flex items-center justify-end gap-3">
                 <button type="button" onClick={closeServiceModal} disabled={isSubmitting} className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-[#6B7280] bg-[#F3F4F6]">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white bg-[#1EBDB8] hover:bg-[#1CAAAE] disabled:opacity-60">
-                  {isSubmitting ? 'Saving...' : 'Save Service'}
+                  {isSubmitting ? (editingServiceId ? 'Updating...' : 'Saving...') : (editingServiceId ? 'Update Service' : 'Save Service')}
                 </button>
               </div>
             </form>

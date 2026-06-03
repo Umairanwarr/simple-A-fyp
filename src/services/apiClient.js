@@ -11,10 +11,12 @@ const API_BASE_URL = import.meta.env.PROD
 export const apiRequest = async (path, options = {}) => {
   const { headers: customHeaders = {}, ...restOptions } = options;
 
+  const isFormDataBody = restOptions?.body instanceof FormData;
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...restOptions,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
       ...customHeaders
     },
   });

@@ -160,6 +160,7 @@ export default function StoreProfileScreen({ storeId, onBack }) {
   const [loadError, setLoadError] = useState('');
   const [activeTab, setActiveTab] = useState('inventory');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Cart logic
   const [cart, setCart] = useState([]); // { id, name, price, quantity, maxStock }
@@ -234,6 +235,15 @@ export default function StoreProfileScreen({ storeId, onBack }) {
       setOrderForm((prev) => ({ ...prev, phoneNumber: patientProfile.phoneNumber }));
     }
   }, [patientProfile]);
+
+  useEffect(() => {
+    if (!previewImage) return undefined;
+    const handleKey = (event) => {
+      if (event.key === 'Escape') setPreviewImage(null);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [previewImage]);
 
   useEffect(() => {
     let isMounted = true;
@@ -668,7 +678,8 @@ export default function StoreProfileScreen({ storeId, onBack }) {
 
   // ── Main profile view ────────────────────────────────────────────────────
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
+    <>
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_420px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
 
       {/* Left column */}
       <section className="min-w-0 bg-transparent p-4 sm:p-6 lg:p-8">
@@ -681,12 +692,12 @@ export default function StoreProfileScreen({ storeId, onBack }) {
         </button>
 
         {/* Hero */}
-        <div className="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-center sm:items-start xl:items-start gap-6 sm:gap-8 mb-10">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 mb-10">
           <div className="w-[160px] h-[160px] rounded-full overflow-hidden bg-[#F3F4F6] border-[4px] border-white shadow-sm shrink-0">
             <img src={store.image} alt={store.name} className="w-full h-full object-cover" />
           </div>
-          <div className="space-y-1.5 text-center sm:text-left xl:text-left mt-2 min-w-0">
-            <h1 className="text-[28px] sm:text-[38px] xl:text-[32px] 2xl:text-[38px] leading-tight font-bold text-[#1F2432]">{store.name}</h1>
+          <div className="space-y-1.5 text-center sm:text-left mt-2 min-w-0">
+            <h1 className="text-[28px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{store.name}</h1>
             <p className="text-[18px] font-semibold text-[#1EBDB8]">Medical Store</p>
             {(store?.isTopStore || store?.hasPrioritySupport) ? (
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
@@ -799,13 +810,18 @@ export default function StoreProfileScreen({ storeId, onBack }) {
                     <div key={med.id} className="bg-white rounded-[16px] p-4 border border-gray-100 shadow-sm flex flex-col gap-2.5">
                       <div className="flex gap-4">
                         {/* Medicine Image */}
-                        <div className="w-16 h-16 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => med.image && setPreviewImage(med.image)}
+                          className="w-16 h-16 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0 overflow-hidden border border-gray-100 focus:outline-none focus:ring-2 focus:ring-[#1EBDB8]/50"
+                          aria-label={med.image ? `Preview ${med.name}` : med.name}
+                        >
                           {med.image ? (
                             <img src={med.image} alt={med.name} className="w-full h-full object-cover" />
                           ) : (
                             <svg className="w-6 h-6 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                           )}
-                        </div>
+                        </button>
 
                         {/* Medicine Details */}
                         <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
@@ -1001,6 +1017,29 @@ export default function StoreProfileScreen({ storeId, onBack }) {
         </button>
       </aside>
     </div>
+
+    {previewImage ? (
+      <div
+        className="fixed inset-0 z-[160] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setPreviewImage(null)}
+      >
+        <div
+          className="relative max-w-4xl w-full bg-white/5 rounded-2xl overflow-hidden border border-white/20"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-black/60 text-white hover:bg-black/80 flex items-center justify-center"
+            aria-label="Close preview"
+          >
+            ✕
+          </button>
+          <img src={previewImage} alt="Medicine preview" className="w-full max-h-[80vh] object-contain bg-black" />
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 

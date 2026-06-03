@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { PasswordField, FilePicker, validatePassword, validateEmail } from './SharedFields';
 import { registerClinic } from '../../services/authApi';
+import GoogleAddressPicker from './GoogleAddressPicker';
 
 const facilityTypes = [
   'General Hospital', 'Private Clinic', 'Diagnostic Lab', 'Specialty Center',
@@ -18,6 +19,9 @@ export default function ClinicForm() {
     phone: '',
     facilityType: '',
     address: '',
+    addressPlaceId: '',
+    addressLatitude: '',
+    addressLongitude: '',
     password: '',
     confirmPassword: '',
     permitMedia: null,
@@ -37,6 +41,17 @@ export default function ClinicForm() {
     }
     setFormData({ ...formData, [e.target.name]: value });
   };
+
+  const handleAddressChange = useCallback(({ address, placeId, latitude, longitude }) => {
+    setFormData((prev) => ({
+      ...prev,
+      address,
+      addressPlaceId: placeId || '',
+      addressLatitude: latitude === '' ? '' : String(latitude),
+      addressLongitude: longitude === '' ? '' : String(longitude)
+    }));
+  }, []);
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFormData({ ...formData, [e.target.name]: e.target.files[0] });
@@ -75,6 +90,9 @@ export default function ClinicForm() {
       formPayload.append('phone', formData.phone);
       formPayload.append('facilityType', formData.facilityType);
       formPayload.append('address', formData.address);
+      formPayload.append('addressPlaceId', formData.addressPlaceId);
+      formPayload.append('addressLatitude', formData.addressLatitude);
+      formPayload.append('addressLongitude', formData.addressLongitude);
       formPayload.append('password', formData.password);
       formPayload.append('confirmPassword', formData.confirmPassword);
 
@@ -123,10 +141,12 @@ export default function ClinicForm() {
         </select>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-[13.5px] font-bold text-[#6B7280]">Complete Physical Address</label>
-        <textarea name="address" placeholder="For GPS-based search results" value={formData.address} onChange={handleChange} className="bg-[#F5F5F5E5] rounded-[10px] px-4 py-3.5 text-[#4B5563] text-[14px] font-medium placeholder-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1EBDB8]/50 transition-all border border-transparent focus:border-[#1EBDB8] min-h-[80px]" />
-      </div>
+      <GoogleAddressPicker
+        label="Complete Physical Address"
+        placeholder="Search or type the clinic address"
+        value={formData.address}
+        onChange={handleAddressChange}
+      />
 
       <FilePicker 
         label="Health Permit (PDF/Image)"
