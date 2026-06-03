@@ -161,7 +161,8 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
         const doctors = Array.isArray(data?.doctors) ? data.doctors : [];
         const doctorIds = Array.isArray(data?.favoriteDoctorIds) ? data.favoriteDoctorIds : [];
         const storeIds = Array.isArray(data?.favoriteStoreIds) ? data.favoriteStoreIds : [];
-        const combinedIds = [...doctorIds, ...storeIds].map(id => String(id));
+        const clinicIds = Array.isArray(data?.favoriteClinicIds) ? data.favoriteClinicIds : [];
+        const combinedIds = [...doctorIds, ...storeIds, ...clinicIds].map(id => String(id));
 
         setFavoriteDoctors(doctors);
         setFavoriteDoctorIds(combinedIds);
@@ -383,7 +384,8 @@ export default function PatientDashboardLayout({ activeTab = 'dashboard', childr
       const doctorsFromApi = Array.isArray(response?.doctors) ? response.doctors : [];
       const doctorIds = Array.isArray(response?.favoriteDoctorIds) ? response.favoriteDoctorIds : [];
       const storeIds = Array.isArray(response?.favoriteStoreIds) ? response.favoriteStoreIds : [];
-      const combinedIds = [...doctorIds, ...storeIds].map(id => String(id));
+      const clinicIds = Array.isArray(response?.favoriteClinicIds) ? response.favoriteClinicIds : [];
+      const combinedIds = [...doctorIds, ...storeIds, ...clinicIds].map(id => String(id));
 
       setFavoriteDoctors(doctorsFromApi);
       setFavoriteDoctorIds(combinedIds);

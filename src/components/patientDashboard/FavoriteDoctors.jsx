@@ -12,6 +12,7 @@ export default function FavoriteDoctors({
   onToggleFavoriteDoctor,
   onScheduleDoctor,
   onOrderFromStore,
+  onViewClinic,
   isLoading = false
 }) {
   const availableDoctors = Array.isArray(doctors) ? doctors : [];
@@ -65,9 +66,17 @@ export default function FavoriteDoctors({
               isFavorite={favoriteDoctorIdSet.has(String(doc.id))}
               isFavoritePending={pendingFavoriteDoctorIdSet.has(String(doc.id))}
               onFavoriteToggle={onToggleFavoriteDoctor}
-              actionLabel={doc.type === 'doctor' ? 'Schedule Appointment' : 'Order Medicine'}
+              actionLabel={
+                doc.type === 'clinic'
+                  ? 'View Clinic'
+                  : doc.type === 'doctor'
+                  ? 'Schedule Appointment'
+                  : 'Order Medicine'
+              }
               onActionClick={
-                doc.type === 'doctor'
+                doc.type === 'clinic'
+                  ? () => onViewClinic?.(doc)
+                  : doc.type === 'doctor'
                   ? () => onScheduleDoctor?.(doc)
                   : () => onOrderFromStore?.(doc)
               }

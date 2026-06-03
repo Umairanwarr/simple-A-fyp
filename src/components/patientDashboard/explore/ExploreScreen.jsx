@@ -737,7 +737,7 @@ export default function ExploreScreen({
     return (
       <div className="pb-24">
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] gap-8 items-start">
-          <section className="bg-[#F0FCFC] rounded-[30px] p-6 sm:p-8 min-h-[760px]">
+          <section className="min-w-0 bg-[#F0FCFC] rounded-[30px] p-6 sm:p-8 min-h-[760px]">
             <button
               type="button"
               onClick={() => {
@@ -752,14 +752,14 @@ export default function ExploreScreen({
               </svg>
             </button>
 
-            <div className="flex flex-col md:flex-row md:items-center gap-8">
+            <div className="flex flex-col md:flex-row xl:flex-col 2xl:flex-row md:items-center xl:items-start 2xl:items-center gap-8">
               <div className="w-[168px] h-[168px] rounded-full overflow-hidden bg-white border border-white shadow-md shrink-0">
                 <img src={clinicProfile.image || '/clinic-placeholder.svg'} alt={clinicProfile.name} className="w-full h-full object-cover" />
               </div>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-[40px] sm:text-[46px] font-extrabold text-[#1F2432] tracking-tight leading-tight">{clinicProfile.name}</h1>
+                  <h1 className="text-[32px] sm:text-[40px] xl:text-[36px] 2xl:text-[46px] font-extrabold text-[#1F2432] tracking-tight leading-tight">{clinicProfile.name}</h1>
                   {clinicProfile.isVerifiedBadge ? (
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#ECFEFF] border border-[#A5F3FC] text-[#0F766E] text-[11px] font-extrabold uppercase tracking-[0.08em]">
                       Verified
@@ -983,7 +983,7 @@ export default function ExploreScreen({
     <DoctorCard
       key={`${item.type}-${item.id}`}
       doctor={item}
-      showFavorite={shouldShowSearchResults && Boolean(onToggleFavoriteDoctor) && isValidObjectId(item.id)}
+      showFavorite={Boolean(onToggleFavoriteDoctor) && isValidObjectId(item.id)}
       isFavorite={favoriteDoctorIdSet.has(String(item.id))}
       isFavoritePending={favoriteActionDoctorIdSet.has(String(item.id))}
       onFavoriteToggle={onToggleFavoriteDoctor}

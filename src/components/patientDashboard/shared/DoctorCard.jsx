@@ -59,7 +59,7 @@ export default function DoctorCard({
 
   return (
     <div className={cardClassName}>
-      {showFavorite && !isClinic && (
+      {showFavorite && (
         <button
           type="button"
           onClick={() => onFavoriteToggle?.(doctor)}

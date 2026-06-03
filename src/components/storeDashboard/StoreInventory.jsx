@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../services/apiClient';
@@ -28,6 +28,10 @@ export default function StoreInventory() {
 
   // Form submission overlay loader
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // File upload state
+  const fileInputRef = useRef(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchMedicines();
@@ -62,26 +66,79 @@ export default function StoreInventory() {
 
   const openAddModal = () => {
     setIsEditing(false);
-    setCurrentMedicine({ name: '', brand: '', price: '', stock: '', category: '', description: '' });
+    setCurrentMedicine({ name: '', brand: '', price: '', stock: '', category: '', description: '', imageDocument: null });
     setIsModalOpen(true);
   };
 
   const openEditModal = (medicine) => {
     setIsEditing(true);
-    setCurrentMedicine(medicine);
+    setCurrentMedicine({
+      ...medicine,
+      imageDocument: medicine.imageDocument || null
+    });
     setIsModalOpen(true);
   };
 
   const closeModals = () => {
     setIsModalOpen(false);
     setIsDeleteModalOpen(false);
-    setCurrentMedicine({ name: '', brand: '', price: '', stock: '', category: '', description: '' });
+    setCurrentMedicine({ name: '', brand: '', price: '', stock: '', category: '', description: '', imageDocument: null });
     setItemToDelete(null);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCurrentMedicine(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error('Image is too large. Maximum size is 4MB.');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const token = localStorage.getItem('medicalStoreToken');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch(`${API_BASE_URL}/medicines/upload-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
+
+      const data = await res.json();
+      setCurrentMedicine(prev => ({
+        ...prev,
+        imageDocument: data.imageDocument
+      }));
+      toast.success('Image uploaded successfully');
+    } catch (err) {
+      toast.error(err.message || 'Image upload failed');
+      console.error(err);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setCurrentMedicine(prev => ({
+      ...prev,
+      imageDocument: null
+    }));
   };
 
   const handleSave = async (e) => {
@@ -309,8 +366,12 @@ export default function StoreInventory() {
                     <tr key={medicine._id} className="border-b border-gray-100 last:border-b-0 hover:bg-[#F9FAFB] transition-colors group">
                       <td className="py-4 px-5 sm:px-8">
                         <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0">
-                            <svg className="w-5 h-5 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                          <div className="w-10 h-10 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+                            {medicine.imageDocument?.url ? (
+                              <img src={medicine.imageDocument.url} alt={medicine.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <svg className="w-5 h-5 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                            )}
                           </div>
                           <div>
                             <p className="text-[14px] font-semibold text-[#1F2432]">{medicine.name}</p>
@@ -370,8 +431,12 @@ export default function StoreInventory() {
                 <div key={medicine._id} className="bg-[#F9FAFB] rounded-[20px] p-4 border border-gray-100 hover:border-[#1EBDB8]/25 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                      <div className="w-10 h-10 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+                        {medicine.imageDocument?.url ? (
+                          <img src={medicine.imageDocument.url} alt={medicine.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-5 h-5 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                        )}
                       </div>
                       <div>
                         <h3 className="text-[15px] font-bold text-[#1F2432]">{medicine.name}</h3>
@@ -504,6 +569,56 @@ export default function StoreInventory() {
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#1EBDB8]/20 focus:border-[#1EBDB8]/40 bg-[#F9FAFB] text-[14px] font-medium text-[#1F2432] placeholder:text-[#9CA3AF] outline-none resize-none transition-all"
                       placeholder="Add dosage instructions, variants, or other details."
                     ></textarea>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-[13px] font-bold text-[#1F2432] mb-1.5">Medicine Image <span className="text-[#9CA3AF] font-medium">(Optional)</span></label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0 overflow-hidden border border-gray-100 relative group">
+                        {currentMedicine.imageDocument?.url ? (
+                          <>
+                            <img src={currentMedicine.imageDocument.url} alt="Preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={handleRemoveImage}
+                              className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Remove image"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                              </div>
+                            </button>
+                          </>
+                        ) : (
+                          <svg className="w-8 h-8 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                          </svg>
+                        )}
+                        {isUploadingImage && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploadingImage}
+                          className="px-4 py-2 border border-[#1EBDB8] hover:bg-[#ECFCFB] text-[#1EBDB8] text-[13px] font-bold rounded-xl transition-all disabled:opacity-50"
+                        >
+                          {currentMedicine.imageDocument?.url ? 'Change Image' : 'Upload Image'}
+                        </button>
+                        <p className="text-[11px] text-[#9CA3AF] mt-1.5">Max 4MB. JPG, JPEG, PNG, or WEBP only.</p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

@@ -52,6 +52,7 @@ export default function ProfilePage({ onProfileUpdated }) {
   const [experience, setExperience] = useState('');
   const [address, setAddress] = useState('');
   const [bio, setBio] = useState('');
+  const [education, setEducation] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(sessionProfile.avatarUrl);
   const [missingFields, setMissingFields] = useState([]);
   const [errors, setErrors] = useState({});
@@ -76,6 +77,7 @@ export default function ProfilePage({ onProfileUpdated }) {
     setExperience(String(profile.experience ?? '').trim());
     setAddress(String(profile.address || '').trim());
     setBio(String(profile.bio || ''));
+    setEducation(String(profile.education || '').trim());
     setAvatarUrl(String(profile.avatarUrl || '').trim() || sessionProfile.avatarUrl);
     setMissingFields(normalizeMissingFields(profile.missingFields));
 
@@ -179,7 +181,8 @@ export default function ProfilePage({ onProfileUpdated }) {
         fullName: fullName.trim(),
         phone: phone.trim(),
         address: address.trim(),
-        bio: bio.trim()
+        bio: bio.trim(),
+        education: education.trim()
       });
 
       hydrateProfile(data);
@@ -357,6 +360,16 @@ export default function ProfilePage({ onProfileUpdated }) {
             label="Years of Experience"
             value={experience}
             readOnly
+          />
+
+          <ProfileField
+            label="Education"
+            value={education}
+            placeholder="e.g. MBBS, FCPS"
+            onChange={(event) => {
+              setEducation(event.target.value);
+            }}
+            disabled={isSaving}
           />
         </div>
 

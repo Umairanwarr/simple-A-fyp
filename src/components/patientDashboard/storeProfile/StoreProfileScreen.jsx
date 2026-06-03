@@ -671,7 +671,7 @@ export default function StoreProfileScreen({ storeId, onBack }) {
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-8 pb-24 items-start bg-[#F4FDFD] -m-6 p-6">
 
       {/* Left column */}
-      <section className="bg-transparent p-4 sm:p-6 lg:p-8 shrink-0">
+      <section className="min-w-0 bg-transparent p-4 sm:p-6 lg:p-8">
         {/* Back */}
         <button type="button" onClick={() => onBack?.()} className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6B7280] hover:text-[#1F2432]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -681,12 +681,12 @@ export default function StoreProfileScreen({ storeId, onBack }) {
         </button>
 
         {/* Hero */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 mb-10">
+        <div className="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-center sm:items-start xl:items-start gap-6 sm:gap-8 mb-10">
           <div className="w-[160px] h-[160px] rounded-full overflow-hidden bg-[#F3F4F6] border-[4px] border-white shadow-sm shrink-0">
             <img src={store.image} alt={store.name} className="w-full h-full object-cover" />
           </div>
-          <div className="space-y-1.5 text-center sm:text-left mt-2">
-            <h1 className="text-[32px] sm:text-[38px] leading-tight font-bold text-[#1F2432]">{store.name}</h1>
+          <div className="space-y-1.5 text-center sm:text-left xl:text-left mt-2 min-w-0">
+            <h1 className="text-[28px] sm:text-[38px] xl:text-[32px] 2xl:text-[38px] leading-tight font-bold text-[#1F2432]">{store.name}</h1>
             <p className="text-[18px] font-semibold text-[#1EBDB8]">Medical Store</p>
             {(store?.isTopStore || store?.hasPrioritySupport) ? (
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
@@ -796,19 +796,35 @@ export default function StoreProfileScreen({ storeId, onBack }) {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredInventory.map((med) => (
-                    <div key={med.id} className="bg-white rounded-[16px] p-4 border border-gray-100 shadow-sm flex flex-col gap-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-[15px] font-bold text-[#1F2432]">{med.name}</p>
-                          <p className="text-[12px] text-[#6B7280]">{med.brand}</p>
+                    <div key={med.id} className="bg-white rounded-[16px] p-4 border border-gray-100 shadow-sm flex flex-col gap-2.5">
+                      <div className="flex gap-4">
+                        {/* Medicine Image */}
+                        <div className="w-16 h-16 rounded-2xl bg-[#ECFCFB] flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+                          {med.image ? (
+                            <img src={med.image} alt={med.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <svg className="w-6 h-6 text-[#1EBDB8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                          )}
                         </div>
-                        <span className="text-[14px] font-bold text-[#1EBDB8]">{formatCurrency(med.price)}</span>
+
+                        {/* Medicine Details */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <p className="text-[15px] font-bold text-[#1F2432] leading-tight truncate">{med.name}</p>
+                              <p className="text-[12px] font-medium text-[#6B7280] mt-0.5 truncate">{med.brand}</p>
+                            </div>
+                            <span className="text-[14px] font-bold text-[#1EBDB8] shrink-0">{formatCurrency(med.price)}</span>
+                          </div>
+
+                          {med.category && (
+                            <span className="w-fit text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E8FBFA] text-[#1EBDB8] mt-1">{med.category}</span>
+                          )}
+                        </div>
                       </div>
-                      {med.category && (
-                        <span className="w-fit text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E8FBFA] text-[#1EBDB8]">{med.category}</span>
-                      )}
+
                       {med.description && (
-                        <p className="text-[12px] text-[#6B7280] leading-relaxed">{med.description}</p>
+                        <p className="text-[12px] text-[#6B7280] leading-relaxed line-clamp-2 mt-1">{med.description}</p>
                       )}
                       <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
                         <span className="text-[11px] text-[#9CA3AF]">Stock: {med.stock}</span>

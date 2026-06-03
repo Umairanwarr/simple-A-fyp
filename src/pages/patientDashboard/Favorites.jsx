@@ -25,6 +25,7 @@ export default function Favorites() {
           onToggleFavoriteDoctor={onToggleFavoriteDoctor}
           onScheduleDoctor={(doctor) => openDoctorProfile(doctor?.id, '/dashboard/favorites')}
           onOrderFromStore={(store) => { if (store?.id) navigate(`/dashboard/store/${store.id}?from=/dashboard/favorites`); }}
+          onViewClinic={(clinic) => { if (clinic?.id) navigate(`/dashboard/explore?clinicId=${clinic.id}&from=/dashboard/favorites`); }}
           isLoading={isFavoritesLoading}
         />
       )}
